@@ -2,6 +2,7 @@ package cn.quotidietium.balatro.engine.joker;
 
 import cn.quotidietium.balatro.engine.Card;
 import cn.quotidietium.balatro.engine.Data;
+import cn.quotidietium.balatro.engine.HandEval;
 import cn.quotidietium.balatro.engine.Joker;
 import cn.quotidietium.balatro.engine.JokerInstance;
 import cn.quotidietium.balatro.engine.Phase;
@@ -871,6 +872,165 @@ public enum BasicJoker implements Joker {
         @Override
         public void onBossDefeated(RunState state, JokerInstance self) {
             self.extra.put("x", 0.0);
+        }
+    },
+    SMEARED("smeared", "污渍小丑", "红桃与方块视为同一花色；黑桃与梅花视为同一花色", 7) {
+        @Override
+        public Map<String, Object> flags() {
+            return Map.of("smeared", true);
+        }
+    },
+    THROWBACK("throwback", "复古", "每跳过一个盲注：×0.25 倍率（累积）", 6) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.xMult(1 + gd(ctx.joker.extra, "x"));
+        }
+        @Override
+        public void onSkip(RunState state, JokerInstance self) {
+            self.extra.put("x", gd(self.extra, "x") + 0.25);
+        }
+    },
+    GEM("gem", "粗宝石", "每张计分的方块牌 +$1", 7) {
+        @Override
+        public void onScoreCard(ScoreContext ctx, Card card) {
+            if (ctx.isSuit(card, 3)) ctx.dollars(1);
+        }
+    },
+    BLOODSTONE("bloodstone", "血石", "每张计分的红桃牌有 1/2 概率 ×1.5 倍率", 7) {
+        @Override
+        public void onScoreCard(ScoreContext ctx, Card card) {
+            if (ctx.isSuit(card, 1) && ctx.prob(0.5)) ctx.xMult(1.5);
+        }
+    },
+    ARROWHEAD("arrowhead", "箭头", "每张计分的黑桃牌 +50 筹码", 7) {
+        @Override
+        public void onScoreCard(ScoreContext ctx, Card card) {
+            if (ctx.isSuit(card, 0)) ctx.addChips(50);
+        }
+    },
+    ONYX("onyx", "玛瑙", "每张计分的梅花牌 +7 倍率", 7) {
+        @Override
+        public void onScoreCard(ScoreContext ctx, Card card) {
+            if (ctx.isSuit(card, 2)) ctx.addMult(7);
+        }
+    },
+    GLASS_JOKER("glass", "玻璃小丑", "每张玻璃牌破碎：×0.75 倍率（累积）", 6) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.xMult(1 + gd(ctx.joker.extra, "x"));
+        }
+        @Override
+        public void onGlassBreak(RunState state, JokerInstance self) {
+            self.extra.put("x", gd(self.extra, "x") + 0.75);
+        }
+    },
+    SHOWMAN("showman", "演艺家", "商店/补充包中可以出现已拥有的卡牌", 5) {
+        @Override
+        public Map<String, Object> flags() {
+            return Map.of("allowDupes", true);
+        }
+    },
+    FLOWERPOT("flowerpot", "花盆", "若出牌含全部四种花色：×3 倍率", 6) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            boolean[] seen = new boolean[4];
+            for (Card c : ctx.playedCards) {
+                if (c.isStone()) continue;
+                if (c.enh() == Data.Enhancement.WILD) { seen[0] = seen[1] = seen[2] = seen[3] = true; break; }
+                seen[c.suit()] = true;
+            }
+            if (seen[0] && seen[1] && seen[2] && seen[3]) ctx.xMult(3);
+        }
+    },
+    WEE("wee", "小不点", "+10 筹码；每张计分的 2 使其永久 +8 筹码", 8) {
+        private long chips(JokerInstance j) {
+            Object v = j.extra.get("chips");
+            return v instanceof Number ? ((Number) v).longValue() : 10;
+        }
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.addChips(chips(ctx.joker));
+        }
+        @Override
+        public void onScoreCard(ScoreContext ctx, Card card) {
+            if (card.rank() == 2) ctx.joker.extra.put("chips", chips(ctx.joker) + 8);
+        }
+    },
+    MERRY("merry", "快乐安迪", "弃牌次数 +3；手牌上限 -1", 7) {
+        @Override
+        public Map<String, Object> flags() {
+            return Map.of("discards", 3, "handSize", -1);
+        }
+    },
+    OOPS("oops", "全是 6", "所有概率翻倍（如 1/4 → 1/2）", 4) {
+        @Override
+        public Map<String, Object> flags() {
+            return Map.of("doubleProb", true);
+        }
+    },
+    SATELLITE("satellite", "卫星", "回合结束：本局每用过一种不同的星球牌 +$1", 6) {
+        @Override
+        public long onRoundEnd(RunState state, JokerInstance self) {
+            int n = 0;
+            for (Object v : state.usedPlanets.values()) if (Boolean.TRUE.equals(v)) n++;
+            return n;
+        }
+    },
+    LICENSE("license", "驾照", "若牌组中增强牌 ≥16 张：×3 倍率", 7) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            int n = 0;
+            for (Card c : ctx.state.fullDeck) if (c.enh() != null) n++;
+            if (n >= 16) ctx.xMult(3);
+        }
+    },
+    CARTOMANCER("cartomancer", "卡牌术士", "击败盲注后获得一张塔罗牌", 6) {
+        @Override
+        public long onRoundEnd(RunState state, JokerInstance self) {
+            state.gainConsumable("tarot");
+            return 0;
+        }
+    },
+    ASTRONOMER("astronomer", "天文学家", "商店与天体包中的星球牌免费", 8) {
+        @Override
+        public Map<String, Object> flags() {
+            return Map.of("freePlanets", true);
+        }
+    },
+    BURNT("burnt", "烧焦小丑", "每次弃牌后升级所弃牌构成的牌型", 6) {
+        @Override
+        public void onDiscard(RunState state, List<Card> cards, JokerInstance self) {
+            HandEval.Result res = state.evaluateHand(cards);
+            if (res != null) {
+                state.levelUpHand(res.type, 1);
+                state.msg("烧焦小丑：「" + res.type.name + "」升 1 级");
+            }
+        }
+    },
+    BOOTSTRAPS("bootstraps", "自力更生", "每持有 $5：+2 倍率", 7) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.addMult(2L * (Math.max(0, ctx.state.money) / 5));
+        }
+    },
+    MATADOR("matador", "斗牛士", "若出牌触发了 Boss 盲注的能力：+$8", 7) {
+        @Override
+        public void onPlayHand(RunState state, PlayHandInfo info) {
+            if (info.findJoker("matador") != null && state.bossTriggeredThisHand) state.gainMoney(8);
+        }
+    },
+    IDOL("idol", "偶像", "每张指定的牌（点数+花色）计分时 ×2 倍率（目标每回合结束更换）", 6) {
+        @Override
+        public void onScoreCard(ScoreContext ctx, Card card) {
+            int rank = gi(ctx.joker.extra, "rank", 14);
+            int suit = gi(ctx.joker.extra, "suit", 0);
+            if (card.rank() == rank && ctx.isSuit(card, suit)) ctx.xMult(2);
+        }
+        @Override
+        public long onRoundEnd(RunState state, JokerInstance self) {
+            self.extra.put("rank", state.stream("idol").range(2, 14));
+            self.extra.put("suit", state.stream("idol").range(0, 3));
+            return 0;
         }
     };
 

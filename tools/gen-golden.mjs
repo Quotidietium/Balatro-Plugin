@@ -248,6 +248,15 @@ function genJokers() {
     ['troubadour', 'GOLDEN1'],
     ['ramen', 'GOLDEN1'],
     ['ancient', 'GOLDEN1'],
+    ['smeared', 'GOLDEN1'],
+    ['gem', 'GOLDEN1'],
+    ['arrowhead', 'GOLDEN1'],
+    ['onyx', 'GOLDEN1'],
+    ['flowerpot', 'GOLDEN1'],
+    ['wee', 'GOLDEN1'],
+    ['oops', 'GOLDEN1'],
+    ['idol', 'GOLDEN1'],
+    ['bootstraps', 'GOLDEN1'],
   ];
   const L = [];
   for (const [jkey, seed] of cases) {

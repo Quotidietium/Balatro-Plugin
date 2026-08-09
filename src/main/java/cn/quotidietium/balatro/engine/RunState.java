@@ -59,6 +59,7 @@ public final class RunState {
     // ---- 牌型升级/统计 ----
     public final Map<Data.HandType, Integer> handLevels = new LinkedHashMap<>();
     public final Map<Data.HandType, Integer> handPlayedCount = new LinkedHashMap<>();
+    public final Map<String, Boolean> usedPlanets = new HashMap<>(); // 卫星小丑用（0.2.0 起记录）
 
     // ---- 回合运行时 ----
     public int handsLeft;
@@ -208,5 +209,10 @@ public final class RunState {
     /** 获得跳过标签（0.1.0 仅入列表，效果 0.3.0）。 */
     public void gainTag(String key) {
         tags.add(key);
+    }
+
+    /** 评估一组手牌的牌型（供小丑钩子调用，如烧焦小丑）。 */
+    public HandEval.Result evaluateHand(List<Card> cards) {
+        return HandEval.evaluate(this, cards);
     }
 }
