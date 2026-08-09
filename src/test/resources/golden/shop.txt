@@ -1,0 +1,24 @@
+SHOP SHOP1
+CARD 0 tarot sun 3
+CARD 1 joker clever 4
+PACK 0 buffoon1 4
+PACK 1 buffoon2 6
+VOUCHER crystal 10
+FREEREROLL 0
+ENDSHOP
+SHOP SHOP2
+CARD 0 joker vampire 7
+CARD 1 joker cloud9 7
+PACK 0 buffoon2 6
+PACK 1 buffoon2 6
+VOUCHER overstock 10
+FREEREROLL 0
+ENDSHOP
+SHOP SHOP3
+CARD 0 joker turtle 6
+CARD 1 tarot death 3
+PACK 0 arcana3 8
+PACK 1 celestial1 4
+VOUCHER crystal 10
+FREEREROLL 0
+ENDSHOP

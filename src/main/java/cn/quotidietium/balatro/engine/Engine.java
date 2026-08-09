@@ -164,6 +164,11 @@ public final class Engine {
         s.flags = f;
     }
 
+    /** 重新计算 flags（购买小丑/优惠券后调用）。 */
+    public static void recomputeFlags(RunState s) {
+        computeFlags(s);
+    }
+
     private static void startRound(RunState s) {
         applyVouchersPassive(s);
         computeFlags(s);
@@ -389,7 +394,16 @@ public final class Engine {
             return PlayResult.ok(score, type, events, true, false);
         }
         if (s.handsLeft <= 0) {
-            // 骨头先生免死 → 0.4.0
+            // 骨头先生免死：得分 ≥ 目标 25% 时销毁自身并判回合通过
+            JokerInstance bones = null;
+            for (JokerInstance j : s.jokers) {
+                if (j.def.key().equals("bones") && !j.debuff) { bones = j; break; }
+            }
+            if (bones != null && s.roundScore >= Math.round(s.blindTarget * 0.25)) {
+                s.destroyJoker(bones, "骨头先生：免除失败！");
+                endRound(s, true);
+                return PlayResult.ok(score, type, events, true, false);
+            }
             loseRun(s);
             return PlayResult.ok(score, type, events, false, true);
         }

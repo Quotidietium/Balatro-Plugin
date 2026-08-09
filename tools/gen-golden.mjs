@@ -201,6 +201,39 @@ function genJokerMeta() {
 }
 genJokerMeta();
 
+// ============ SHOP 黄金值（商店生成） ============
+function genShop() {
+  const { Engine, openShop } = loadBalatro(['rng.js', 'data.js', 'jokers.js', 'engine.js'], ['Engine', 'openShop']);
+  const seeds = ['SHOP1', 'SHOP2', 'SHOP3'];
+  const L = [];
+  for (const seed of seeds) {
+    const st = Engine.createRun({ deck: 'red', stake: 0, seed });
+    openShop(st); // 直接进入商店并生成
+    const shop = st.shop;
+    L.push(`SHOP ${seed}`);
+    for (let i = 0; i < shop.cards.length; i++) {
+      const c = shop.cards[i];
+      let key = '-';
+      if (c.kind === 'joker') key = c.joker.def.key;
+      else if (c.kind === 'playing') key = 'play:' + c.card.rank + '.' + c.card.suit;
+      else key = c.key;
+      let extra = '';
+      if (c.kind === 'joker' && c.joker.edition) extra = '|' + c.joker.edition;
+      if (c.kind === 'joker' && c.joker.eternal) extra += '|eternal';
+      L.push(`CARD ${i} ${c.kind} ${key} ${c.price}${extra}`);
+    }
+    for (let i = 0; i < shop.packs.length; i++) {
+      const p = shop.packs[i];
+      L.push(`PACK ${i} ${p.pack.key} ${p.price}`);
+    }
+    L.push(`VOUCHER ${shop.voucher ? shop.voucher.voucher.key : '-'} ${shop.voucher ? shop.voucher.price : 0}`);
+    L.push(`FREEREROLL ${shop.freeRerolls}`);
+    L.push('ENDSHOP');
+  }
+  writeText('shop.txt', L);
+}
+genShop();
+
 // ============ JOKER 黄金值 ============
 // 给开局授予指定小丑后，驱动 small 盲注整回合，对比计分（验证小丑效果与计分管线）。
 function genJokers() {

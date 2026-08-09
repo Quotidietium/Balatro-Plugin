@@ -26,6 +26,7 @@ public final class JokerRegistry {
     private static final Map<String, Integer> RARITY = new HashMap<>();
     private static final Map<String, Integer> COST = new HashMap<>();
     private static final Map<String, String> NAME = new HashMap<>();
+    private static final List<Joker> ORDERED = new ArrayList<>(); // 按原版 jokers.js 定义顺序
 
     static {
         for (BasicJoker j : BasicJoker.values()) {
@@ -62,6 +63,11 @@ public final class JokerRegistry {
         return BY_KEY.values();
     }
 
+    /** 按原版 jokers.js 定义顺序返回（供商店 pick 复现）。 */
+    public static List<Joker> allJokersOrdered() {
+        return ORDERED;
+    }
+
     /** 稀有度（0 普通 / 1 罕见 / 2 稀有 / 3 传奇）；未登记返回 0。 */
     public static int rarityOf(String key) {
         return RARITY.getOrDefault(key, 0);
@@ -88,6 +94,8 @@ public final class JokerRegistry {
                         RARITY.put(p[1], Integer.parseInt(p[2]));
                         COST.put(p[1], Integer.parseInt(p[3]));
                         NAME.put(p[1], p[4]);
+                        Joker j = BY_KEY.get(p[1]);
+                        if (j != null) ORDERED.add(j); // 按元数据(=原版)顺序收录
                     }
                 }
             }

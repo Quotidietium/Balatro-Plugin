@@ -147,7 +147,7 @@ public enum BasicJoker implements Joker {
         }
         @Override
         public long onRoundEnd(RunState state, JokerInstance self) {
-            if (state.stream("grossmichel").chance(1.0 / 6)) state.destroyJoker(self, "格罗米歇尔碎掉了！");
+            if (state.stream("grossmichel").chance(1.0 / 6)) { state.grosDead = true; state.destroyJoker(self, "格罗米歇尔碎掉了！"); }
             return 0;
         }
     },
@@ -1261,6 +1261,9 @@ public enum BasicJoker implements Joker {
                 state.msg("隐形小丑：复制了 " + src.def.displayName());
             }
         }
+    },
+    BONES("bones", "骨头先生", "若回合得分 ≥ 目标的 25%：免除一次失败并自毁", 8) {
+        // 免死特判在 Engine.playHand 内（handsLeft<=0 分支）
     };
 
     private final String key;

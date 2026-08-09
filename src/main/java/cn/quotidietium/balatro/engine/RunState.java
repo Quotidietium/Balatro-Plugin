@@ -77,6 +77,9 @@ public final class RunState {
     public boolean bossDisabled;
     public boolean bossTriggeredThisHand;
     public int roundCount = 0;
+    public boolean grosDead; // 格罗米歇尔已碎（决定卡文迪什是否可生成）
+    public cn.quotidietium.balatro.engine.shop.Shop.ShopData shop; // 当前商店（0.2.0）
+    public final Map<String, Object> nextShop = new HashMap<>();  // 标签等对下个商店的修饰
 
     // ---- 运行时杂项 ----
     private final StreamSource streamSource;

@@ -26,6 +26,7 @@ public final class Mods {
     public boolean inflation;        // 挑战：商店通胀
     public boolean doubleBoss;       // 挑战：双 Boss
     public boolean must5;            // 挑战：必须出满 5 张
+    public boolean noJokers;         // 挑战：无法获得小丑
     public int handsSet;             // 挑战：固定出牌次数（0 表示不覆盖）
     public int handSize;             // 挑战：手牌上限调整
     public double blindMult;         // 挑战：盲注倍率（0 表示不覆盖）
