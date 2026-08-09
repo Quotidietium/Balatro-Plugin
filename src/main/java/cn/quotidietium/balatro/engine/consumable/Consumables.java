@@ -3,6 +3,7 @@ package cn.quotidietium.balatro.engine.consumable;
 import cn.quotidietium.balatro.engine.Card;
 import cn.quotidietium.balatro.engine.Consumable;
 import cn.quotidietium.balatro.engine.Data;
+import cn.quotidietium.balatro.engine.Engine;
 import cn.quotidietium.balatro.engine.JokerInstance;
 import cn.quotidietium.balatro.engine.Phase;
 import cn.quotidietium.balatro.engine.Rng;
@@ -50,6 +51,7 @@ public final class Consumables {
             s.usedPlanets.put(c.key, true);
             for (JokerInstance j : new ArrayList<>(s.jokers)) if (!j.debuff) j.def.onUsePlanet(s, j);
         }
+        Engine.sortHand(s); // 消耗品可能改写/增删手牌，整理以保持展示顺序（apply 内 stream.pick 已于此之前完成）
         return Result.ok();
     }
 

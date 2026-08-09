@@ -282,6 +282,7 @@ public final class Engine {
     /** 补满手牌（消耗品弃牌后调用）。 */
     public static void refillHand(RunState s) {
         drawUpTo(s);
+        sortHand(s);
     }
 
     private static void startRound(RunState s) {
@@ -352,6 +353,8 @@ public final class Engine {
                 j.def.onRoundStart(s, j);
             }
         }
+        // 整理手牌（bell/hook 等 stream.pick 已发生于此之前，安全）
+        sortHand(s);
         s.msg("回合开始：目标 " + s.blindTarget + " 分");
     }
 
@@ -379,6 +382,31 @@ public final class Engine {
             if (c == null) break;
             if ("fish".equals(bk) && s.handsPlayedThisRound > 0) c.setFacedown(true);
         }
+    }
+
+    /**
+     * 按「点数降序、同点花色升序、石头牌置末」整理手牌，与原版 {@code game.js sortHand("rank")} 逐字一致。
+     *
+     * <p>对齐原版：{@code rankOrder(c)=enh==="stone"?-1:c.rank}、{@code suitOrder(c)=enh==="stone"?9:c.suit}，
+     * 主序 {@code rankOrder(b)-rankOrder(a)}（降序），次序 {@code suitOrder(a)-suitOrder(b)}（升序）。
+     *
+     * <p>计分按 {@code s.hand} 中位置从左到右（{@code playHand} 内 {@code cards.sort(indexOf)}），
+     * 故整理手牌后展示与计分顺序一致（呈现给玩家的始终是排列好的手牌）。
+     *
+     * <p><b>调用时机红线</b>：必须在所有「按 stream 索引 pick(s.hand)」之后调用——
+     * bell/hook 等用 {@code stream.pick(hand)} 依手牌顺序取元素，整理顺序若先于 pick 发生会与原版分流。
+     * 因此只在 startRound（bell 抽取之后）/ playHand（updateBellCard 之后）/ discard / refillHand / Consumables.use 末尾调用。
+     */
+    public static void sortHand(RunState s) {
+        s.hand.sort((a, b) -> {
+            int ra = a.isStone() ? -1 : a.rank();
+            int rb = b.isStone() ? -1 : b.rank();
+            int primary = Integer.compare(rb, ra); // rankOrder(b)-rankOrder(a)：点数降序
+            if (primary != 0) return primary;
+            int sa = a.isStone() ? 9 : a.suit();
+            int sb = b.isStone() ? 9 : b.suit();
+            return Integer.compare(sa, sb);        // suitOrder(a)-suitOrder(b)：花色升序
+        });
     }
 
     private static boolean hasChicot(RunState s) {
@@ -628,6 +656,7 @@ public final class Engine {
 
         drawUpTo(s);
         updateBellCard(s);
+        sortHand(s); // 补牌后整理（updateBellCard 的 stream.pick 已发生于此之前，安全）
 
         // 胜负判定
         boolean won = s.roundScore >= s.blindTarget;
@@ -744,6 +773,7 @@ public final class Engine {
 
         drawUpTo(s);
         updateBellCard(s);
+        sortHand(s);
         return PlayResult.okDiscard();
     }
 

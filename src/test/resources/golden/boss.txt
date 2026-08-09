@@ -1,45 +1,44 @@
 BOSS flint BOSS1 target=600 handSize=8 hands=4 discards=4
-HAND 10.1,12.0,8.3,13.2,11.2,7.2,13.0,7.1
-PLAY ok=1 type=high score=13 won=0 lost=0 rs=13 hl=3 money=4
-PLAY ok=1 type=pair score=19 won=0 lost=0 rs=32 hl=2 money=4
-PLAY ok=1 type=high score=13 won=0 lost=0 rs=45 hl=1 money=4
-PLAY ok=1 type=high score=14 won=0 lost=1 rs=59 hl=0 money=4
+HAND 13.0,13.2,12.0,11.2,10.1,8.3,7.1,7.2
+PLAY ok=1 type=pair score=25 won=0 lost=0 rs=25 hl=3 money=4
+PLAY ok=1 type=pair score=21 won=0 lost=0 rs=46 hl=2 money=4
+PLAY ok=1 type=pair score=19 won=0 lost=0 rs=65 hl=1 money=4
+PLAY ok=1 type=three score=60 won=0 lost=1 rs=125 hl=0 money=4
 ENDBOSS
 BOSS tooth BOSS1 target=600 handSize=8 hands=4 discards=4
-HAND 10.1,12.0,8.3,13.2,11.2,7.2,13.0,7.1
-PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3 money=0
-PLAY ok=1 type=pair score=48 won=0 lost=0 rs=63 hl=2 money=0
-PLAY ok=1 type=high score=15 won=0 lost=0 rs=78 hl=1 money=0
-PLAY ok=1 type=high score=16 won=0 lost=1 rs=94 hl=0 money=0
+HAND 13.0,13.2,12.0,11.2,10.1,8.3,7.1,7.2
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=60 hl=3 money=0
+PLAY ok=1 type=pair score=52 won=0 lost=0 rs=112 hl=2 money=0
+PLAY ok=1 type=pair score=48 won=0 lost=0 rs=160 hl=1 money=0
+PLAY ok=1 type=three score=135 won=0 lost=1 rs=295 hl=0 money=0
 ENDBOSS
 BOSS needle BOSS1 target=600 handSize=8 hands=1 discards=4
-HAND 10.1,12.0,8.3,13.2,11.2,7.2,13.0,7.1
-PLAY ok=1 type=high score=15 won=0 lost=1 rs=15 hl=0 money=4
+HAND 13.0,13.2,12.0,11.2,10.1,8.3,7.1,7.2
+PLAY ok=1 type=pair score=60 won=0 lost=1 rs=60 hl=0 money=4
 ENDBOSS
 BOSS manacle BOSS1 target=600 handSize=7 hands=4 discards=4
-HAND 10.1,12.0,8.3,13.2,11.2,7.2,13.0
-PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3 money=4
-PLAY ok=1 type=pair score=48 won=0 lost=0 rs=63 hl=2 money=4
-PLAY ok=1 type=high score=15 won=0 lost=0 rs=78 hl=1 money=4
-PLAY ok=1 type=high score=16 won=0 lost=1 rs=94 hl=0 money=4
+HAND 13.0,13.2,12.0,11.2,10.1,8.3,7.2
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=60 hl=3 money=4
+PLAY ok=1 type=pair score=52 won=0 lost=0 rs=112 hl=2 money=4
+PLAY ok=1 type=pair score=48 won=0 lost=0 rs=160 hl=1 money=4
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=175 hl=0 money=4
 ENDBOSS
 BOSS water BOSS1 target=600 handSize=8 hands=4 discards=0
-HAND 10.1,12.0,8.3,13.2,11.2,7.2,13.0,7.1
-PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3 money=4
-PLAY ok=1 type=pair score=48 won=0 lost=0 rs=63 hl=2 money=4
-PLAY ok=1 type=high score=15 won=0 lost=0 rs=78 hl=1 money=4
-PLAY ok=1 type=high score=16 won=0 lost=1 rs=94 hl=0 money=4
+HAND 13.0,13.2,12.0,11.2,10.1,8.3,7.1,7.2
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=60 hl=3 money=4
+PLAY ok=1 type=pair score=52 won=0 lost=0 rs=112 hl=2 money=4
+PLAY ok=1 type=pair score=48 won=0 lost=0 rs=160 hl=1 money=4
+PLAY ok=1 type=three score=135 won=0 lost=1 rs=295 hl=0 money=4
 ENDBOSS
 BOSS eye BOSS1 target=600 handSize=8 hands=4 discards=4
-HAND 10.1,12.0,8.3,13.2,11.2,7.2,13.0,7.1
-PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3 money=4
-PLAY ok=1 type=pair score=48 won=0 lost=0 rs=63 hl=2 money=4
-PLAY ok=0 type=- score=0 won=0 lost=0 rs=63 hl=2 money=4
+HAND 13.0,13.2,12.0,11.2,10.1,8.3,7.1,7.2
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=60 hl=3 money=4
+PLAY ok=0 type=- score=0 won=0 lost=0 rs=60 hl=3 money=4
 ENDBOSS
 BOSS hook BOSS1 target=600 handSize=8 hands=4 discards=4
-HAND 10.1,12.0,8.3,13.2,11.2,7.2,13.0,7.1
-PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3 money=4
-PLAY ok=1 type=high score=16 won=0 lost=0 rs=31 hl=2 money=4
-PLAY ok=1 type=high score=16 won=0 lost=0 rs=47 hl=1 money=4
-PLAY ok=1 type=pair score=60 won=0 lost=1 rs=107 hl=0 money=4
+HAND 13.0,13.2,12.0,11.2,10.1,8.3,7.1,7.2
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=60 hl=3 money=4
+PLAY ok=1 type=high score=16 won=0 lost=0 rs=76 hl=2 money=4
+PLAY ok=1 type=high score=16 won=0 lost=0 rs=92 hl=1 money=4
+PLAY ok=1 type=pair score=60 won=0 lost=1 rs=152 hl=0 money=4
 ENDBOSS

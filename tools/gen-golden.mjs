@@ -27,6 +27,17 @@ function loadBalatro(files, exportNames) {
 
 function ensureDir(dir) { fs.mkdirSync(dir, { recursive: true }); }
 
+// 手牌整理顺序，须与 Java Engine.sortHand 逐字一致（对齐原版 game.js sortHand("rank")）：
+// rankOrder=enh==="stone"?-1:rank（降序）、suitOrder=enh==="stone"?9:suit（升序，石头置末）。
+// 在 selectBlind（初抽+bell pick）后与每次 playHand（drawUpTo+updateBellCard）后调用，
+// 与引擎 sortHand 调用时机对齐，保证黄金值复现"整理后的手牌"。
+const handCmp = (a, b) => {
+  const ro = (c) => (c.enh === "stone" ? -1 : c.rank);
+  const so = (c) => (c.enh === "stone" ? 9 : c.suit);
+  return (ro(b) - ro(a)) || (so(a) - so(b));
+};
+const sortHand = (st) => st.hand.sort(handCmp);
+
 function writeText(name, lines) {
   ensureDir(OUT);
   const file = path.join(OUT, name);
@@ -182,12 +193,14 @@ function genEngineRound() {
   for (const seed of seeds) {
     const st = Engine.createRun({ deck: 'red', stake: 0, seed });
     Engine.selectBlind(st, 'small', false);
+    sortHand(st);
     L.push(`ROUND ${seed} target=${st.blindTarget} handSize=${st.handSizeRound} hands=${st.handsLeft} discards=${st.discardsLeft}`);
     L.push('HAND ' + st.hand.map((c) => `${c.rank}.${c.suit}`).join(','));
     let safety = 0;
     while (st.phase === 'round' && safety++ < 20) {
       const ids = st.hand.slice(0, Math.min(5, st.hand.length)).map((c) => c.id);
       const r = Engine.playHand(st, ids);
+      sortHand(st);
       L.push(`PLAY ok=${r.ok ? 1 : 0} type=${r.type || '-'} score=${r.score || 0} won=${r.won ? 1 : 0} lost=${r.lost ? 1 : 0} rs=${st.roundScore} hl=${st.handsLeft}`);
       if (!r.ok || r.won || r.lost) break;
     }
@@ -253,12 +266,14 @@ function genBoss() {
     // 强制面对该 Boss（覆盖 chooseBoss 的选取，复现 stream 一致）
     st.bossKey = bk; st.bossQueue = [bk]; st.nextBlind = 'boss';
     Engine.selectBlind(st, 'boss', false);
+    sortHand(st);
     L.push(`BOSS ${bk} BOSS1 target=${st.blindTarget} handSize=${st.handSizeRound} hands=${st.handsLeft} discards=${st.discardsLeft}`);
     L.push('HAND ' + st.hand.map((c) => `${c.rank}.${c.suit}`).join(','));
     let safety = 0;
     while (st.phase === 'round' && safety++ < 20) {
       const ids = st.hand.slice(0, Math.min(5, st.hand.length)).map((c) => c.id);
       const r = Engine.playHand(st, ids);
+      sortHand(st);
       L.push(`PLAY ok=${r.ok ? 1 : 0} type=${r.type || '-'} score=${r.score || 0} won=${r.won ? 1 : 0} lost=${r.lost ? 1 : 0} rs=${st.roundScore} hl=${st.handsLeft} money=${st.money}`);
       if (!r.ok || r.won || r.lost) break;
     }
@@ -433,12 +448,14 @@ function genJokers() {
     const st = Engine.createRun({ deck: 'red', stake: 0, seed });
     grantJoker(st, jkey);
     Engine.selectBlind(st, 'small', false);
+    sortHand(st);
     L.push(`JROUND ${jkey} ${seed} target=${st.blindTarget}`);
     L.push('HAND ' + st.hand.map((c) => `${c.rank}.${c.suit}`).join(','));
     let safety = 0;
     while (st.phase === 'round' && safety++ < 20) {
       const ids = st.hand.slice(0, Math.min(5, st.hand.length)).map((c) => c.id);
       const r = Engine.playHand(st, ids);
+      sortHand(st);
       L.push(`PLAY ok=${r.ok ? 1 : 0} type=${r.type || '-'} score=${r.score || 0} won=${r.won ? 1 : 0} lost=${r.lost ? 1 : 0} rs=${st.roundScore} hl=${st.handsLeft}`);
       if (!r.ok || r.won || r.lost) break;
     }
