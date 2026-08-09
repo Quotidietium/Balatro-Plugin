@@ -1,0 +1,143 @@
+package cn.quotidietium.balatro.engine.shop;
+
+import cn.quotidietium.balatro.engine.Card;
+import cn.quotidietium.balatro.engine.Consumable;
+import cn.quotidietium.balatro.engine.Data;
+import cn.quotidietium.balatro.engine.JokerInstance;
+import cn.quotidietium.balatro.engine.Phase;
+import cn.quotidietium.balatro.engine.Rng;
+import cn.quotidietium.balatro.engine.RunState;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 补充包开启/选择/跳过，移植自 {@code engine.js} openPack/pickPackCard/skipPack。
+ */
+public final class Packs {
+
+    private Packs() {
+    }
+
+    public static final class PackCard {
+        public String kind; // tarot/planet/playing/joker/spectral
+        public String key;       // tarot/planet/spectral
+        public Card card;        // playing
+        public JokerInstance joker; // joker
+        public String name, desc;
+        public boolean taken;
+    }
+
+    public static final class Session {
+        public Data.Pack def;
+        public List<PackCard> cards = new ArrayList<>();
+        public int left; // 还能选几张
+    }
+
+    /** 开启补充包（进入 PACK 阶段）。 */
+    public static void open(RunState s, Data.Pack packDef) {
+        Rng.Stream st = s.stream("pack" + s.roundCount + ":" + packDef.key + ":" + (s.packSeq = s.packSeq + 1));
+        Session sess = new Session();
+        sess.def = packDef;
+        for (int i = 0; i < packDef.size; i++) {
+            sess.cards.add(genPackCard(s, st, packDef.type));
+        }
+        sess.left = packDef.choose;
+        s.packReturn = s.phase == Phase.PACK ? (s.packReturn != null ? s.packReturn : Phase.SHOP) : s.phase;
+        s.pack = sess;
+        s.phase = Phase.PACK;
+        // 幻觉小丑
+        for (JokerInstance j : new ArrayList<>(s.jokers)) if (!j.debuff) j.def.onPackOpen(s, j);
+    }
+
+    private static PackCard genPackCard(RunState s, Rng.Stream st, Data.PackType type) {
+        PackCard c = new PackCard();
+        switch (type) {
+            case ARCANA -> {
+                Data.Tarot t = st.pick(List.of(Data.Tarot.values()));
+                c.kind = "tarot"; c.key = t.key; c.name = t.name; c.desc = t.desc;
+            }
+            case CELESTIAL -> {
+                Data.Planet p = null;
+                if (s.vouchers.contains("telescope")) {
+                    Data.HandType most = s.mostPlayedType();
+                    if (most == null) most = Data.HandType.HIGH;
+                    for (Data.Planet x : Data.Planet.values()) if (x.hand == most) { p = x; break; }
+                }
+                if (p == null) p = st.pick(List.of(Data.Planet.values()));
+                c.kind = "planet"; c.key = p.key; c.name = p.name; c.desc = p.desc;
+            }
+            case STANDARD -> {
+                Card card = s.randomPlayingCard();
+                if (st.chance(0.4)) {
+                    Data.Enhancement[] enhs = Data.Enhancement.values();
+                    card.setEnh(enhs[st.range(0, enhs.length - 1)]);
+                }
+                if (st.chance(0.2)) card.setEdition(weightedEdition(st));
+                if (st.chance(0.2)) {
+                    Data.Seal[] seals = Data.Seal.values();
+                    card.setSeal(seals[st.range(0, seals.length - 1)]);
+                }
+                c.kind = "playing"; c.card = card; c.name = s.cardName(card); c.desc = "游戏牌";
+            }
+            case BUFFOON -> {
+                Shop.CardItem item = Shop.makeJokerItem(s, null, null);
+                c.kind = "joker"; c.joker = item.joker; c.name = item.name; c.desc = item.desc;
+            }
+            case SPECTRAL -> {
+                Data.Spectral sp = st.pick(List.of(Data.Spectral.values()));
+                c.kind = "spectral"; c.key = sp.key; c.name = sp.name; c.desc = sp.desc;
+            }
+        }
+        return c;
+    }
+
+    /** 从包中选第 idx 张。 */
+    public static boolean pick(RunState s, int idx) {
+        Session pack = s.pack;
+        if (pack == null || idx < 0 || idx >= pack.cards.size()) return false;
+        PackCard item = pack.cards.get(idx);
+        if (item.taken) return false;
+        switch (item.kind) {
+            case "joker" -> {
+                if (s.jokerSpace() <= 0) return false;
+                s.jokers.add(item.joker);
+                s.msg("获得小丑：" + item.name);
+            }
+            case "playing" -> {
+                s.addCardToDeck(item.card);
+                s.msg("牌组加入：" + item.name);
+            }
+            default -> {
+                if (!s.addConsumableKey(item.kind, item.key)) return false;
+                s.msg("获得：" + item.name);
+            }
+        }
+        item.taken = true;
+        pack.left--;
+        if (pack.left <= 0) {
+            s.pack = null;
+            s.phase = s.packReturn != null ? s.packReturn : Phase.SHOP;
+            s.packReturn = null;
+        }
+        cn.quotidietium.balatro.engine.Engine.recomputeFlags(s);
+        return true;
+    }
+
+    /** 跳过补充包。 */
+    public static boolean skip(RunState s) {
+        if (s.pack == null) return false;
+        s.pack = null;
+        s.phase = s.packReturn != null ? s.packReturn : Phase.SHOP;
+        s.packReturn = null;
+        for (JokerInstance j : new ArrayList<>(s.jokers)) if (!j.debuff) j.def.onPackSkip(s, j);
+        s.msg("跳过了补充包");
+        return true;
+    }
+
+    private static Data.Edition weightedEdition(Rng.Stream st) {
+        double r = st.next() * 100;
+        if (r < 50) return Data.Edition.FOIL;
+        if (r < 85) return Data.Edition.HOLO;
+        return Data.Edition.POLY;
+    }
+}

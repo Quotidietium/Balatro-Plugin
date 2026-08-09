@@ -182,6 +182,20 @@ public final class GameSession {
         return r;
     }
 
+    /** 从当前补充包选第 idx 张。 */
+    public boolean pickPack(int idx) {
+        boolean ok = cn.quotidietium.balatro.engine.shop.Packs.pick(state, idx);
+        if (board != null) board.update(state);
+        return ok;
+    }
+
+    /** 跳过当前补充包。 */
+    public boolean skipPack() {
+        boolean ok = cn.quotidietium.balatro.engine.shop.Packs.skip(state);
+        if (board != null) board.update(state);
+        return ok;
+    }
+
     /** 盲注选择阶段自动推进到下一盲注。 */
     private void autoAdvance() {
         if (state.phase == Phase.BLIND_SELECT && !state.endlessPending) {

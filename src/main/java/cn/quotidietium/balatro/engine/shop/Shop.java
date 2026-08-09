@@ -334,7 +334,7 @@ public final class Shop {
         if (it.sold || !canAfford(s, it.price)) return false;
         s.money -= it.price;
         it.sold = true;
-        // TODO 0.2.0：openPack 进入补充包选择
+        Packs.open(s, it.pack); // 进入补充包选择
         return true;
     }
 

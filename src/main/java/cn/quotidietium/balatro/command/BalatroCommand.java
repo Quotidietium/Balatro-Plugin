@@ -55,6 +55,9 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             case "next" -> cmdNext(player);
             case "cons", "consumables" -> cmdCons(player);
             case "use" -> cmdUse(player, args);
+            case "packs" -> cmdPack(player);
+            case "pick" -> cmdPick(player, args);
+            case "skipack" -> cmdSkipPack(player);
             default -> sendHelp(player);
         }
         return true;
@@ -320,6 +323,43 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         var r = s.useConsumable(cidx, cardIds);
         if (!r.ok) player.sendMessage("§c" + r.err);
         else { player.sendMessage("§a使用成功。"); cmdCons(player); }
+    }
+
+    private void cmdPack(Player player) {
+        GameSession s = plugin.sessionManager().get(player);
+        if (s == null || s.state().phase != cn.quotidietium.balatro.engine.Phase.PACK || s.state().pack == null) {
+            player.sendMessage("§c当前没有正在开启的补充包。");
+            return;
+        }
+        var pack = s.state().pack;
+        player.sendMessage("§6=== 补充包：§f" + pack.def.name + "§6（选 " + pack.left + " 张）===");
+        int i = 0;
+        for (var c : pack.cards) {
+            String label = switch (c.kind) {
+                case "joker" -> "小丑 " + c.name;
+                case "playing" -> "游戏牌 " + c.name;
+                default -> c.kind + " " + c.name;
+            };
+            player.sendMessage("§e[" + (i + 1) + "] §f" + label + (c.taken ? " §7(已选)" : ""));
+            i++;
+        }
+        player.sendMessage("§7/balatro pick <序号> | skipack");
+    }
+
+    private void cmdPick(Player player, String[] args) {
+        GameSession s = plugin.sessionManager().get(player);
+        if (s == null || s.state().pack == null) { player.sendMessage("§c当前没有补充包。"); return; }
+        int idx = parseOne(player, args);
+        if (idx < 0) return;
+        if (s.pickPack(idx)) { player.sendMessage("§a已选择。"); if (s.state().phase == cn.quotidietium.balatro.engine.Phase.PACK) cmdPack(player); }
+        else player.sendMessage("§c选择失败（槽满/已选）。");
+    }
+
+    private void cmdSkipPack(Player player) {
+        GameSession s = plugin.sessionManager().get(player);
+        if (s == null || s.state().pack == null) { player.sendMessage("§c当前没有补充包。"); return; }
+        s.skipPack();
+        player.sendMessage("§e已跳过补充包。");
     }
 
     private void sendHelp(Player player) {

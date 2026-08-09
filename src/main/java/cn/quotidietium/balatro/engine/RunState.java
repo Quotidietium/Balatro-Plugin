@@ -95,6 +95,9 @@ public final class RunState {
     }
     public cn.quotidietium.balatro.engine.shop.Shop.ShopData shop; // 当前商店（0.2.0）
     public final Map<String, Object> nextShop = new HashMap<>();  // 标签等对下个商店的修饰
+    public cn.quotidietium.balatro.engine.shop.Packs.Session pack; // 当前补充包
+    public Phase packReturn;                                       // 开完包返回的阶段
+    public int packSeq;                                            // 补充包序号（构造唯一流）
 
     // ---- 运行时杂项 ----
     private final StreamSource streamSource;
