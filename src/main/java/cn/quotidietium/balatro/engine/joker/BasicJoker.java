@@ -4,6 +4,7 @@ import cn.quotidietium.balatro.engine.Card;
 import cn.quotidietium.balatro.engine.Data;
 import cn.quotidietium.balatro.engine.Joker;
 import cn.quotidietium.balatro.engine.JokerInstance;
+import cn.quotidietium.balatro.engine.Phase;
 import cn.quotidietium.balatro.engine.PlayHandInfo;
 import cn.quotidietium.balatro.engine.RunState;
 import cn.quotidietium.balatro.engine.ScoreContext;
@@ -644,6 +645,232 @@ public enum BasicJoker implements Joker {
                 state.gainConsumable("spectral");
                 state.msg("第六感：销毁了 6，获得一张幻灵牌");
             }
+        }
+    },
+    PHOTOGRAPH("photograph", "照片", "第一张计分的人头牌 ×2 倍率", 5) {
+        @Override
+        public void onScoreCard(ScoreContext ctx, Card card) {
+            if (ctx.isFace(card) && !ctx.photoUsed) { ctx.photoUsed = true; ctx.xMult(2); }
+        }
+    },
+    GIFTCARD("giftcard", "礼品卡", "回合结束时每张小丑与消耗品售价 +$1", 6) {
+        @Override
+        public long onRoundEnd(RunState state, JokerInstance self) {
+            for (JokerInstance j : state.jokers) j.sellBonus += 1;
+            return 0;
+        }
+    },
+    TURTLE("turtle", "海龟豆", "手牌上限 +3；每回合结束 -1", 6) {
+        @Override
+        public Map<String, Object> flagsFn(RunState state, JokerInstance self) {
+            return Map.of("handSize", gi(self.extra, "size", 3));
+        }
+        @Override
+        public long onRoundEnd(RunState state, JokerInstance self) {
+            int s = gi(self.extra, "size", 3) - 1;
+            self.extra.put("size", s);
+            if (s <= 0) state.destroyJoker(self, "海龟豆吃完了！");
+            return 0;
+        }
+    },
+    EROSION("erosion", "侵蚀", "牌组每比 52 张少一张牌：+4 倍率", 6) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.addMult(4L * Math.max(0, 52 - ctx.state.fullDeck.size()));
+        }
+    },
+    PARKING("parking", "预留车位", "手中每张人头牌有 1/2 概率 +$1", 5) {
+        @Override
+        public void onHeld(ScoreContext ctx, Card card) {
+            if (ctx.isFace(card) && ctx.prob(0.5)) ctx.dollars(1);
+        }
+    },
+    MAILIN("mailin", "邮寄返利", "弃掉指定点数的牌每张 +$5（点数每回合结束更换）", 4) {
+        @Override
+        public void onDiscard(RunState state, List<Card> cards, JokerInstance self) {
+            int target = gi(self.extra, "rank", 14);
+            int n = 0;
+            for (Card c : cards) if (c.rank() == target) n++;
+            if (n > 0) state.gainMoney(5L * n);
+        }
+        @Override
+        public long onRoundEnd(RunState state, JokerInstance self) {
+            self.extra.put("rank", state.stream("mailin").range(2, 14));
+            return 0;
+        }
+    },
+    TOTHEMOON("tothemoon", "奔月", "回合结束时每张剩余出牌次数 +$1", 5) {
+        @Override
+        public long onRoundEnd(RunState state, JokerInstance self) {
+            return state.handsLeft;
+        }
+    },
+    FORTUNE("fortune", "算命先生", "每使用一张塔罗牌：+1 倍率（累积）", 6) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.addMult(gi(ctx.joker.extra, "mult", 0));
+        }
+        @Override
+        public void onUseTarot(RunState state, JokerInstance self) {
+            self.extra.put("mult", gi(self.extra, "mult", 0) + 1);
+        }
+    },
+    STONE_JOKER("stone", "石头小丑", "牌组中每张石头牌 +25 筹码", 6) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            int n = 0;
+            for (Card c : ctx.state.fullDeck) if (c.enh() == Data.Enhancement.STONE) n++;
+            ctx.addChips(25L * n);
+        }
+    },
+    LUCKYCAT("luckycat", "招财猫", "每张幸运牌触发成功：×0.25 倍率（累积）", 6) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.xMult(1 + gd(ctx.joker.extra, "x"));
+        }
+        @Override
+        public void onLucky(RunState state, JokerInstance self) {
+            self.extra.put("x", gd(self.extra, "x") + 0.25);
+        }
+    },
+    TRADING("trading", "交易卡", "回合第一次弃牌仅 1 张时：销毁它并 +$3", 6) {
+        @Override
+        public void onDiscard(RunState state, List<Card> cards, JokerInstance self) {
+            if (state.discardsUsedThisRound == 1 && cards.size() == 1) {
+                state.removeCardFromDeck(cards.get(0));
+                state.gainMoney(3);
+                state.msg("交易卡：销毁了 " + state.cardName(cards.get(0)) + "，+$3");
+            }
+        }
+    },
+    FLASH("flash", "闪存卡", "每次商店重掷：+2 倍率（累积）", 5) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.addMult(gi(ctx.joker.extra, "mult", 0));
+        }
+        @Override
+        public void onReroll(RunState state, JokerInstance self) {
+            self.extra.put("mult", gi(self.extra, "mult", 0) + 2);
+        }
+    },
+    TROUSERS("trousers", "备用长裤", "每次打出两对：永久 +2 倍率", 6) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.addMult(gi(ctx.joker.extra, "mult", 0));
+        }
+        @Override
+        public void onPlayHand(RunState state, PlayHandInfo info) {
+            if (info.handType != Data.HandType.TWOPAIR) return;
+            JokerInstance j = info.findJoker("trousers");
+            if (j == null) return;
+            int m = gi(j.extra, "mult", 0) + 2;
+            j.extra.put("mult", m);
+            state.msg("备用长裤：倍率累积至 +" + m);
+        }
+    },
+    ANCIENT("ancient", "远古小丑", "每张指定花色的计分牌 ×1.5 倍率（花色每回合结束更换）", 8) {
+        @Override
+        public void onScoreCard(ScoreContext ctx, Card card) {
+            int suit = gi(ctx.joker.extra, "suit", 1);
+            if (ctx.isSuit(card, suit)) ctx.xMult(1.5);
+        }
+        @Override
+        public long onRoundEnd(RunState state, JokerInstance self) {
+            self.extra.put("suit", state.stream("ancient").range(0, 3));
+            return 0;
+        }
+    },
+    RAMEN("ramen", "拉面", "×2 倍率；每弃一张牌 -0.01 倍率", 6) {
+        private double x(JokerInstance j) {
+            Object v = j.extra.get("x");
+            return v instanceof Number ? ((Number) v).doubleValue() : 2.0;
+        }
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.xMult(x(ctx.joker));
+        }
+        @Override
+        public void onDiscard(RunState state, List<Card> cards, JokerInstance self) {
+            double nx = x(self) - 0.01 * cards.size();
+            self.extra.put("x", nx);
+            if (nx <= 1) state.destroyJoker(self, "拉面吃完了！");
+        }
+    },
+    SELTZER("seltzer", "苏打水", "接下来 10 次出牌重新触发所有计分牌，之后自毁", 6) {
+        @Override
+        public int retrigger(Card card, ScoreContext ctx) {
+            return 1;
+        }
+        @Override
+        public void onPlayHand(RunState state, PlayHandInfo info) {
+            JokerInstance j = info.findJoker("seltzer");
+            if (j == null) return;
+            int u = gi(j.extra, "uses", 10) - 1;
+            j.extra.put("uses", u);
+            if (u <= 0) state.destroyJoker(j, "苏打水喝完了！");
+        }
+    },
+    CASTLE("castle", "城堡", "每弃一张指定花色的牌：永久 +3 筹码（花色每回合更换）", 6) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.addChips(gi(ctx.joker.extra, "chips", 0));
+        }
+        @Override
+        public void onDiscard(RunState state, List<Card> cards, JokerInstance self) {
+            int suit = gi(self.extra, "suit", 0);
+            for (Card c : cards) if (state.isSuit(c, suit)) self.extra.put("chips", gi(self.extra, "chips", 0) + 3);
+        }
+        @Override
+        public long onRoundEnd(RunState state, JokerInstance self) {
+            self.extra.put("suit", state.stream("castle").range(0, 3));
+            return 0;
+        }
+    },
+    ACROBAT("acrobat", "杂技演员", "回合最后一次出牌：×3 倍率", 6) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            if (ctx.state.handsLeft == 0) ctx.xMult(3);
+        }
+    },
+    SOCK("sock", "袜子与布偶", "重新触发所有计分的人头牌", 6) {
+        @Override
+        public int retrigger(Card card, ScoreContext ctx) {
+            return ctx.isFace(card) ? 1 : 0;
+        }
+    },
+    TROUBADOUR("troubadour", "吟游诗人", "手牌上限 +2；出牌次数 -1", 6) {
+        @Override
+        public Map<String, Object> flags() {
+            return Map.of("handSize", 2, "hands", -1);
+        }
+    },
+    LUCHADOR("luchador", "摔跤手", "出售此牌：消除当前 Boss 盲注效果", 5) {
+        @Override
+        public void onSell(RunState state, JokerInstance self) {
+            if (state.phase == Phase.ROUND && state.blindType == Data.BlindType.BOSS) {
+                state.disableBoss();
+                state.msg("摔跤手：Boss 盲注效果已消除");
+            }
+        }
+    },
+    COLA("cola", "健怡可乐", "出售此牌：获得一个「翻倍标签」", 6) {
+        @Override
+        public void onSell(RunState state, JokerInstance self) {
+            state.gainTag("double");
+        }
+    },
+    CAMPFIRE("campfire", "篝火", "每卖出一张牌：×0.5 倍率（累积）；击败 Boss 盲注后重置", 9) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.xMult(1 + gd(ctx.joker.extra, "x"));
+        }
+        @Override
+        public void onAnySell(RunState state, JokerInstance self) {
+            self.extra.put("x", gd(self.extra, "x") + 0.5);
+        }
+        @Override
+        public void onBossDefeated(RunState state, JokerInstance self) {
+            self.extra.put("x", 0.0);
         }
     };
 

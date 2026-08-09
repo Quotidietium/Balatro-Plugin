@@ -277,3 +277,44 @@ PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
 PLAY ok=1 type=high score=18 won=0 lost=0 rs=93 hl=1
 PLAY ok=1 type=high score=15 won=0 lost=1 rs=108 hl=0
 ENDROUND
+JROUND photograph GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=30 won=0 lost=0 rs=30 hl=3
+PLAY ok=1 type=pair score=120 won=0 lost=0 rs=150 hl=2
+PLAY ok=1 type=high score=30 won=0 lost=0 rs=180 hl=1
+PLAY ok=1 type=high score=30 won=0 lost=1 rs=210 hl=0
+ENDROUND
+JROUND acrobat GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
+ENDROUND
+JROUND sock GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=25 won=0 lost=0 rs=25 hl=3
+PLAY ok=1 type=pair score=100 won=0 lost=0 rs=125 hl=2
+PLAY ok=1 type=high score=25 won=0 lost=0 rs=150 hl=1
+PLAY ok=1 type=high score=25 won=0 lost=1 rs=175 hl=0
+ENDROUND
+JROUND troubadour GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0,7.0,10.3
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=2
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=90 hl=0
+ENDROUND
+JROUND ramen GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=30 won=0 lost=0 rs=30 hl=3
+PLAY ok=1 type=pair score=120 won=0 lost=0 rs=150 hl=2
+PLAY ok=1 type=high score=30 won=0 lost=0 rs=180 hl=1
+PLAY ok=1 type=high score=30 won=0 lost=1 rs=210 hl=0
+ENDROUND
+JROUND ancient GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=23 won=0 lost=0 rs=23 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=83 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=98 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=113 hl=0
+ENDROUND

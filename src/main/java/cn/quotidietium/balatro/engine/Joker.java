@@ -70,6 +70,31 @@ public interface Joker {
     default void onBossDefeated(RunState state, JokerInstance self) {
     }
 
+    // ---- 商店/补充包/消耗品钩子（0.2.0 起调用；0.1.0 默认空） ----
+    default void onUseTarot(RunState state, JokerInstance self) {
+    }
+
+    default void onUsePlanet(RunState state, JokerInstance self) {
+    }
+
+    default void onReroll(RunState state, JokerInstance self) {
+    }
+
+    default void onSell(RunState state, JokerInstance self) {
+    }
+
+    default void onAnySell(RunState state, JokerInstance self) {
+    }
+
+    default void onCardAdded(RunState state, Card card, JokerInstance self) {
+    }
+
+    default void onPackOpen(RunState state, JokerInstance self) {
+    }
+
+    default void onPackSkip(RunState state, JokerInstance self) {
+    }
+
     // ---- flags（影响牌型判定/手牌上限等） ----
     default Map<String, Object> flags() {
         return null;

@@ -242,6 +242,12 @@ function genJokers() {
     ['cardsharp', 'GOLDEN1'],
     ['baron', 'GOLDEN1'],
     ['obelisk', 'GOLDEN1'],
+    ['photograph', 'GOLDEN1'],
+    ['acrobat', 'GOLDEN1'],
+    ['sock', 'GOLDEN1'],
+    ['troubadour', 'GOLDEN1'],
+    ['ramen', 'GOLDEN1'],
+    ['ancient', 'GOLDEN1'],
   ];
   const L = [];
   for (const [jkey, seed] of cases) {

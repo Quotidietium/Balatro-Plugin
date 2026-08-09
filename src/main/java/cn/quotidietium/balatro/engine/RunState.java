@@ -199,4 +199,14 @@ public final class RunState {
     public void gainConsumable(String kind) {
         // TODO 0.2.0：按 kind 从 Tarot/Planet/Spectral 池取并加入消耗品区
     }
+
+    /** 消除当前 Boss 效果（0.1.0 Boss 效果未生效，置标志）。 */
+    public void disableBoss() {
+        bossDisabled = true;
+    }
+
+    /** 获得跳过标签（0.1.0 仅入列表，效果 0.3.0）。 */
+    public void gainTag(String key) {
+        tags.add(key);
+    }
 }
