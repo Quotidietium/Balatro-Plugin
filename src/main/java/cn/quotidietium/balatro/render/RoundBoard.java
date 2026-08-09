@@ -147,6 +147,18 @@ public final class RoundBoard {
         voucherEnt = mkFrame("balatro_voucher", BG_NORMAL);
         skipackBtn = mkFrame("balatro_skipack", BG_BUTTON_DISC);
         update(state);
+        sendControls();
+    }
+
+    /** 向玩家发送操作说明（聊天框）。 */
+    private void sendControls() {
+        Player p = session.player();
+        p.sendMessage(Component.text("━━ 小丑牌 · 操作说明 ━━", NamedTextColor.GOLD));
+        p.sendMessage(Component.text("直接右键 = 使用/操作", NamedTextColor.WHITE)
+                .append(Component.text("（选中手牌 · 购买商品 · 选择补充包卡 · 使用消耗品 · 出售小丑 · 出牌/弃牌/重掷/下一回合）", NamedTextColor.GRAY)));
+        p.sendMessage(Component.text("Shift + 右键 = 查看该卡简介", NamedTextColor.AQUA)
+                .append(Component.text("（简介发到聊天框）", NamedTextColor.GRAY)));
+        p.sendMessage(Component.text("进入商店/补充包时会自动列出全部简介，便于判断。", NamedTextColor.DARK_GRAY));
     }
 
     /** 状态变更后刷新（原地改写，不 clear+respawn）。 */
@@ -254,7 +266,8 @@ public final class RoundBoard {
                 .append(Component.text("底注 " + state.ante + "  " + blindName(blind) + boss, NamedTextColor.GOLD)).appendNewline()
                 .append(Component.text("分数 " + state.roundScore + " / " + state.blindTarget, NamedTextColor.WHITE)).appendNewline()
                 .append(Component.text("出牌 " + state.handsLeft + "  弃牌 " + state.discardsLeft + "  $" + state.money
-                        + "  选中 " + selected.size(), NamedTextColor.YELLOW))
+                        + "  选中 " + selected.size(), NamedTextColor.YELLOW)).appendNewline()
+                .append(Component.text("右键=使用/选中  Shift+右键=查看简介", NamedTextColor.DARK_GRAY))
                 .build());
         statusBar.teleport(at(0, STATUS_Y));
 
@@ -514,7 +527,7 @@ public final class RoundBoard {
         if (shop.voucher != null) {
             p.sendMessage(infoLine("🎫 ", "优惠券", shop.voucher.name, shop.voucher.price, shop.voucher.sold, shop.voucher.desc));
         }
-        p.sendMessage(Component.text("右键商品购买 · 重掷/下一回合（右键手牌的小丑/消耗品查看简介）", NamedTextColor.GRAY));
+        p.sendMessage(Component.text("直接右键=购买/使用 · Shift+右键=查看该卡简介 · 重掷/下一回合", NamedTextColor.GRAY));
     }
 
     /** 进入补充包：把所有卡简介发到玩家聊天框。 */
@@ -527,7 +540,7 @@ public final class RoundBoard {
             var c = pack.cards.get(i);
             p.sendMessage(infoLine((i + 1) + ". ", kindLabel(c.kind), c.name, 0, c.taken, c.desc));
         }
-        p.sendMessage(Component.text("右键选择 · 跳过", NamedTextColor.GRAY));
+        p.sendMessage(Component.text("直接右键=选择 · Shift+右键=查看该卡简介 · 跳过", NamedTextColor.GRAY));
     }
 
     private static Component infoLine(String prefix, String tag, String name, long price, boolean gone, String desc) {
@@ -547,10 +560,15 @@ public final class RoundBoard {
         };
     }
 
-    /** 右键单个元素时返回其简介（小丑/消耗品/商品/补充包卡/优惠券；其余如手牌/按钮返回 null）。 */
+    /** 右键单个元素时返回其简介（小丑/消耗品/商品/补充包卡/优惠券/手牌；按钮返回 null）。 */
     public Component infoFor(RunState state, String action) {
         try {
-            if (action.startsWith("joker:")) {
+            if (action.startsWith("card:")) {
+                int id = Integer.parseInt(action.substring("card:".length()));
+                for (Card c : state.hand) {
+                    if (c.id() == id) return playingCardInfo(c);
+                }
+            } else if (action.startsWith("joker:")) {
                 int i = Integer.parseInt(action.substring("joker:".length()));
                 if (i >= 0 && i < state.jokers.size()) {
                     JokerInstance j = state.jokers.get(i);
@@ -589,6 +607,27 @@ public final class RoundBoard {
         } catch (NumberFormatException ignored) {
         }
         return null;
+    }
+
+    /** 手牌扑克牌简介：花色点数 + 增强/版本/蜡封说明。 */
+    private static Component playingCardInfo(Card c) {
+        Component head = c.isStone()
+                ? Component.text("石头牌", NamedTextColor.GRAY)
+                : Component.text(Data.Suit.byIndex(c.suit()).name + " " + Data.rankName(c.rank()), NamedTextColor.WHITE);
+        Component body = Component.empty();
+        if (c.enh() != null) {
+            body = body.appendNewline().append(Component.text(c.enh().name + "：" + c.enh().desc, NamedTextColor.YELLOW));
+        }
+        if (c.edition() != null) {
+            body = body.appendNewline().append(Component.text(c.edition().name + "：" + c.edition().desc, TextColor.color(220, 180, 255)));
+        }
+        if (c.seal() != null) {
+            body = body.appendNewline().append(Component.text(c.seal().name + "：" + c.seal().desc, TextColor.color(120, 200, 255)));
+        }
+        if (c.debuff()) {
+            body = body.appendNewline().append(Component.text("（被失效）", NamedTextColor.DARK_RED));
+        }
+        return head.append(body);
     }
 
     // ================= 角标 / 标签 =================

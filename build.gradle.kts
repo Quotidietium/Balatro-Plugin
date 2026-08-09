@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "cn.quotidietium.balatro"
-version = "0.2.5"
+version = "0.2.6"
 
 repositories {
     mavenCentral()

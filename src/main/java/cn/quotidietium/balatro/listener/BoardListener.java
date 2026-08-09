@@ -6,6 +6,7 @@ import cn.quotidietium.balatro.session.GameSession;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.entity.Entity;
@@ -19,15 +20,17 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * 全息牌桌交互。
+ * 全息牌桌交互（统一规则）。
  *
- * <p><b>命中机制</b>：用 {@link Interaction} 实体承载点击——它是 MC 1.19.4+ 专为"可点击全息"设计的实体，
- * 有明确的 width×height 命中区，玩家右键它**确定触发** {@link PlayerInteractEntityEvent}。
- * 这不依赖 {@code TextDisplay} 那套极小且不可靠的命中盒，也不依赖手动射线计算。
- * 每个可点击元素（手牌/按钮/商品/补充包）由 {@link RoundBoard} 放一个 Interaction 命中盒，
- * 动作编进 scoreboard tag（{@code balatro_i_<action>}），本监听器解析后派发。
+ * <p>命中机制：用 {@link Interaction} 实体承载点击——它有 width×height 原生命中盒，
+ * 玩家右键它确定触发 {@link PlayerInteractEntityEvent}。动作编进 scoreboard tag（{@code balatro_i_<action>}）。
  *
- * <p>含每玩家 150ms 节流（防同一交互双触发）与点击音效。
+ * <p><b>统一交互规则</b>：
+ * <ul>
+ *   <li><b>Shift + 右键</b> = 查看该卡简介（发到聊天框）；按钮等无简介的则执行操作。</li>
+ *   <li><b>直接右键</b> = 使用/操作（选中手牌 / 购买商品 / 选择补充包卡 / 使用消耗品 / 出售小丑 / 出牌弃牌…）。</li>
+ * </ul>
+ * 含每玩家 150ms 节流与点击音效。
  */
 public final class BoardListener implements Listener {
 
@@ -62,31 +65,33 @@ public final class BoardListener implements Listener {
         if (!throttle(player)) return;
 
         event.setCancelled(true);
-        dispatch(player, session, session.board(), action);
+        dispatch(player, session, session.board(), action, player.isSneaking());
     }
 
-    private void dispatch(Player player, GameSession session, RoundBoard board, String act) {
+    private void dispatch(Player player, GameSession session, RoundBoard board, String act, boolean sneak) {
+        // Shift + 右键：查看简介（若有），不执行操作
+        if (sneak) {
+            Component info = board.infoFor(session.state(), act);
+            if (info != null) {
+                player.sendMessage(info);
+                click(player, 1.6f);
+                return;
+            }
+            // 按钮等无简介：继续执行操作
+        }
+
+        // 直接右键（或无简介的 Shift 右键）：执行使用/操作
         switch (act) {
             case "play" -> { board.playSelected(); click(player, 1.2f); }
             case "discard" -> { board.discardSelected(); click(player, 0.8f); }
             case "reroll" -> { session.reroll(); click(player, 1.0f); }
             case "next" -> { session.nextRound(); click(player, 1.2f); }
             case "skipack" -> { session.skipPack(); click(player, 0.8f); }
-            case "voucher" -> {
-                // 先取简介再购买（购买后状态变化）
-                net.kyori.adventure.text.Component info = board.infoFor(session.state(), act);
-                session.buyVoucher();
-                click(player, 1.0f);
-                if (info != null) player.sendMessage(info);
-            }
+            case "voucher" -> { session.buyVoucher(); click(player, 1.0f); }
             default -> {
-                // 功能卡/商品：先取简介（基于当前状态），再执行操作，然后发送简介
-                net.kyori.adventure.text.Component info = board.infoFor(session.state(), act);
-                boolean acted = true;
                 if (act.startsWith("card:")) {
                     board.toggleSelect(Integer.parseInt(act.substring("card:".length())));
                     click(player, 1.6f);
-                    acted = false; // 手牌扑克牌不发简介
                 } else if (act.startsWith("shop:")) {
                     session.buyCard(Integer.parseInt(act.substring("shop:".length())));
                     click(player, 1.0f);
@@ -96,12 +101,13 @@ public final class BoardListener implements Listener {
                 } else if (act.startsWith("pick:")) {
                     session.pickPack(Integer.parseInt(act.substring("pick:".length())));
                     click(player, 1.2f);
-                } else if (act.startsWith("joker:") || act.startsWith("cons:")) {
-                    click(player, 1.6f);
-                } else {
-                    acted = false;
+                } else if (act.startsWith("joker:")) {
+                    session.sellJoker(Integer.parseInt(act.substring("joker:".length())));
+                    click(player, 0.8f);
+                } else if (act.startsWith("cons:")) {
+                    session.useConsumable(Integer.parseInt(act.substring("cons:".length())), null);
+                    click(player, 1.0f);
                 }
-                if (acted && info != null) player.sendMessage(info);
             }
         }
     }
