@@ -155,7 +155,7 @@ public final class Consumables {
                 case "hanged": {
                     List<Card> t = targets(s, targetIds, inRound, 2, false);
                     if (t == null || t.isEmpty()) return Result.err("请选择至多 2 张手牌");
-                    for (Card card : t) { s.hand.remove(card); s.removeCardFromDeck(card); }
+                    for (Card card : t) { s.destroyCard(card); }
                     cn.quotidietium.balatro.engine.Engine.refillHand(s);
                     return Result.ok();
                 }
@@ -301,8 +301,7 @@ public final class Consumables {
         Rng.Stream ds = s.stream("destroyhand");
         for (int i = 0; i < n && !s.hand.isEmpty(); i++) {
             Card v = ds.pick(s.hand);
-            s.hand.remove(v);
-            s.removeCardFromDeck(v);
+            s.destroyCard(v);
         }
     }
 

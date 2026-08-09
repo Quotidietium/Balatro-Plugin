@@ -218,6 +218,16 @@ public final class RunState {
         discardPile.remove(c);
     }
 
+    /** 销毁一张牌（含 onFaceDestroyed 钩子：人头牌被销毁时触发 Canio 等）。 */
+    public void destroyCard(Card c) {
+        if (c.rank() >= 11 && c.rank() <= 13) {
+            for (JokerInstance j : new ArrayList<>(jokers)) {
+                if (!j.debuff) j.def.onFaceDestroyed(this, j);
+            }
+        }
+        removeCardFromDeck(c);
+    }
+
     /** 获得随机消耗品（按 kind 从对应池随机取）。 */
     public void gainConsumable(String kind) {
         switch (kind) {
