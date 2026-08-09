@@ -9,7 +9,6 @@ import java.util.UUID;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -17,13 +16,17 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * 全息牌桌交互：右键时用 {@code World.rayTraceEntities} 命中最近的板面实体，
- * 按 scoreboard tag 派发：选牌 / 出牌 / 弃牌。含 150ms 节流与点击音效。
+ * 全息牌桌交互。
+ *
+ * <p><b>命中检测</b>：不用 {@code World.rayTraceEntities}（Display/TextDisplay 实体命中盒极小、几乎无法命中），
+ * 改由 {@link RoundBoard#hitTest} 做「视线射线 × 板面平面」相交，再按命中盒（与视觉尺寸解耦、可独立调大）判断落点。
+ * 这与 doudizhu 的 {@code raycastHand/raycastButton}（手动射线-平面相交）思路一致，点击可靠。
+ *
+ * <p>右键主手 → 命中 → 按 action 串派发（选牌/出牌/弃牌/购买/选择/重掷/下一回合/跳过）。含 150ms 节流与点击音效。
  */
 public final class BoardListener implements Listener {
 
@@ -50,60 +53,38 @@ public final class BoardListener implements Listener {
 
         Location eye = player.getEyeLocation();
         Vector dir = eye.getDirection();
-        RayTraceResult hit = player.getWorld().rayTraceEntities(eye, dir, RANGE, this::isBoardEntity);
-        if (hit == null || hit.getHitEntity() == null) return;
+        RoundBoard board = session.board();
+        String act = board.hitTest(eye, dir, RANGE);
+        if (act == null) return;
 
         event.setCancelled(true);
-        Entity entity = hit.getHitEntity();
-        RoundBoard board = session.board();
-        for (String tag : entity.getScoreboardTags()) {
-            if (tag.startsWith("balatro_card_")) {
-                try {
-                    int cardId = Integer.parseInt(tag.substring("balatro_card_".length()));
-                    board.toggleSelect(cardId);
-                    click(player, 1.6f);
-                } catch (NumberFormatException ignored) {
-                }
-                return;
-            }
-            switch (tag) {
-                case "balatro_act_play" -> { board.playSelected(); click(player, 1.2f); return; }
-                case "balatro_act_discard" -> { board.discardSelected(); click(player, 0.8f); return; }
-                case "balatro_voucher" -> { session.buyVoucher(); click(player, 1.0f); return; }
-                case "balatro_reroll" -> { session.reroll(); click(player, 1.0f); return; }
-                case "balatro_next" -> { session.nextRound(); click(player, 1.2f); return; }
-                case "balatro_skipack" -> { session.skipPack(); click(player, 0.8f); return; }
-                default -> { }
-            }
-            if (tag.startsWith("balatro_shopcard_")) {
-                session.buyCard(Integer.parseInt(tag.substring("balatro_shopcard_".length())));
-                click(player, 1.0f);
-                return;
-            }
-            if (tag.startsWith("balatro_shoppack_")) {
-                session.buyPack(Integer.parseInt(tag.substring("balatro_shoppack_".length())));
-                click(player, 1.0f);
-                return;
-            }
-            if (tag.startsWith("balatro_pick_")) {
-                session.pickPack(Integer.parseInt(tag.substring("balatro_pick_".length())));
-                click(player, 1.2f);
-                return;
-            }
-        }
+        dispatch(player, session, board, act);
     }
 
-    private boolean isBoardEntity(Entity e) {
-        for (String t : e.getScoreboardTags()) {
-            if (t.startsWith("balatro_card_") || t.startsWith("balatro_shopcard_")
-                    || t.startsWith("balatro_shoppack_") || t.startsWith("balatro_pick_")
-                    || t.equals("balatro_act_play") || t.equals("balatro_act_discard")
-                    || t.equals("balatro_voucher") || t.equals("balatro_reroll")
-                    || t.equals("balatro_next") || t.equals("balatro_skipack")) {
-                return true;
+    private void dispatch(Player player, GameSession session, RoundBoard board, String act) {
+        switch (act) {
+            case "play" -> { board.playSelected(); click(player, 1.2f); }
+            case "discard" -> { board.discardSelected(); click(player, 0.8f); }
+            case "reroll" -> { session.reroll(); click(player, 1.0f); }
+            case "next" -> { session.nextRound(); click(player, 1.2f); }
+            case "voucher" -> { session.buyVoucher(); click(player, 1.0f); }
+            case "skipack" -> { session.skipPack(); click(player, 0.8f); }
+            default -> {
+                if (act.startsWith("card:")) {
+                    board.toggleSelect(Integer.parseInt(act.substring("card:".length())));
+                    click(player, 1.6f);
+                } else if (act.startsWith("shop:")) {
+                    session.buyCard(Integer.parseInt(act.substring("shop:".length())));
+                    click(player, 1.0f);
+                } else if (act.startsWith("shoppack:")) {
+                    session.buyPack(Integer.parseInt(act.substring("shoppack:".length())));
+                    click(player, 1.0f);
+                } else if (act.startsWith("pick:")) {
+                    session.pickPack(Integer.parseInt(act.substring("pick:".length())));
+                    click(player, 1.2f);
+                }
             }
         }
-        return false;
     }
 
     private void click(Player player, float pitch) {

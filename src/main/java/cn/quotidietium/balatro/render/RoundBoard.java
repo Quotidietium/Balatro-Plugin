@@ -19,7 +19,10 @@ import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.entity.TextDisplay;
+import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 /**
  * 单个玩家回合的全息牌桌（TextDisplay 文字牌面）。
@@ -39,16 +42,32 @@ public final class RoundBoard {
 
     // ---- 布局常量 ----
     private static final double FORWARD = 2.6;
-    private static final double CARD_SPACING = 0.66;
+    private static final double CARD_SPACING = 0.78;
     private static final double HAND_Y = 0.0;
-    private static final double SELECT_LIFT = 0.22;
-    private static final double STATUS_Y = 2.35;
-    private static final double EVAL_Y = 1.92;
-    private static final double JOKER_Y = 1.35;
-    private static final double JOKER_SPACING = 0.78;
-    private static final double CONS_Y = 0.8;
-    private static final double CONS_SPACING = 0.66;
-    private static final double BUTTON_Y = -1.05;
+    private static final double SELECT_LIFT = 0.25;
+    private static final double STATUS_Y = 2.5;
+    private static final double EVAL_Y = 2.0;
+    private static final double JOKER_Y = 1.4;
+    private static final double JOKER_SPACING = 0.82;
+    private static final double CONS_Y = 0.78;
+    private static final double CONS_SPACING = 0.72;
+    private static final double BUTTON_Y = -1.15;
+
+    // ---- 命中盒（点击检测用，与视觉尺寸解耦；可独立调大以保证好点） ----
+    private static final double CARD_HW = 0.36;   // 卡牌命中半宽（全宽 0.72）
+    private static final double CARD_HH = 0.55;   // 卡牌命中半高（全高 1.10）
+    private static final double BTN_HW = 0.55;
+    private static final double BTN_HH = 0.24;
+    private static final double SHOPCARD_HW = 0.6;
+    private static final double SHOPCARD_HH = 0.4;
+    private static final double PACK_HW = 0.8;
+    private static final double PACK_HH = 0.35;
+
+    /** 卡牌文字缩放（默认 1.0 约 0.5 格高，偏小；放大使牌面更清晰）。 */
+    private static final float CARD_TEXT_SCALE = 1.5f;
+    private static final float JOKER_TEXT_SCALE = 1.0f;
+    private static final float FRAME_TEXT_SCALE = 1.0f;
+
     private static final Color TRANSPARENT = Color.fromARGB(0, 0, 0, 0);
 
     // ---- 配色 ----
@@ -93,10 +112,24 @@ public final class RoundBoard {
     private final Set<Integer> selected = new HashSet<>();
     private Phase activePhase = null;
 
+    /** 当前阶段所有可点击元素（板面局部坐标 + 命中盒半尺寸 + 动作），由 reflow 重建。 */
+    private final List<Clickable> clickables = new ArrayList<>();
+
+    /** 一个可点击区域：板面局部 (lx,ly) 中心 + 半宽 hw + 半高 hh + 命中动作。 */
+    private record Clickable(double lx, double ly, double hw, double hh, String action) {
+        boolean hit(double rx, double ry) {
+            return Math.abs(rx - lx) <= hw && Math.abs(ry - ly) <= hh;
+        }
+    }
+
     public RoundBoard(GameSession session) {
         this.session = session;
         Location eye = session.player().getEyeLocation();
-        Vector dir = eye.getDirection().normalize();
+        // 水平化朝向：牌桌正立悬浮于眼前（不随玩家俯仰倾斜），且命中平面与实体位置平面一致。
+        Vector dir = eye.getDirection();
+        dir.setY(0);
+        if (dir.lengthSquared() < 1.0E-6) dir.setX(1); // 玩家纯俯/仰视时给默认水平方向
+        dir.normalize();
         this.origin = eye.toVector().add(dir.clone().multiply(FORWARD));
         this.forward = dir;
         Vector up = new Vector(0, 1, 0);
@@ -118,6 +151,7 @@ public final class RoundBoard {
 
     /** 状态变更后刷新（原地改写，不 clear+respawn）。 */
     public void update(RunState state) {
+        clickables.clear();
         if (activePhase != state.phase) {
             hideAll();
             activePhase = state.phase;
@@ -127,6 +161,31 @@ public final class RoundBoard {
             case PACK -> reflowPack(state);
             default -> reflowRound(state);
         }
+    }
+
+    /**
+     * 射线-板面平面相交命中检测（取代 {@code rayTraceEntities}——Display 实体命中盒极小不可靠）。
+     *
+     * <p>板面为过 {@link #origin}、法向 {@link #forward} 的平面（forward 已水平化，{@code up}=世界 Y）。
+     * 求视线射线与该平面交点，转为板面局部坐标 (rx=横向, ry=垂直)，遍历 {@link #clickables}
+     * 判断是否落在某命中盒内。返回动作串（如 {@code "card:12"}/{@code "play"}/{@code "shop:0"}）或 null。
+     */
+    public String hitTest(Location eye, Vector dir, double maxDist) {
+        double denom = dir.dot(forward);
+        if (denom < 0.02) return null; // 不朝向板面（或几乎平行）
+        Vector e = eye.toVector();
+        double t = origin.clone().subtract(e).dot(forward) / denom;
+        if (t <= 0 || t > maxDist) return null;
+        Vector p = e.clone().add(dir.clone().multiply(t));
+        Vector rel = p.clone().subtract(origin);
+        double rx = rel.dot(right);
+        double ry = rel.getY(); // up = 世界 Y
+        // 逆序：后注册（视觉在上层）优先，例如抬起的选中牌。
+        for (int i = clickables.size() - 1; i >= 0; i--) {
+            Clickable c = clickables.get(i);
+            if (c.hit(rx, ry)) return c.action;
+        }
+        return null;
     }
 
     private TextDisplay mkFrame(String tag, Color bg) {
@@ -156,6 +215,15 @@ public final class RoundBoard {
 
     private void ensureTag(TextDisplay d, String tag) {
         if (!d.getScoreboardTags().contains(tag)) d.addScoreboardTag(tag);
+    }
+
+    private static final Quaternionf Q_IDENTITY = new Quaternionf();
+
+    /** 设置实体整体缩放（放大文字与背景，使牌面更清晰、命中盒与之相称）。 */
+    private static void setScale(TextDisplay d, float scale) {
+        d.setTransformation(new Transformation(
+                new Vector3f(0, 0, 0), Q_IDENTITY,
+                new Vector3f(scale, scale, scale), Q_IDENTITY));
     }
 
     private void hideAll() {
@@ -214,10 +282,12 @@ public final class RoundBoard {
             double x = (i - (n - 1) / 2.0) * CARD_SPACING;
             double y = HAND_Y + (sel ? SELECT_LIFT : 0);
             TextDisplay d = slot(handSlots, i, BG_NORMAL);
+            setScale(d, CARD_TEXT_SCALE);
             d.text(cardFace(card, sel));
             d.setBackgroundColor(cardBg(card, sel));
             setCardTag(d, card.id());
             d.teleport(at(x, y));
+            clickables.add(new Clickable(x, y, CARD_HW, CARD_HH, "card:" + card.id()));
         }
         for (int i = n; i < handSlots.size(); i++) hide(handSlots.get(i));
 
@@ -226,9 +296,11 @@ public final class RoundBoard {
         playBtn.text(Component.text("▶ 出牌" + (selN > 0 ? " (" + selN + ")" : ""), NamedTextColor.GREEN));
         ensureTag(playBtn, "balatro_act_play");
         playBtn.teleport(at(-1.15, BUTTON_Y));
+        clickables.add(new Clickable(-1.15, BUTTON_Y, BTN_HW, BTN_HH, "play"));
         discBtn.text(Component.text("✗ 弃牌" + (selN > 0 ? " (" + selN + ")" : ""), NamedTextColor.RED));
         ensureTag(discBtn, "balatro_act_discard");
         discBtn.teleport(at(1.15, BUTTON_Y));
+        clickables.add(new Clickable(1.15, BUTTON_Y, BTN_HW, BTN_HH, "discard"));
 
         // 回合阶段不用的按钮隐藏
         hide(rerollBtn);
@@ -327,6 +399,7 @@ public final class RoundBoard {
             d.setBackgroundColor(c.sold ? BG_SOLD : BG_NORMAL);
             setIndexedTag(d, "balatro_shopcard_", i);
             d.teleport(at(x, 1.3));
+            if (!c.sold) clickables.add(new Clickable(x, 1.3, SHOPCARD_HW, SHOPCARD_HH, "shop:" + i));
         }
         for (int i = n; i < shopSlots.size(); i++) hide(shopSlots.get(i));
 
@@ -339,6 +412,7 @@ public final class RoundBoard {
             d.setBackgroundColor(p.sold ? BG_SOLD : BG_NORMAL);
             setIndexedTag(d, "balatro_shoppack_", i);
             d.teleport(at(x, 0.2));
+            if (!p.sold) clickables.add(new Clickable(x, 0.2, PACK_HW, PACK_HH, "shoppack:" + i));
         }
         for (int i = pn; i < packSlots.size(); i++) hide(packSlots.get(i));
 
@@ -348,15 +422,18 @@ public final class RoundBoard {
             voucherEnt.setBackgroundColor(shop.voucher.sold ? BG_SOLD : BG_NORMAL);
             ensureTag(voucherEnt, "balatro_voucher");
             voucherEnt.teleport(at(0, -0.8));
+            if (!shop.voucher.sold) clickables.add(new Clickable(0, -0.8, PACK_HW, PACK_HH, "voucher"));
         } else {
             hide(voucherEnt);
         }
         rerollBtn.text(Component.text("🔄 重掷", NamedTextColor.YELLOW));
         ensureTag(rerollBtn, "balatro_reroll");
         rerollBtn.teleport(at(-1.5, -1.7));
+        clickables.add(new Clickable(-1.5, -1.7, BTN_HW, BTN_HH, "reroll"));
         nextBtn.text(Component.text("▶ 下一回合", NamedTextColor.GREEN));
         ensureTag(nextBtn, "balatro_next");
         nextBtn.teleport(at(1.5, -1.7));
+        clickables.add(new Clickable(1.5, -1.7, BTN_HW, BTN_HH, "next"));
         hide(playBtn);
         hide(discBtn);
         hide(skipackBtn);
@@ -389,12 +466,14 @@ public final class RoundBoard {
             d.setBackgroundColor(c.taken ? BG_SOLD : BG_NORMAL);
             setIndexedTag(d, "balatro_pick_", i);
             d.teleport(at(x, 0.9));
+            if (!c.taken) clickables.add(new Clickable(x, 0.9, SHOPCARD_HW, SHOPCARD_HH, "pick:" + i));
         }
         for (int i = n; i < packSlots.size(); i++) hide(packSlots.get(i));
 
         skipackBtn.text(Component.text("✗ 跳过", NamedTextColor.RED));
         ensureTag(skipackBtn, "balatro_skipack");
         skipackBtn.teleport(at(0, -0.8));
+        clickables.add(new Clickable(0, -0.8, BTN_HW, BTN_HH, "skipack"));
         hide(playBtn);
         hide(discBtn);
         hide(rerollBtn);
