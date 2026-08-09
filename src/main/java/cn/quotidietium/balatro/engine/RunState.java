@@ -47,6 +47,7 @@ public final class RunState {
 
     // ---- 持有物 ----
     public final List<JokerInstance> jokers = new ArrayList<>();
+    public final List<Object> consumables = new ArrayList<>(); // 0.2.0 类型化
     public final List<String> vouchers = new ArrayList<>();
     public final List<String> tags = new ArrayList<>();
 

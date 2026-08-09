@@ -95,6 +95,10 @@ public interface Joker {
     default void onPackSkip(RunState state, JokerInstance self) {
     }
 
+    /** 有人头牌被销毁时（幻灵牌等，0.2.0 起调用）。 */
+    default void onFaceDestroyed(RunState state, JokerInstance self) {
+    }
+
     // ---- flags（影响牌型判定/手牌上限等） ----
     default Map<String, Object> flags() {
         return null;

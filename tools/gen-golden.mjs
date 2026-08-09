@@ -257,6 +257,11 @@ function genJokers() {
     ['oops', 'GOLDEN1'],
     ['idol', 'GOLDEN1'],
     ['bootstraps', 'GOLDEN1'],
+    ['duo', 'GOLDEN1'],
+    ['order', 'GOLDEN1'],
+    ['tribe', 'GOLDEN1'],
+    ['triboulet', 'GOLDEN1'],
+    ['hittheroad', 'GOLDEN1'],
   ];
   const L = [];
   for (const [jkey, seed] of cases) {

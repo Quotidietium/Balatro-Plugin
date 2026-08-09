@@ -1032,6 +1032,105 @@ public enum BasicJoker implements Joker {
             self.extra.put("suit", state.stream("idol").range(0, 3));
             return 0;
         }
+    },
+    HITTHEROAD("hittheroad", "上路", "每弃一张 J：×0.5 倍率（累积）", 8) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.xMult(1 + gd(ctx.joker.extra, "x"));
+        }
+        @Override
+        public void onDiscard(RunState state, List<Card> cards, JokerInstance self) {
+            for (Card c : cards) if (c.rank() == 11) self.extra.put("x", gd(self.extra, "x") + 0.5);
+        }
+    },
+    DUO("duo", "二人组", "若牌型为对子：×2 倍率", 8) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            if (ctx.handIs("pair")) ctx.xMult(2);
+        }
+    },
+    TRIO("trio", "三人组", "若牌型为三条：×3 倍率", 8) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            if (ctx.handIs("three")) ctx.xMult(3);
+        }
+    },
+    FAMILY("family", "家族", "若牌型为四条：×4 倍率", 8) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            if (ctx.handIs("four")) ctx.xMult(4);
+        }
+    },
+    ORDER("order", "秩序", "若牌型为顺子：×3 倍率", 8) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            if (ctx.handIs("straight")) ctx.xMult(3);
+        }
+    },
+    TRIBE("tribe", "部落", "若牌型为同花：×2 倍率", 8) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            if (ctx.handIs("flush")) ctx.xMult(2);
+        }
+    },
+    BLUEPRINT("blueprint", "蓝图", "复制右侧小丑的能力", 10) {
+        @Override
+        public boolean blueprint() {
+            return true;
+        }
+    },
+    BRAINSTORM("brainstorm", "头脑风暴", "复制最左侧小丑的能力", 10) {
+        @Override
+        public boolean brainstorm() {
+            return true;
+        }
+    },
+    CANIO("canio", "卡尼奥", "每张被销毁的人头牌：×1 倍率（累积）", 20) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.xMult(1 + gd(ctx.joker.extra, "x"));
+        }
+        @Override
+        public void onFaceDestroyed(RunState state, JokerInstance self) {
+            self.extra.put("x", gd(self.extra, "x") + 1);
+        }
+    },
+    TRIBOULET("triboulet", "特里布莱", "每张计分的 K 或 Q ×2 倍率", 20) {
+        @Override
+        public void onScoreCard(ScoreContext ctx, Card card) {
+            if (card.rank() == 13 || card.rank() == 12) ctx.xMult(2);
+        }
+    },
+    YORICK("yorick", "约里克", "每弃 23 张牌：×1 倍率（累积）", 20) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.xMult(1 + gd(ctx.joker.extra, "x"));
+        }
+        @Override
+        public void onDiscard(RunState state, List<Card> cards, JokerInstance self) {
+            int count = gi(self.extra, "count", 0) + cards.size();
+            while (count >= 23) {
+                count -= 23;
+                self.extra.put("x", gd(self.extra, "x") + 1);
+                state.msg("约里克：倍率累积");
+            }
+            self.extra.put("count", count);
+        }
+    },
+    CHICOT("chicot", "奇科特", "消除所有 Boss 盲注的效果", 20) {
+        @Override
+        public Map<String, Object> flags() {
+            return Map.of("chicot", true);
+        }
+    },
+    PERKEO("perkeo", "佩尔凯奥", "回合结束时复制一张随机消耗品（负片）", 20) {
+        @Override
+        public long onRoundEnd(RunState state, JokerInstance self) {
+            // 0.1.0 消耗品区为空；0.2.0 实现复制逻辑
+            if (state.consumables.isEmpty()) return 0;
+            // TODO 0.2.0：随机复制一张消耗品为负片
+            return 0;
+        }
     };
 
     private final String key;
