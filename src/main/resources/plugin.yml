@@ -1,0 +1,18 @@
+name: Balatro
+version: '${version}'
+main: cn.quotidietium.balatro.BalatroPlugin
+api-version: '1.21.11'
+author: quotidietium
+description: 在 Minecraft 中实现 Steam 游戏《小丑牌》(Balatro) 的扑克构筑 Roguelike 玩法。
+commands:
+  balatro:
+    description: 小丑牌主命令
+    usage: /balatro play [牌组] [赌注] [种子] | quit | reload
+    aliases: [blt, joker]
+permissions:
+  balatro.play:
+    description: 允许开始/退出一局小丑牌
+    default: true
+  balatro.admin:
+    description: 允许重载配置等管理操作
+    default: op
