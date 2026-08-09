@@ -58,6 +58,7 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             case "packs" -> cmdPack(player);
             case "pick" -> cmdPick(player, args);
             case "skipack" -> cmdSkipPack(player);
+            case "top" -> cmdTop(player);
             default -> sendHelp(player);
         }
         return true;
@@ -360,6 +361,17 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         if (s == null || s.state().pack == null) { player.sendMessage("§c当前没有补充包。"); return; }
         s.skipPack();
         player.sendMessage("§e已跳过补充包。");
+    }
+
+    private void cmdTop(Player player) {
+        var top = plugin.services().leaderboard().top(10);
+        if (top.isEmpty()) { player.sendMessage("§7暂无记录。"); return; }
+        player.sendMessage("§6=== 小丑牌排行榜 ===");
+        int rank = 1;
+        for (var s : top) {
+            player.sendMessage(String.format("§e#%d §f%s §7%s 底注%d %s",
+                    rank++, s.won() ? "§a通关" : "§c失败", s.deckKey(), s.anteReached(), s.seed()));
+        }
     }
 
     private void sendHelp(Player player) {

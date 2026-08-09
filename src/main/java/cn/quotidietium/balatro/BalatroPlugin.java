@@ -30,6 +30,9 @@ public final class BalatroPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         services = new Services();
+        // 持久化统计（文件）+ 基于其的排行榜
+        services.setStats(new cn.quotidietium.balatro.service.FileStats(getDataFolder().toPath().resolve("stats.txt")));
+        services.setLeaderboard(new cn.quotidietium.balatro.service.MemoryLeaderboard(services.stats()));
         sessionManager = new SessionManager(this);
 
         BalatroCommand command = new BalatroCommand(this);
