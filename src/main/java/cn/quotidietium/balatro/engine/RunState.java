@@ -293,7 +293,9 @@ public final class RunState {
     /** 把一张牌加入牌组（触发 onCardAdded）。 */
     public void addCardToDeck(Card c) {
         fullDeck.add(c);
-        for (JokerInstance j : new java.util.ArrayList<>(jokers)) j.def.onCardAdded(this, c, j);
+        for (JokerInstance j : new java.util.ArrayList<>(jokers)) {
+            if (!j.debuff) j.def.onCardAdded(this, c, j);
+        }
     }
 
     /** 生成一张随机游戏牌（rpc 流）。 */

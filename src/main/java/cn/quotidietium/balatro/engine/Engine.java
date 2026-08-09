@@ -520,7 +520,7 @@ public final class Engine {
                 if (s.stream("glass").chance(p)) {
                     card.setBroken(true);
                     events.add("玻璃牌破碎了");
-                    for (JokerInstance j : s.jokers) j.def.onGlassBreak(s, j);
+                    for (JokerInstance j : activeJokers) j.def.onGlassBreak(s, j);
                 }
             }
         }
