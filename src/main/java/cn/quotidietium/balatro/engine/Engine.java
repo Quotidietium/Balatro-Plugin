@@ -164,7 +164,8 @@ public final class Engine {
             case "invest" -> s.nextShop.put("invest", true);
             case "voucher" -> s.nextShop.put("extraVoucher", true);
             case "boss" -> rerollBoss(s, true);
-            case "standard", "buffoon" -> { /* openFreePack → 0.2.0 补充包开启待实现 */ }
+            case "standard" -> cn.quotidietium.balatro.engine.shop.Packs.open(s, firstPackOfType(Data.PackType.STANDARD));
+            case "buffoon" -> cn.quotidietium.balatro.engine.shop.Packs.open(s, firstPackOfType(Data.PackType.BUFFOON));
             case "charm" -> s.nextShop.put("freeTarot", true);
             case "meteor" -> s.nextShop.put("freePlanet", true);
             case "ethereal" -> s.nextShop.put("etherealPack", true);
@@ -192,6 +193,12 @@ public final class Engine {
         }
         chooseBoss(s);
         s.msg("Boss 盲注已重掷为：" + bossDef(s).name);
+    }
+
+    /** 取指定类型的第一个补充包定义。 */
+    private static Data.Pack firstPackOfType(Data.PackType type) {
+        for (Data.Pack p : Data.PACKS) if (p.type == type) return p;
+        return Data.PACKS.get(0);
     }
 
     /** 盲注目标分。 */
@@ -541,7 +548,16 @@ public final class Engine {
             applyJokerScore(s, ctx, j, ji, activeJokers);
         }
 
-        // 天文台（observatory 优惠券）→ 0.2.0
+        // 天文台（observatory 优惠券）：消耗品区的星球牌使其对应牌型 ×1.5
+        if (s.vouchers.contains("observatory")) {
+            for (int ci = 0; ci < s.consumables.size(); ci++) {
+                cn.quotidietium.balatro.engine.Consumable con = s.consumables.get(ci);
+                if ("planet".equals(con.kind)) {
+                    Data.Planet p = Data.Planet.byKey(con.key);
+                    if (p.hand == type) { ctx.xMult(1.5); events.add("天文台：×1.5"); }
+                }
+            }
+        }
 
         // 等离子牌组：平衡
         if (s.mods.plasma) {
@@ -780,7 +796,18 @@ public final class Engine {
             if (g > 0) { gain += g; detail.add(j.def.displayName() + " +$" + g); }
         }
 
-        // 租赁 / 易腐小丑（0.2.0 商店属性，0.1.0 无）
+        // 租赁小丑：每回合 -$3（在 money += gain 之前扣）
+        for (JokerInstance j : s.jokers) {
+            if (j.rental) { s.money -= 3; detail.add("租赁 " + j.def.displayName() + " -$3"); }
+        }
+        // 易腐小丑：倒计时，归零后失效
+        for (int ji = s.jokers.size() - 1; ji >= 0; ji--) {
+            JokerInstance j = s.jokers.get(ji);
+            if (j.perishable) {
+                j.perishCount--;
+                if (j.perishCount <= 0) j.debuff = true;
+            }
+        }
 
         s.statsDiscardsUnused += s.discardsLeft;
         s.money += gain;
