@@ -307,6 +307,39 @@ function genDeck() {
 }
 genDeck();
 
+// ============ 挑战 mods 黄金数据（供 createRun 应用） ============
+function genChallengeMods() {
+  const { DATA } = loadBalatro(['data.js'], ['DATA']);
+  const L = [];
+  for (const c of DATA.CHALLENGES) {
+    L.push(`CHALLENGE ${c.key}`);
+    const mods = c.mods || {};
+    for (const k of Object.keys(mods)) {
+      const v = mods[k];
+      if (Array.isArray(v)) L.push(`${k}=${v.join(',')}`);
+      else L.push(`${k}=${v}`);
+    }
+    L.push('END');
+  }
+  writeText('challengemods.txt', L);
+}
+genChallengeMods();
+
+// ============ 挑战效果黄金值 ============
+function genChallengeEffect() {
+  const { Engine, DATA } = loadBalatro(['rng.js', 'data.js', 'jokers.js', 'engine.js'], ['Engine', 'DATA']);
+  const L = [];
+  for (const c of DATA.CHALLENGES) {
+    const st = Engine.createRun({ deck: 'red', stake: 0, seed: 'CHAL1', challenge: c.key });
+    const jks = st.jokers.map((j) => j.def.key).join(',');
+    let stone = 0;
+    for (const card of st.fullDeck) if (card.enh === 'stone') stone++;
+    L.push(`CHALFX ${c.key} money=${st.money} jokers=${jks} deck=${st.fullDeck.length} stone=${stone}`);
+  }
+  writeText('challenge.txt', L);
+}
+genChallengeEffect();
+
 // ============ JOKER 黄金值 ============
 // 给开局授予指定小丑后，驱动 small 盲注整回合，对比计分（验证小丑效果与计分管线）。
 function genJokers() {

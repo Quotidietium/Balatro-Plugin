@@ -32,11 +32,16 @@ public final class Engine {
     // ================= 创建一局 =================
 
     public static RunState createRun(String deckKey, int stakeIdx, String seed) {
+        return createRun(deckKey, stakeIdx, seed, null);
+    }
+
+    public static RunState createRun(String deckKey, int stakeIdx, String seed, String challenge) {
         if (deckKey == null || deckKey.isEmpty()) deckKey = "red";
         if (seed == null || seed.isEmpty()) seed = Rng.randomSeedString();
         RunState s = new RunState(seed);
         s.deckKey = deckKey;
         s.stakeIdx = stakeIdx;
+        s.challenge = challenge;
         s.money = 4;
         s.ante = 1;
 
@@ -52,6 +57,9 @@ public final class Engine {
         if ("yellow".equals(deckKey)) s.money += 10;
         if ("green".equals(deckKey)) s.mods.noInterest = true;
         if ("plasma".equals(deckKey)) s.mods.plasma = true;
+
+        // 挑战修饰（jokers/money 立即生效；handSize/handsSet 由 applyVouchersPassive 应用）
+        if (challenge != null) ChallengeMods.applyTo(s, challenge);
 
         buildFullDeck(s);
         applyVouchersPassive(s);

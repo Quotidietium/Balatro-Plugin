@@ -1,0 +1,67 @@
+CHALLENGE omelette
+jokers=egg,egg,egg,egg,egg
+noInterest=true
+END
+CHALLENGE city15
+freeReroll=true
+END
+CHALLENGE rich
+doubleInterest=true
+minRewardMoney=10
+END
+CHALLENGE knife
+blindMult=1.5
+END
+CHALLENGE xray
+handSize=-2
+END
+CHALLENGE madworld
+doubleBoss=true
+END
+CHALLENGE luxury
+jokerTax=0.1
+END
+CHALLENGE nonperish
+allEternal=true
+shopDiscount=0.6
+END
+CHALLENGE medusa
+facesToStone=true
+END
+CHALLENGE double
+hands=-99
+handsSet=1
+blindMult=0.5
+END
+CHALLENGE typecast
+checkered=true
+END
+CHALLENGE inflation
+inflation=true
+END
+CHALLENGE bram
+numbersToFaces=true
+END
+CHALLENGE fragile
+glassDouble=true
+END
+CHALLENGE monolith
+allStone=true
+END
+CHALLENGE blastoff
+jokers=rocket
+money=0
+END
+CHALLENGE fivecard
+must5=true
+END
+CHALLENGE golden
+handsSet=1
+rewardMult=3
+END
+CHALLENGE cruelty
+smallBigRewardHalf=true
+END
+CHALLENGE jokerless
+noJokers=true
+END
