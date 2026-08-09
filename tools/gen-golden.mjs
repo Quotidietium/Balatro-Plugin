@@ -14,14 +14,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REF_JS = path.resolve(__dirname, '..', 'REF', 'balatro', 'js');
 const OUT = path.resolve(__dirname, '..', 'src', 'test', 'resources', 'golden');
 
-function loadBalatro(files) {
+// 把多个纯逻辑脚本合并为单个脚本运行（共享顶层词法作用域），并在末尾把指定符号挂到 globalThis 取回。
+// 用 typeof 守卫，避免未加载的符号（如未加载 engine.js 时的 Engine）抛 ReferenceError。
+function loadBalatro(files, exportNames) {
   const ctx = {};
   vm.createContext(ctx);
-  for (const f of files) {
-    const src = fs.readFileSync(path.join(REF_JS, f), 'utf8');
-    vm.runInContext(src, ctx, { filename: f });
-  }
-  return ctx;
+  const bundle = files.map((f) => fs.readFileSync(path.join(REF_JS, f), 'utf8')).join('\n;\n');
+  const grab = exportNames.map((n) => `${n}: typeof ${n} !== "undefined" ? ${n} : undefined`).join(', ');
+  vm.runInContext(bundle + `\n;globalThis.__out = { ${grab} };\n`, ctx, { filename: 'bundle.js' });
+  return ctx.__out;
 }
 
 function ensureDir(dir) { fs.mkdirSync(dir, { recursive: true }); }
@@ -34,7 +35,7 @@ function writeText(name, lines) {
 }
 
 function genRng() {
-  const { makeStream } = loadBalatro(['rng.js']);
+  const { makeStream } = loadBalatro(['rng.js'], ['makeStream']);
   const seeds = ['TEST', 'BALATRO', 'ABCD1234', 'Z'];
   const streamNames = ['deckbuild', 'shop', 'boss', 'round', 'joker', 'x'];
   const L = [];
@@ -86,4 +87,28 @@ function genRng() {
 }
 
 genRng();
+
+// ============ DATA 黄金值 ============
+function genData() {
+  const { DATA } = loadBalatro(['data.js'], ['DATA']);
+  const L = [];
+  for (let r = 2; r <= 14; r++) L.push(`RANKNAME ${r} ${DATA.rankName(r)}`);
+  for (let r = 2; r <= 14; r++) L.push(`RANKCHIPS ${r} ${DATA.rankChips(r)}`);
+  for (let ante = 1; ante <= 12; ante++) L.push(`BLINDBASE ${ante} ${DATA.blindBase(ante)}`);
+  L.push('HANDS');
+  for (const k of Object.keys(DATA.HANDS)) {
+    const h = DATA.HANDS[k];
+    L.push(`HAND ${k} ${h.name} ${h.chips} ${h.mult} ${h.lchips} ${h.lmult} ${h.order}`);
+  }
+  L.push('END');
+  for (const t of ['small', 'big', 'boss']) {
+    L.push(`BLIND ${t} ${DATA.BLIND_MULT[t]} ${DATA.BLIND_REWARD[t]}`);
+  }
+  L.push('SUITS');
+  for (const s of DATA.SUITS) L.push(`SUIT ${s.key} ${s.name} ${s.symbol} ${s.color}`);
+  L.push('END');
+  writeText('data.txt', L);
+}
+genData();
+
 console.log('done.');
