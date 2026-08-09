@@ -4,6 +4,7 @@ main: cn.quotidietium.balatro.BalatroPlugin
 api-version: '1.21.11'
 author: quotidietium
 description: 在 Minecraft 中实现 Steam 游戏《小丑牌》(Balatro) 的扑克构筑 Roguelike 玩法。
+softdepend: [Vault]
 commands:
   balatro:
     description: 小丑牌主命令

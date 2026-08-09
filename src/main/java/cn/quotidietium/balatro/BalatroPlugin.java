@@ -33,6 +33,13 @@ public final class BalatroPlugin extends JavaPlugin {
         // 持久化统计（文件）+ 基于其的排行榜
         services.setStats(new cn.quotidietium.balatro.service.FileStats(getDataFolder().toPath().resolve("stats.txt")));
         services.setLeaderboard(new cn.quotidietium.balatro.service.MemoryLeaderboard(services.stats()));
+        if (getServer().getPluginManager().isPluginEnabled("Vault")) {
+            cn.quotidietium.balatro.service.VaultEconomy ve = new cn.quotidietium.balatro.service.VaultEconomy();
+            if (ve.available()) {
+                services.setEconomy(ve);
+                getLogger().info("已接入 Vault 经济。");
+            }
+        }
         sessionManager = new SessionManager(this);
 
         BalatroCommand command = new BalatroCommand(this);
