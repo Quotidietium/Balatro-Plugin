@@ -154,25 +154,33 @@ public final class GameSession {
     /** 购买商店第 idx 张商品（卡牌行）。 */
     public boolean buyCard(int idx) {
         if (state.phase != Phase.SHOP) return false;
-        return cn.quotidietium.balatro.engine.shop.Shop.buyCard(state, idx);
+        boolean ok = cn.quotidietium.balatro.engine.shop.Shop.buyCard(state, idx);
+        if (board != null) board.update(state);
+        return ok;
     }
 
     /** 购买第 idx 个补充包。 */
     public boolean buyPack(int idx) {
         if (state.phase != Phase.SHOP) return false;
-        return cn.quotidietium.balatro.engine.shop.Shop.buyPack(state, idx);
+        boolean ok = cn.quotidietium.balatro.engine.shop.Shop.buyPack(state, idx);
+        if (board != null) board.update(state);
+        return ok;
     }
 
     /** 购买优惠券。 */
     public boolean buyVoucher() {
         if (state.phase != Phase.SHOP) return false;
-        return cn.quotidietium.balatro.engine.shop.Shop.buyVoucher(state);
+        boolean ok = cn.quotidietium.balatro.engine.shop.Shop.buyVoucher(state);
+        if (board != null) board.update(state);
+        return ok;
     }
 
     /** 商店重掷；返回本次费用，-1 表示失败。 */
     public long reroll() {
         if (state.phase != Phase.SHOP) return -1;
-        return cn.quotidietium.balatro.engine.shop.Shop.reroll(state);
+        long cost = cn.quotidietium.balatro.engine.shop.Shop.reroll(state);
+        if (cost >= 0 && board != null) board.update(state);
+        return cost;
     }
 
     /** 使用消耗品 idx；cardIds 为目标手牌卡 id（可空）。 */

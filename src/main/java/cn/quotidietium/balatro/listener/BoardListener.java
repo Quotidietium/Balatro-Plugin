@@ -66,14 +66,28 @@ public final class BoardListener implements Listener {
                 }
                 return;
             }
-            if (tag.equals("balatro_act_play")) {
-                board.playSelected();
-                click(player, 1.2f);
+            switch (tag) {
+                case "balatro_act_play" -> { board.playSelected(); click(player, 1.2f); return; }
+                case "balatro_act_discard" -> { board.discardSelected(); click(player, 0.8f); return; }
+                case "balatro_voucher" -> { session.buyVoucher(); click(player, 1.0f); return; }
+                case "balatro_reroll" -> { session.reroll(); click(player, 1.0f); return; }
+                case "balatro_next" -> { session.nextRound(); click(player, 1.2f); return; }
+                case "balatro_skipack" -> { session.skipPack(); click(player, 0.8f); return; }
+                default -> { }
+            }
+            if (tag.startsWith("balatro_shopcard_")) {
+                session.buyCard(Integer.parseInt(tag.substring("balatro_shopcard_".length())));
+                click(player, 1.0f);
                 return;
             }
-            if (tag.equals("balatro_act_discard")) {
-                board.discardSelected();
-                click(player, 0.8f);
+            if (tag.startsWith("balatro_shoppack_")) {
+                session.buyPack(Integer.parseInt(tag.substring("balatro_shoppack_".length())));
+                click(player, 1.0f);
+                return;
+            }
+            if (tag.startsWith("balatro_pick_")) {
+                session.pickPack(Integer.parseInt(tag.substring("balatro_pick_".length())));
+                click(player, 1.2f);
                 return;
             }
         }
@@ -81,7 +95,11 @@ public final class BoardListener implements Listener {
 
     private boolean isBoardEntity(Entity e) {
         for (String t : e.getScoreboardTags()) {
-            if (t.startsWith("balatro_card_") || t.equals("balatro_act_play") || t.equals("balatro_act_discard")) {
+            if (t.startsWith("balatro_card_") || t.startsWith("balatro_shopcard_")
+                    || t.startsWith("balatro_shoppack_") || t.startsWith("balatro_pick_")
+                    || t.equals("balatro_act_play") || t.equals("balatro_act_discard")
+                    || t.equals("balatro_voucher") || t.equals("balatro_reroll")
+                    || t.equals("balatro_next") || t.equals("balatro_skipack")) {
                 return true;
             }
         }

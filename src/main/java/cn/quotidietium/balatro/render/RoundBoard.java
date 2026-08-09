@@ -3,6 +3,7 @@ package cn.quotidietium.balatro.render;
 import cn.quotidietium.balatro.engine.Card;
 import cn.quotidietium.balatro.engine.Data;
 import cn.quotidietium.balatro.engine.JokerInstance;
+import cn.quotidietium.balatro.engine.Phase;
 import cn.quotidietium.balatro.engine.RunState;
 import cn.quotidietium.balatro.session.GameSession;
 import java.util.ArrayList;
@@ -66,6 +67,14 @@ public final class RoundBoard {
 
     private void render(RunState state) {
         clear();
+        switch (state.phase) {
+            case SHOP -> renderShop(state);
+            case PACK -> renderPack(state);
+            default -> renderRound(state);
+        }
+    }
+
+    private void renderRound(RunState state) {
         // 状态栏
         String blind = state.blindType == null ? "-" : state.blindType.key;
         String boss = state.blindType == Data.BlindType.BOSS && !state.bossQueue.isEmpty()
@@ -147,6 +156,72 @@ public final class RoundBoard {
                 .add(right.clone().multiply(rightOffset))
                 .add(new Vector(0, upOffset, 0));
         return new Location(session.player().getWorld(), v.getX(), v.getY(), v.getZ());
+    }
+
+    private void renderShop(RunState state) {
+        var shop = state.shop;
+        Component status = Component.text()
+                .append(Component.text("商店  $" + state.money, NamedTextColor.GOLD)).appendNewline()
+                .append(Component.text("右键卡片购买 | 重掷 | 下一回合", NamedTextColor.GRAY))
+                .build();
+        owned.add(Holo.text(session.plugin(), session.player(), at(0, 2.3), "balatro_status", status, BG_STATUS, true));
+        if (shop == null) return;
+        int n = shop.cards.size();
+        for (int i = 0; i < n; i++) {
+            var c = shop.cards.get(i);
+            double x = (i - (n - 1) / 2.0) * 1.1;
+            TextColor col = c.sold ? NamedTextColor.GRAY : (c.kind.equals("joker") ? TextColor.color(255, 220, 120) : NamedTextColor.WHITE);
+            Component face = Component.text((c.sold ? "[售] " : "") + shopCardLabel(c) + " $" + c.price, col);
+            owned.add(Holo.text(session.plugin(), session.player(), at(x, 1.2), "balatro_shopcard_" + i, face, c.sold ? BG_STATUS : BG_NORMAL, true));
+        }
+        int pn = shop.packs.size();
+        for (int i = 0; i < pn; i++) {
+            var p = shop.packs.get(i);
+            double x = (i - (pn - 1) / 2.0) * 1.6;
+            owned.add(Holo.text(session.plugin(), session.player(), at(x, 0.1), "balatro_shoppack_" + i,
+                    Component.text((p.sold ? "[售] " : "") + "📦" + p.name + " $" + p.price, NamedTextColor.AQUA), BG_NORMAL, true));
+        }
+        if (shop.voucher != null) {
+            owned.add(Holo.text(session.plugin(), session.player(), at(0, -0.9), "balatro_voucher",
+                    Component.text("🎫" + shop.voucher.name + " $" + shop.voucher.price + (shop.voucher.sold ? "(已售)" : ""), NamedTextColor.LIGHT_PURPLE), BG_NORMAL, true));
+        }
+        owned.add(Holo.text(session.plugin(), session.player(), at(-1.4, -1.8), "balatro_reroll",
+                Component.text("🔄 重掷", NamedTextColor.YELLOW), BG_BUTTON, true));
+        owned.add(Holo.text(session.plugin(), session.player(), at(1.4, -1.8), "balatro_next",
+                Component.text("▶ 下一回合", NamedTextColor.GREEN), BG_BUTTON, true));
+    }
+
+    private void renderPack(RunState state) {
+        var pack = state.pack;
+        Component status = Component.text()
+                .append(Component.text("补充包：" + (pack == null ? "?" : pack.def.name) + "（选 " + (pack == null ? 0 : pack.left) + " 张）", NamedTextColor.GOLD)).appendNewline()
+                .append(Component.text("右键选择 | 跳过", NamedTextColor.GRAY))
+                .build();
+        owned.add(Holo.text(session.plugin(), session.player(), at(0, 2.3), "balatro_status", status, BG_STATUS, true));
+        if (pack == null) return;
+        int n = pack.cards.size();
+        for (int i = 0; i < n; i++) {
+            var c = pack.cards.get(i);
+            double x = (i - (n - 1) / 2.0) * 1.1;
+            String label = switch (c.kind) {
+                case "joker" -> "小丑 " + c.name;
+                case "playing" -> "游戏牌 " + c.name;
+                default -> c.kind + " " + c.name;
+            };
+            TextColor col = c.taken ? NamedTextColor.GRAY : NamedTextColor.WHITE;
+            owned.add(Holo.text(session.plugin(), session.player(), at(x, 0.8), "balatro_pick_" + i,
+                    Component.text((c.taken ? "[选] " : "") + label, col), c.taken ? BG_STATUS : BG_NORMAL, true));
+        }
+        owned.add(Holo.text(session.plugin(), session.player(), at(0, -0.9), "balatro_skipack",
+                Component.text("✗ 跳过", NamedTextColor.RED), BG_BUTTON, true));
+    }
+
+    private static String shopCardLabel(cn.quotidietium.balatro.engine.shop.Shop.CardItem c) {
+        return switch (c.kind) {
+            case "joker" -> "小丑 " + c.name;
+            case "playing" -> "游戏牌 " + c.name;
+            default -> c.kind + " " + c.name;
+        };
     }
 
     // ---- 交互（由 BoardListener 经 tag 派发） ----
