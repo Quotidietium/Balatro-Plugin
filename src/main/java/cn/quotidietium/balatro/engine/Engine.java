@@ -189,14 +189,43 @@ public final class Engine {
         s.handsLeft = Math.max(0, s.handsBase + intFlag(f, "hands"));
         s.discardsLeft = Math.max(0, s.discardsBase + intFlag(f, "discards"));
 
-        // Boss 干扰效果、juggle 标签 → 0.3.0
+        // juggle 标签（下回合手牌 +3）→ 0.3.0 标签
+        // Boss 回合开始效果（pre-draw：覆盖 hands/discards/handSize/失效标记/打乱）
+        String bk = effectBk(s);
+        s.bossSuitDebuff = null;
+        s.bossFaceDebuff = false;
+        s.bossLeaf = false;
+        s.bellCardId = null;
+        if (bk != null) {
+            if ("water".equals(bk)) s.discardsLeft = 0;
+            if ("needle".equals(bk)) s.handsLeft = 1;
+            if ("manacle".equals(bk)) s.handSizeRound = Math.max(1, s.handSizeRound - 1);
+            if ("club".equals(bk)) s.bossSuitDebuff = 2;
+            if ("goad".equals(bk)) s.bossSuitDebuff = 0;
+            if ("head".equals(bk)) s.bossSuitDebuff = 1;
+            if ("window".equals(bk)) s.bossSuitDebuff = 3;
+            if ("plant".equals(bk)) s.bossFaceDebuff = true;
+            if ("leaf".equals(bk)) s.bossLeaf = true;
+            if ("acorn".equals(bk)) { s.stream("acorn").shuffle(s.jokers); s.msg("琥珀橡子：小丑顺序被打乱"); }
+        }
 
         // 洗牌并抽牌
         s.drawPile = new ArrayList<>(s.fullDeck);
         s.stream("shuffle" + s.roundCount).shuffle(s.drawPile);
         s.hand.clear();
         s.discardPile.clear();
-        for (int i = 0; i < s.handSizeRound; i++) drawOne(s, false);
+        for (int i = 0; i < s.handSizeRound; i++) drawOne(s, i == 0 && "house".equals(bk));
+
+        // Boss post-draw：房子（首轮全面朝下）、翠绿铃（强制选中）、翠绿之叶（全部失效）
+        if ("house".equals(bk)) {
+            for (Card c : s.hand) c.setFacedown(true);
+        }
+        if ("bell".equals(bk) && !s.hand.isEmpty()) {
+            s.bellCardId = s.stream("bell").pick(s.hand).id();
+        }
+        if (s.bossLeaf) {
+            for (Card c : s.hand) c.setDebuff(true);
+        }
 
         // 小丑回合开始钩子
         List<JokerInstance> snap = new ArrayList<>(s.jokers);
@@ -213,19 +242,54 @@ public final class Engine {
     private static Card drawOne(RunState s, boolean forceFacedown) {
         if (s.drawPile.isEmpty()) return null;
         Card c = s.drawPile.remove(s.drawPile.size() - 1);
+        String bk = effectBk(s);
         c.setFacedown(forceFacedown);
-        // Boss 抽牌效果（wheel/mark/pillar/花色/人头/leaf）→ 0.3.0
+        if ("wheel".equals(bk) && s.stream("wheel").chance(1.0 / 7)) c.setFacedown(true);
+        if ("mark".equals(bk) && c.rank() >= 11 && c.rank() <= 13) c.setFacedown(true);
+        if ("pillar".equals(bk) && s.playedThisAnte.contains(c.id())) c.setDebuff(true);
+        if (s.bossSuitDebuff != null && c.enh() != Data.Enhancement.STONE && c.suit() == s.bossSuitDebuff) c.setDebuff(true);
+        if (s.bossFaceDebuff && isFaceCard(s, c)) c.setDebuff(true);
+        if (s.bossLeaf) c.setDebuff(true);
         s.hand.add(c);
         return c;
     }
 
     private static void drawUpTo(RunState s) {
+        String bk = effectBk(s);
         int n = s.handSizeRound - s.hand.size();
-        // serpent（贪蛇）→ 0.3.0
+        if ("serpent".equals(bk)) n = 3;
         for (int i = 0; i < n; i++) {
             Card c = drawOne(s, false);
             if (c == null) break;
-            // fish（鱼）→ 0.3.0
+            if ("fish".equals(bk) && s.handsPlayedThisRound > 0) c.setFacedown(true);
+        }
+    }
+
+    private static boolean hasChicot(RunState s) {
+        for (JokerInstance j : s.jokers) {
+            if (j.def.key().equals("chicot") && !j.debuff) return true;
+        }
+        return false;
+    }
+
+    /** 当前生效的 Boss key（用于效果分支；chicot/已消除时不生效）。 */
+    private static String effectBk(RunState s) {
+        if (s.blindType != Data.BlindType.BOSS) return null;
+        if (hasChicot(s) || s.bossDisabled) return null;
+        return s.bossQueue.isEmpty() ? null : s.bossQueue.get(0);
+    }
+
+    private static boolean isFaceCard(RunState s, Card c) {
+        return s.isFace(c);
+    }
+
+    /** 翠绿铃：强制牌离开手牌后重新指定一张（防软锁）。 */
+    private static void updateBellCard(RunState s) {
+        if (!"bell".equals(effectBk(s)) || s.bellCardId == null) return;
+        boolean still = false;
+        for (Card c : s.hand) if (c.id() == s.bellCardId) { still = true; break; }
+        if (!still) {
+            s.bellCardId = !s.hand.isEmpty() ? s.stream("bell").pick(s.hand).id() : null;
         }
     }
 
@@ -251,10 +315,23 @@ public final class Engine {
         // 保持手牌顺序（从左到右结算）
         cards.sort(Comparator.comparingInt(c -> s.hand.indexOf(c)));
 
-        // Boss 出牌限制（psychic/bell/eye/mouth）→ 0.3.0
+        // Boss 出牌限制（psychic/bell；eye/mouth 需先判定牌型，见下）
+        String bk = effectBk(s);
+        if ("psychic".equals(bk) && cards.size() != 5) return PlayResult.err("通灵者：必须出满 5 张牌");
+        if (s.mods.must5 && cards.size() != 5) return PlayResult.err("本局要求必须出满 5 张牌");
+        if ("bell".equals(bk) && s.bellCardId != null && !cardIds.contains(s.bellCardId)) {
+            return PlayResult.err("翠绿铃：必须包含被强制的牌");
+        }
 
         HandEval.Result evalRes = HandEval.evaluate(s, cards);
         Data.HandType type = evalRes.type;
+
+        if ("eye".equals(bk) && s.playedTypesThisRound.contains(type)) {
+            return PlayResult.err("眼睛：本回合已经出过「" + type.name + "」");
+        }
+        if ("mouth".equals(bk) && !s.playedTypesThisRound.isEmpty() && s.playedTypesThisRound.get(0) != type) {
+            return PlayResult.err("嘴：本回合只能出「" + s.playedTypesThisRound.get(0).name + "」");
+        }
 
         s.bossTriggeredThisHand = false;
 
@@ -265,7 +342,13 @@ public final class Engine {
         double chips = hd.chips + (long) (lvl - 1) * hd.lchips;
         double mult = hd.mult + (long) (lvl - 1) * hd.lmult;
 
-        // flint（燧石）→ 0.3.0
+        // flint（燧石）：基础筹码/倍率减半（须在 ctx 构造前改 chips/mult）
+        if ("flint".equals(bk)) {
+            chips = Math.max(1, Math.round(chips / 2.0));
+            mult = Math.max(1, Math.round(mult / 2.0));
+            events.add("燧石：基础筹码与倍率减半");
+            s.bossTriggeredThisHand = true;
+        }
 
         List<Card> scoringCards = evalRes.scoring;
         List<Card> heldCards = new ArrayList<>();
@@ -279,7 +362,13 @@ public final class Engine {
 
         ScoreContext ctx = new ScoreContext(s, type, chips, mult, cards, heldCards, events);
 
-        // 绯红之心 → 0.3.0
+        // 绯红之心：随机禁用一张小丑（本次出牌内）
+        if ("heart".equals(bk) && !activeJokers.isEmpty()) {
+            JokerInstance v = s.stream("heart").pick(activeJokers);
+            v.debuffHand = true;
+            events.add("绯红之心：" + v.def.displayName() + " 本次出牌失效");
+            s.bossTriggeredThisHand = true;
+        }
 
         // 1) 打出牌逐张计分（含重新触发）
         for (int ci = 0; ci < cards.size(); ci++) {
@@ -365,7 +454,21 @@ public final class Engine {
         s.playedTypesThisRound.add(type);
         for (Card c : cards) s.playedThisAnte.add(c.id());
 
-        // Boss 公牛/牙齿/手臂 → 0.3.0
+        // Boss：公牛（最常用牌型→金钱归零）/牙齿（每牌-$1）/手臂（牌型降级）
+        if ("ox".equals(bk)) {
+            Data.HandType most = s.mostPlayedType();
+            if (most == type) { s.money = 0; events.add("公牛：金钱归零！"); s.bossTriggeredThisHand = true; }
+        }
+        if ("tooth".equals(bk)) {
+            s.money = Math.max(0, s.money - cards.size());
+            events.add("牙齿：-$" + cards.size());
+            s.bossTriggeredThisHand = true;
+        }
+        if ("arm".equals(bk) && s.handLevel(type) > 1) {
+            s.levelUpHand(type, -1);
+            events.add("手臂：「" + type.name + "」等级 -1");
+            s.bossTriggeredThisHand = true;
+        }
 
         // 移除打出的牌
         s.hand.removeIf(c -> cardIds.contains(c.id()));
@@ -383,9 +486,20 @@ public final class Engine {
         // 恢复 debuffHand
         for (JokerInstance j : s.jokers) j.debuffHand = false;
 
-        // Boss 钩子（hook）→ 0.3.0
+        // Boss：钩子（出牌后随机弃 2 张）
+        if ("hook".equals(bk) && !s.hand.isEmpty()) {
+            Rng.Stream st = s.stream("hook");
+            for (int i = 0; i < 2 && !s.hand.isEmpty(); i++) {
+                Card v = st.pick(s.hand);
+                s.hand.remove(v);
+                s.discardPile.add(v);
+            }
+            events.add("钩子：随机弃掉了 2 张牌");
+            s.bossTriggeredThisHand = true;
+        }
 
         drawUpTo(s);
+        updateBellCard(s);
 
         // 胜负判定
         boolean won = s.roundScore >= s.blindTarget;
@@ -500,6 +614,7 @@ public final class Engine {
         }
 
         drawUpTo(s);
+        updateBellCard(s);
         return PlayResult.okDiscard();
     }
 

@@ -76,6 +76,10 @@ public final class RunState {
     public Map<String, Object> flags = new HashMap<>();
     public boolean bossDisabled;
     public boolean bossTriggeredThisHand;
+    public Integer bossSuitDebuff; // Boss 花色失效（null 或 0-3）
+    public boolean bossFaceDebuff; // Boss 人头牌失效
+    public boolean bossLeaf;       // 翠绿之叶：全部失效
+    public Integer bellCardId;     // 翠绿铃：强制选中的牌 id（null 无）
     public int roundCount = 0;
     public boolean grosDead; // 格罗米歇尔已碎（决定卡文迪什是否可生成）
     public int inflation;   // 通货膨胀挑战：商店加价累计

@@ -1,0 +1,45 @@
+BOSS flint BOSS1 target=600 handSize=8 hands=4 discards=4
+HAND 10.1,12.0,8.3,13.2,11.2,7.2,13.0,7.1
+PLAY ok=1 type=high score=13 won=0 lost=0 rs=13 hl=3 money=4
+PLAY ok=1 type=pair score=19 won=0 lost=0 rs=32 hl=2 money=4
+PLAY ok=1 type=high score=13 won=0 lost=0 rs=45 hl=1 money=4
+PLAY ok=1 type=high score=14 won=0 lost=1 rs=59 hl=0 money=4
+ENDBOSS
+BOSS tooth BOSS1 target=600 handSize=8 hands=4 discards=4
+HAND 10.1,12.0,8.3,13.2,11.2,7.2,13.0,7.1
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3 money=0
+PLAY ok=1 type=pair score=48 won=0 lost=0 rs=63 hl=2 money=0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=78 hl=1 money=0
+PLAY ok=1 type=high score=16 won=0 lost=1 rs=94 hl=0 money=0
+ENDBOSS
+BOSS needle BOSS1 target=600 handSize=8 hands=1 discards=4
+HAND 10.1,12.0,8.3,13.2,11.2,7.2,13.0,7.1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=15 hl=0 money=4
+ENDBOSS
+BOSS manacle BOSS1 target=600 handSize=7 hands=4 discards=4
+HAND 10.1,12.0,8.3,13.2,11.2,7.2,13.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3 money=4
+PLAY ok=1 type=pair score=48 won=0 lost=0 rs=63 hl=2 money=4
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=78 hl=1 money=4
+PLAY ok=1 type=high score=16 won=0 lost=1 rs=94 hl=0 money=4
+ENDBOSS
+BOSS water BOSS1 target=600 handSize=8 hands=4 discards=0
+HAND 10.1,12.0,8.3,13.2,11.2,7.2,13.0,7.1
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3 money=4
+PLAY ok=1 type=pair score=48 won=0 lost=0 rs=63 hl=2 money=4
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=78 hl=1 money=4
+PLAY ok=1 type=high score=16 won=0 lost=1 rs=94 hl=0 money=4
+ENDBOSS
+BOSS eye BOSS1 target=600 handSize=8 hands=4 discards=4
+HAND 10.1,12.0,8.3,13.2,11.2,7.2,13.0,7.1
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3 money=4
+PLAY ok=1 type=pair score=48 won=0 lost=0 rs=63 hl=2 money=4
+PLAY ok=0 type=- score=0 won=0 lost=0 rs=63 hl=2 money=4
+ENDBOSS
+BOSS hook BOSS1 target=600 handSize=8 hands=4 discards=4
+HAND 10.1,12.0,8.3,13.2,11.2,7.2,13.0,7.1
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3 money=4
+PLAY ok=1 type=high score=16 won=0 lost=0 rs=31 hl=2 money=4
+PLAY ok=1 type=high score=16 won=0 lost=0 rs=47 hl=1 money=4
+PLAY ok=1 type=pair score=60 won=0 lost=1 rs=107 hl=0 money=4
+ENDBOSS

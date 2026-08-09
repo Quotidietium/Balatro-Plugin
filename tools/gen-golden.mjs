@@ -234,6 +234,31 @@ function genShop() {
 }
 genShop();
 
+// ============ BOSS 黄金值（强制面对指定 Boss 的回合出牌序列） ============
+function genBoss() {
+  const { Engine } = loadBalatro(['rng.js', 'data.js', 'jokers.js', 'engine.js'], ['Engine']);
+  const bosses = ['flint', 'tooth', 'needle', 'manacle', 'water', 'eye', 'hook'];
+  const L = [];
+  for (const bk of bosses) {
+    const st = Engine.createRun({ deck: 'red', stake: 0, seed: 'BOSS1' });
+    // 强制面对该 Boss（覆盖 chooseBoss 的选取，复现 stream 一致）
+    st.bossKey = bk; st.bossQueue = [bk]; st.nextBlind = 'boss';
+    Engine.selectBlind(st, 'boss', false);
+    L.push(`BOSS ${bk} BOSS1 target=${st.blindTarget} handSize=${st.handSizeRound} hands=${st.handsLeft} discards=${st.discardsLeft}`);
+    L.push('HAND ' + st.hand.map((c) => `${c.rank}.${c.suit}`).join(','));
+    let safety = 0;
+    while (st.phase === 'round' && safety++ < 20) {
+      const ids = st.hand.slice(0, Math.min(5, st.hand.length)).map((c) => c.id);
+      const r = Engine.playHand(st, ids);
+      L.push(`PLAY ok=${r.ok ? 1 : 0} type=${r.type || '-'} score=${r.score || 0} won=${r.won ? 1 : 0} lost=${r.lost ? 1 : 0} rs=${st.roundScore} hl=${st.handsLeft} money=${st.money}`);
+      if (!r.ok || r.won || r.lost) break;
+    }
+    L.push('ENDBOSS');
+  }
+  writeText('boss.txt', L);
+}
+genBoss();
+
 // ============ JOKER 黄金值 ============
 // 给开局授予指定小丑后，驱动 small 盲注整回合，对比计分（验证小丑效果与计分管线）。
 function genJokers() {
