@@ -175,6 +175,13 @@ public final class GameSession {
         return cn.quotidietium.balatro.engine.shop.Shop.reroll(state);
     }
 
+    /** 使用消耗品 idx；cardIds 为目标手牌卡 id（可空）。 */
+    public cn.quotidietium.balatro.engine.consumable.Consumables.Result useConsumable(int idx, List<Integer> cardIds) {
+        var r = cn.quotidietium.balatro.engine.consumable.Consumables.use(state, idx, cardIds);
+        if (r.ok && board != null) board.update(state);
+        return r;
+    }
+
     /** 盲注选择阶段自动推进到下一盲注。 */
     private void autoAdvance() {
         if (state.phase == Phase.BLIND_SELECT && !state.endlessPending) {

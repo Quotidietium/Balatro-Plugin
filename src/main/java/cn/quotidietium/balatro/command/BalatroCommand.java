@@ -53,6 +53,8 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             case "buyvoucher", "voucher" -> cmdBuyVoucher(player);
             case "reroll" -> cmdReroll(player);
             case "next" -> cmdNext(player);
+            case "cons", "consumables" -> cmdCons(player);
+            case "use" -> cmdUse(player, args);
             default -> sendHelp(player);
         }
         return true;
@@ -289,6 +291,35 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§c无效序号：" + args[1]);
             return -1;
         }
+    }
+
+    private void cmdCons(Player player) {
+        GameSession s = plugin.sessionManager().get(player);
+        if (s == null) { player.sendMessage("§c当前没有进行中的局。"); return; }
+        if (s.state().consumables.isEmpty()) { player.sendMessage("§7没有消耗品。"); return; }
+        int i = 0;
+        for (var c : s.state().consumables) {
+            player.sendMessage("§d[" + (i + 1) + "] §f" + c.kind + " " + c.name() + " §7" + c.desc());
+            i++;
+        }
+        player.sendMessage("§7/balatro use <序号> [手牌序号...]（目标手牌从 1 起）");
+    }
+
+    private void cmdUse(Player player, String[] args) {
+        GameSession s = plugin.sessionManager().get(player);
+        if (s == null) { player.sendMessage("§c当前没有进行中的局。"); return; }
+        if (args.length < 2) { player.sendMessage("§c用法：/balatro use <消耗品序号> [手牌序号...]"); return; }
+        int cidx;
+        try { cidx = Integer.parseInt(args[1]) - 1; } catch (NumberFormatException e) { player.sendMessage("§c无效序号"); return; }
+        List<Integer> cardIds = new ArrayList<>();
+        for (int i = 2; i < args.length; i++) {
+            int hi = Integer.parseInt(args[i]);
+            if (hi < 1 || hi > s.state().hand.size()) { player.sendMessage("§c手牌序号越界：" + args[i]); return; }
+            cardIds.add(s.state().hand.get(hi - 1).id());
+        }
+        var r = s.useConsumable(cidx, cardIds);
+        if (!r.ok) player.sendMessage("§c" + r.err);
+        else { player.sendMessage("§a使用成功。"); cmdCons(player); }
     }
 
     private void sendHelp(Player player) {

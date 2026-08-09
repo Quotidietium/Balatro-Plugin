@@ -169,6 +169,11 @@ public final class Engine {
         computeFlags(s);
     }
 
+    /** 补满手牌（消耗品弃牌后调用）。 */
+    public static void refillHand(RunState s) {
+        drawUpTo(s);
+    }
+
     private static void startRound(RunState s) {
         applyVouchersPassive(s);
         computeFlags(s);

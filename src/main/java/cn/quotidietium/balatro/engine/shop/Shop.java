@@ -316,7 +316,10 @@ public final class Shop {
             s.msg("牌组加入：" + it.name);
         } else {
             s.money -= it.price;
-            // TODO 0.2.0：加入消耗品区（需消耗品槽）
+            if (!s.addConsumableKey(it.kind, it.key)) {
+                s.money += it.price;
+                return false; // 消耗品槽已满
+            }
             s.msg("获得：" + it.name);
         }
         it.sold = true;

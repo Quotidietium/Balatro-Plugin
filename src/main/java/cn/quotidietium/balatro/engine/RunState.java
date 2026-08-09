@@ -47,7 +47,7 @@ public final class RunState {
 
     // ---- 持有物 ----
     public final List<JokerInstance> jokers = new ArrayList<>();
-    public final List<Object> consumables = new ArrayList<>(); // 0.2.0 类型化
+    public final List<Consumable> consumables = new ArrayList<>();
     public final List<String> vouchers = new ArrayList<>();
     public final List<String> tags = new ArrayList<>();
 
@@ -83,6 +83,14 @@ public final class RunState {
     public int roundCount = 0;
     public boolean grosDead; // 格罗米歇尔已碎（决定卡文迪什是否可生成）
     public int inflation;   // 通货膨胀挑战：商店加价累计
+    public int useSeq;      // 消耗品使用序号（构造唯一流）
+    public TarotPlanet lastTarotPlanet; // 愚人复制用：上一张使用的塔罗/星球
+
+    /** 上一张使用的塔罗/星球（供愚人复制）。 */
+    public static final class TarotPlanet {
+        public final String kind, key;
+        public TarotPlanet(String kind, String key) { this.kind = kind; this.key = key; }
+    }
     public cn.quotidietium.balatro.engine.shop.Shop.ShopData shop; // 当前商店（0.2.0）
     public final Map<String, Object> nextShop = new HashMap<>();  // 标签等对下个商店的修饰
 
@@ -205,9 +213,20 @@ public final class RunState {
         discardPile.remove(c);
     }
 
-    /** 获得随机消耗品（0.2.0 实现；0.1.0 占位无操作）。 */
+    /** 获得随机消耗品（按 kind 从对应池随机取）。 */
     public void gainConsumable(String kind) {
-        // TODO 0.2.0：按 kind 从 Tarot/Planet/Spectral 池取并加入消耗品区
+        switch (kind) {
+            case "tarot" -> { Data.Tarot t = stream("consumable").pick(List.of(Data.Tarot.values())); addConsumableKey("tarot", t.key); }
+            case "planet" -> { Data.Planet p = stream("consumable").pick(List.of(Data.Planet.values())); addConsumableKey("planet", p.key); }
+            default -> { Data.Spectral sp = stream("consumable").pick(List.of(Data.Spectral.values())); addConsumableKey("spectral", sp.key); }
+        }
+    }
+
+    /** 把指定消耗品加入消耗品区（槽位满则失败）。 */
+    public boolean addConsumableKey(String kind, String key) {
+        if (consumables.size() >= consumableSlots) return false;
+        consumables.add(new Consumable(kind, key));
+        return true;
     }
 
     /** 消除当前 Boss 效果（0.1.0 Boss 效果未生效，置标志）。 */
@@ -241,15 +260,19 @@ public final class RunState {
         return true;
     }
 
-    /** 随机获得一张指定稀有度的小丑。 */
-    public void gainRandomJoker(int rarity) {
+    /** 随机获得一张指定稀有度的小丑；rarity=null 则按权重随机稀有度。 */
+    public boolean gainRandomJoker(Integer rarity) {
+        if (rarity == null) {
+            double r = stream("jokergrant").next() * 100;
+            rarity = r < 70 ? 0 : r < 95 ? 1 : 2;
+        }
         java.util.List<Joker> pool = new java.util.ArrayList<>();
-        for (Joker j : cn.quotidietium.balatro.engine.joker.JokerRegistry.allJokers()) {
+        for (Joker j : cn.quotidietium.balatro.engine.joker.JokerRegistry.allJokersOrdered()) {
             if (cn.quotidietium.balatro.engine.joker.JokerRegistry.rarityOf(j.key()) == rarity) pool.add(j);
         }
-        if (pool.isEmpty()) return;
+        if (pool.isEmpty()) return false;
         Joker pick = stream("jokergrant").pick(pool);
-        gainJoker(pick.key(), null);
+        return gainJoker(pick.key(), null);
     }
 
     /** 把一张牌加入牌组（触发 onCardAdded）。 */

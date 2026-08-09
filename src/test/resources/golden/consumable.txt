@@ -1,0 +1,12 @@
+PLANETUSE pluto high 1 2 1
+PLANETUSE mercury pair 1 2 1
+PLANETUSE uranus twopair 1 2 1
+PLANETUSE venus three 1 2 1
+PLANETUSE saturn straight 1 2 1
+PLANETUSE jupiter flush 1 2 1
+PLANETUSE earth full 1 2 1
+PLANETUSE mars four 1 2 1
+PLANETUSE neptune sflush 1 2 1
+PLANETUSE planetx five 1 2 1
+PLANETUSE ceres fhouse 1 2 1
+PLANETUSE eris ffive 1 2 1

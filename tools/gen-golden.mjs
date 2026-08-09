@@ -259,6 +259,23 @@ function genBoss() {
 }
 genBoss();
 
+// ============ 消耗品黄金值（星球升级） ============
+function genConsumable() {
+  const { Engine, DATA } = loadBalatro(['rng.js', 'data.js', 'jokers.js', 'engine.js'], ['Engine', 'DATA']);
+  const L = [];
+  const st = Engine.createRun({ deck: 'red', stake: 0, seed: 'CONS1' });
+  st.phase = 'round'; // 允许在回合内使用
+  for (const p of DATA.PLANETS) {
+    const before = st.handLevels[p.hand];
+    st.consumables.push({ kind: 'planet', key: p.key, edition: null, sellBonus: 0 });
+    const r = Engine.useConsumable(st, st.consumables.length - 1, null);
+    const after = st.handLevels[p.hand];
+    L.push(`PLANETUSE ${p.key} ${p.hand} ${before} ${after} ${r.ok ? 1 : 0}`);
+  }
+  writeText('consumable.txt', L);
+}
+genConsumable();
+
 // ============ JOKER 黄金值 ============
 // 给开局授予指定小丑后，驱动 small 盲注整回合，对比计分（验证小丑效果与计分管线）。
 function genJokers() {
