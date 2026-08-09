@@ -119,6 +119,16 @@ function genData() {
     const s = DATA.SEALS[k];
     L.push(`SEAL|${k}|${s.name}|${s.desc}`);
   }
+  for (const t of DATA.TAROT) L.push(`TAROT|${t.key}|${t.name}|${t.desc}`);
+  for (const p of DATA.PLANETS) L.push(`PLANET|${p.key}|${p.name}|${p.hand}|${p.desc}`);
+  for (const s of DATA.SPECTRAL) L.push(`SPECTRAL|${s.key}|${s.name}|${s.desc}`);
+  for (const p of DATA.PACKS) L.push(`PACK|${p.key}|${p.type}|${p.name}|${p.size}|${p.choose}|${p.cost}`);
+  for (const v of DATA.VOUCHERS) L.push(`VOUCHER|${v.key}|${v.name}|${v.desc}|${v.base}|${v.pair || v.requires || '-'}`);
+  for (const r of DATA.RARITY) L.push(`RARITY|${r.key}|${r.name}|${r.w}`);
+  for (const d of DATA.DECKS) L.push(`DECK|${d.key}|${d.name}|${d.desc}`);
+  for (const s of DATA.STAKES) L.push(`STAKE|${s.key}|${s.name}|${s.desc}`);
+  for (const t of DATA.TAGS) L.push(`TAG|${t.key}|${t.name}|${t.desc}`);
+  for (const c of DATA.CHALLENGES) L.push(`CHALLENGE|${c.key}|${c.name}|${c.desc}`);
   writeText('data.txt', L);
 }
 genData();

@@ -76,3 +76,171 @@ SEAL|gold|金色蜡封|该牌计分时 +$3
 SEAL|red|红色蜡封|该牌重新触发一次
 SEAL|blue|蓝色蜡封|回合结束时若仍在手中，获得对应星球牌
 SEAL|purple|紫色蜡封|弃掉该牌时获得一张塔罗牌
+TAROT|fool|愚人|复制本局上一张使用的塔罗或星球牌
+TAROT|magician|魔术师|至多 2 张手牌变为「幸运牌」
+TAROT|priestess|女祭司|获得至多 2 张随机星球牌
+TAROT|empress|皇后|至多 2 张手牌变为「倍率牌」
+TAROT|emperor|皇帝|获得至多 2 张随机塔罗牌
+TAROT|hierophant|教皇|至多 2 张手牌变为「奖励牌」
+TAROT|lovers|恋人|至多 1 张手牌变为「万能牌」
+TAROT|chariot|战车|至多 1 张手牌变为「钢铁牌」
+TAROT|justice|正义|至多 1 张手牌变为「玻璃牌」
+TAROT|hermit|隐者|金钱翻倍（至多 +$20）
+TAROT|wheel|命运之轮|1/4 概率为一张随机小丑附加版本
+TAROT|strength|力量|至多 2 张手牌点数 +1
+TAROT|hanged|倒吊人|销毁至多 2 张手牌
+TAROT|death|死神|选 2 张牌：左边那张变成右边那张
+TAROT|temperance|节制|获得全部小丑的总售价（至多 $50）
+TAROT|devil|恶魔|至多 1 张手牌变为「黄金牌」
+TAROT|tower|高塔|至多 1 张手牌变为「石头牌」
+TAROT|star|星星|至多 3 张手牌变为方块
+TAROT|moon|月亮|至多 3 张手牌变为梅花
+TAROT|sun|太阳|至多 3 张手牌变为红桃
+TAROT|judgement|审判|获得一张随机小丑牌
+TAROT|world|世界|至多 3 张手牌变为黑桃
+PLANET|pluto|冥王星|high|「高牌」升 1 级
+PLANET|mercury|水星|pair|「对子」升 1 级
+PLANET|uranus|天王星|twopair|「两对」升 1 级
+PLANET|venus|金星|three|「三条」升 1 级
+PLANET|saturn|土星|straight|「顺子」升 1 级
+PLANET|jupiter|木星|flush|「同花」升 1 级
+PLANET|earth|地球|full|「葫芦」升 1 级
+PLANET|mars|火星|four|「四条」升 1 级
+PLANET|neptune|海王星|sflush|「同花顺」升 1 级
+PLANET|planetx|X 行星|five|「五条」升 1 级
+PLANET|ceres|谷神星|fhouse|「同花葫芦」升 1 级
+PLANET|eris|阋神星|ffive|「同花五条」升 1 级
+SPECTRAL|familiar|妖精|销毁 1 张随机手牌，获得 3 张随机增强人头牌
+SPECTRAL|grim|鬼魂|销毁 1 张随机手牌，获得 2 张随机增强 A
+SPECTRAL|incantation|咒语|销毁 1 张随机手牌，获得 4 张随机增强数字牌
+SPECTRAL|talisman|护符|为 1 张手牌附加金色蜡封
+SPECTRAL|aura|光环|为 1 张手牌附加随机版本（闪膜/镭射/多彩）
+SPECTRAL|wraith|幽灵|获得一张随机稀有小丑，但金钱归零
+SPECTRAL|sigil|印记|全部手牌变为同一随机花色
+SPECTRAL|ouija|占卜板|全部手牌变为同一随机点数；手牌上限 -1
+SPECTRAL|hex|妖术|一张随机小丑变为负片，销毁其余小丑
+SPECTRAL|ankh|安魂曲|复制一张随机小丑，销毁其余小丑
+SPECTRAL|dejavu|似曾相识|为 1 张手牌附加红色蜡封
+SPECTRAL|trance|恍惚|为 1 张手牌附加蓝色蜡封
+SPECTRAL|medium|灵媒|为 1 张手牌附加紫色蜡封
+SPECTRAL|cryptid|地穴生物|选 1 张手牌，获得它的 2 张复制
+SPECTRAL|immolate|献祭|销毁 5 张随机手牌，获得 $20
+SPECTRAL|soul|灵魂|获得一张随机传奇小丑
+SPECTRAL|blackhole|黑洞|所有牌型各升 1 级
+SPECTRAL|ectoplasm|灵质|一张随机小丑变为负片；手牌上限 -1
+PACK|arcana1|arcana|奥术包|3|1|4
+PACK|arcana2|arcana|特大奥术包|5|1|6
+PACK|arcana3|arcana|巨型奥术包|5|2|8
+PACK|celestial1|celestial|天体包|3|1|4
+PACK|celestial2|celestial|特大天体包|5|1|6
+PACK|celestial3|celestial|巨型天体包|5|2|8
+PACK|standard1|standard|标准包|3|1|4
+PACK|standard2|standard|特大标准包|5|1|6
+PACK|standard3|standard|巨型标准包|5|2|8
+PACK|buffoon1|buffoon|小丑包|2|1|4
+PACK|buffoon2|buffoon|特大小丑包|4|1|6
+PACK|buffoon3|buffoon|巨型小丑包|4|2|8
+PACK|spectral1|spectral|幻灵包|2|1|4
+VOUCHER|overstock|多重库存|商店卡牌位 +1|10|overstock2
+VOUCHER|overstock2|多重库存+|商店卡牌位再 +1|10|overstock
+VOUCHER|clearance|清仓特卖|商店全部商品 75 折|10|liquidation
+VOUCHER|liquidation|清仓大甩卖|商店全部商品 5 折|10|clearance
+VOUCHER|blank|空白优惠券|……什么也没有？|10|antimatter
+VOUCHER|antimatter|反物质|小丑槽 +1|10|blank
+VOUCHER|tarotm|塔罗商人|商店塔罗牌出现率 ×2|10|tarott
+VOUCHER|tarott|塔罗大亨|商店塔罗牌出现率 ×4|10|tarotm
+VOUCHER|planetm|星球商人|商店星球牌出现率 ×2|10|planett
+VOUCHER|planett|星球大亨|商店星球牌出现率 ×4|10|planetm
+VOUCHER|hone|磨刀石|闪膜/镭射/多彩出现率 ×2|10|glowup
+VOUCHER|glowup|光彩照人|闪膜/镭射/多彩出现率 ×4|10|hone
+VOUCHER|reroll1|重掷红利|商店重掷费用 -$2|10|reroll2
+VOUCHER|reroll2|重掷狂欢|商店重掷费用再 -$2|10|reroll1
+VOUCHER|crystal|水晶球|消耗品槽 +1|10|omen
+VOUCHER|omen|预言球|幻灵牌可出现在商店|10|crystal
+VOUCHER|telescope|望远镜|天体包必含你最常用牌型的星球牌|10|observatory
+VOUCHER|observatory|天文台|消耗品区的星球牌使其对应牌型倍率 ×1.5|10|telescope
+VOUCHER|seedmoney|种子基金|利息上限提升至 $10|10|moneytree
+VOUCHER|moneytree|摇钱树|利息上限提升至 $20|10|seedmoney
+VOUCHER|grabber|补给手|每回合出牌次数 +1|10|nacho
+VOUCHER|nacho|顺手牵羊|每回合出牌次数再 +1|10|grabber
+VOUCHER|wasteful|挥霍无度|每回合弃牌次数 +1|10|recyclo
+VOUCHER|recyclo|回收狂人|每回合弃牌次数再 +1|10|wasteful
+VOUCHER|magictrick|魔术技巧|商店可出现游戏牌|10|illusion
+VOUCHER|illusion|幻觉|商店的游戏牌可能带增强或版本|10|magictrick
+VOUCHER|hieroglyph|象形文字|底注 -1|10|petroglyph
+VOUCHER|petroglyph|岩画|底注再 -1|10|hieroglyph
+VOUCHER|director|导演剪辑版|可花 $10 重掷 Boss 盲注|10|retcon
+VOUCHER|retcon|翻拍|重掷 Boss 盲注免费|10|director
+VOUCHER|paintbrush|油漆刷|手牌上限 +1|10|palette
+VOUCHER|palette|调色板|手牌上限再 +1|10|paintbrush
+RARITY|common|普通|70
+RARITY|uncommon|罕见|25
+RARITY|rare|稀有|5
+RARITY|legendary|传奇|0
+DECK|red|红色牌组|每回合弃牌次数 +1
+DECK|blue|蓝色牌组|每回合出牌次数 +1
+DECK|yellow|黄色牌组|开局额外获得 $10
+DECK|green|绿色牌组|回合结束时每张剩余出牌 +$2、每张剩余弃牌 +$1；无利息
+DECK|black|黑色牌组|小丑槽 +1；每回合出牌次数 -1
+DECK|magic|魔法牌组|开局拥有「水晶球」优惠券与 2 张「愚人」
+DECK|nebula|星云牌组|开局拥有「望远镜」优惠券；消耗品槽 -1
+DECK|ghost|幽灵牌组|幻灵牌可出现在商店；开局拥有 1 张「妖术」
+DECK|abandoned|废弃牌组|牌组中没有人头牌（共 40 张）
+DECK|checkered|棋盘牌组|牌组由 26 张黑桃与 26 张红桃组成
+DECK|zodiac|黄道牌组|开局拥有「塔罗商人」「星球商人」「多重库存」优惠券
+DECK|painted|涂鸦牌组|手牌上限 +2；小丑槽 -1
+DECK|anaglyph|浮雕牌组|每击败一个 Boss 盲注获得一个「翻倍标签」
+DECK|plasma|等离子牌组|结算时筹码与倍率先取平均值再相乘；盲注目标分 ×2
+DECK|erratic|百变牌组|牌组的点数与花色完全随机
+STAKE|white|白注|基础难度
+STAKE|red|红注|小盲注不提供奖励金
+STAKE|green|绿注|所需分数随底注加速增长（每底注 ×1.15）
+STAKE|black|黑注|商店可能出现「永恒」小丑（不可出售或摧毁）
+STAKE|blue|蓝注|每回合弃牌次数 -1
+STAKE|purple|紫注|所需分数随底注进一步加速增长（每底注 ×1.3）
+STAKE|orange|橙注|商店可能出现「易腐」小丑（5 回合后失效）
+STAKE|gold|金注|商店可能出现「租赁」小丑（每回合结束扣 $3）
+TAG|double|翻倍标签|复制下一个获得的标签（不含本标签）
+TAG|uncommon|罕见标签|下个商店必有一张罕见小丑
+TAG|rare|稀有标签|下个商店必有一张稀有小丑
+TAG|negative|负片标签|下个商店必有一张负片小丑
+TAG|foil|闪膜标签|下个商店必有一张闪膜小丑
+TAG|holo|镭射标签|下个商店必有一张镭射小丑
+TAG|poly|多彩标签|下个商店必有一张多彩小丑
+TAG|invest|投资标签|击败下一个 Boss 盲注后获得 $25
+TAG|voucher|优惠券标签|下个商店出现一张优惠券
+TAG|boss|老板标签|重新随机本底注的 Boss 盲注
+TAG|standard|标准标签|立即免费开启一个标准补充包
+TAG|charm|魅力标签|下个商店的塔罗牌免费
+TAG|meteor|流星标签|下个商店的星球牌免费
+TAG|buffoon|小丑标签|立即免费开启一个小丑补充包
+TAG|handy|手套标签|立即获得 $1 × 本局已出牌次数
+TAG|garbage|垃圾标签|立即获得 $1 × 本局未使用的弃牌次数
+TAG|ethereal|幽冥标签|下个商店出现一个幻灵补充包
+TAG|coupon|折扣标签|下个商店的卡牌与补充包免费
+TAG|d6|D6 标签|下个商店重掷免费
+TAG|topup|补充标签|立即获得至多 2 张随机普通小丑
+TAG|speed|速度标签|立即获得 $5 × 本局已跳过的盲注数
+TAG|orbital|轨道标签|随机一种牌型升 3 级
+TAG|economy|经济标签|立即获得 $1 / 每 $5 持有资金（至多 $25）
+TAG|juggle|灵活标签|下一回合手牌上限 +3
+CHALLENGE|omelette|煎蛋卷|开局拥有 5 张「蛋」；无法获得其他金钱来源
+CHALLENGE|city15|十五分钟城市|商店始终满员且重掷免费
+CHALLENGE|rich|富者愈富|利息翻倍，但资金低于 $10 时无法获得出牌奖励
+CHALLENGE|knife|刀尖行走|所有盲注目标分 ×1.5
+CHALLENGE|xray|X 光视界|所有抽到的牌面朝上，但手牌上限 -2
+CHALLENGE|madworld|疯狂世界|没有大小盲注，每个底注打 2 个 Boss
+CHALLENGE|luxury|奢侈品税|每持有 1 张小丑，盲注目标分 +10%
+CHALLENGE|nonperish|永不过期|所有小丑均为永恒（不可出售），但商店价格 6 折
+CHALLENGE|medusa|美杜莎|所有人头牌变为石头牌
+CHALLENGE|double|孤注一掷|每回合只有 1 次出牌机会；目标分减半
+CHALLENGE|typecast|刻板印象|牌组只有黑桃与红桃
+CHALLENGE|inflation|通货膨胀|商店价格每回合 +$1
+CHALLENGE|bram|布拉姆扑克|所有数字牌变为人头牌
+CHALLENGE|fragile|易碎品|玻璃牌破碎概率翻倍；玻璃牌出现率提升
+CHALLENGE|monolith|巨石阵|牌组全部由石头牌组成
+CHALLENGE|blastoff|点火升空|开局拥有「火箭」与 $0
+CHALLENGE|fivecard|五张抽牌|每次必须出满 5 张牌
+CHALLENGE|golden|金针|每回合只有 1 次出牌机会，且奖励金 ×3
+CHALLENGE|cruelty|残酷|小盲注与大盲注的奖励金减半
+CHALLENGE|jokerless|无丑之地|无法获得任何小丑牌

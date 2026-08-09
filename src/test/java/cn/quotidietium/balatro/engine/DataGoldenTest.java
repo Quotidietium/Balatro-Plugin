@@ -103,6 +103,124 @@ class DataGoldenTest {
         }
     }
 
+    @Test
+    void tarotMatch() throws IOException {
+        for (String[] p : pipeLines("TAROT")) {
+            Data.Tarot t = Data.Tarot.byKey(p[1]);
+            assertEquals(p[2], t.name, "name " + p[1]);
+            assertEquals(p[3], t.desc, "desc " + p[1]);
+        }
+    }
+
+    @Test
+    void planetsMatch() throws IOException {
+        for (String[] p : pipeLines("PLANET")) {
+            Data.Planet pl = Data.Planet.byKey(p[1]);
+            assertEquals(p[2], pl.name, "name " + p[1]);
+            assertEquals(p[3], pl.hand.key, "hand " + p[1]);
+            assertEquals(p[4], pl.desc, "desc " + p[1]);
+        }
+    }
+
+    @Test
+    void spectralMatch() throws IOException {
+        for (String[] p : pipeLines("SPECTRAL")) {
+            Data.Spectral sp = Data.Spectral.byKey(p[1]);
+            assertEquals(p[2], sp.name, "name " + p[1]);
+            assertEquals(p[3], sp.desc, "desc " + p[1]);
+        }
+    }
+
+    @Test
+    void packsMatch() throws IOException {
+        for (String[] p : pipeLines("PACK")) {
+            Data.Pack pk = Data.packByKey(p[1]);
+            assertEquals(p[2], pk.type.key, "type " + p[1]);
+            assertEquals(p[3], pk.name, "name " + p[1]);
+            assertEquals(Integer.parseInt(p[4]), pk.size, "size " + p[1]);
+            assertEquals(Integer.parseInt(p[5]), pk.choose, "choose " + p[1]);
+            assertEquals(Integer.parseInt(p[6]), pk.cost, "cost " + p[1]);
+        }
+    }
+
+    @Test
+    void vouchersMatch() throws IOException {
+        for (String[] p : pipeLines("VOUCHER")) {
+            Data.Voucher v = Data.voucherByKey(p[1]);
+            assertEquals(p[2], v.name, "name " + p[1]);
+            assertEquals(p[3], v.desc, "desc " + p[1]);
+            assertEquals(Integer.parseInt(p[4]), v.base, "base " + p[1]);
+            String dep = v.pair != null ? v.pair : (v.requires != null ? v.requires : "-");
+            assertEquals(p[5], dep, "pair/requires " + p[1]);
+        }
+    }
+
+    @Test
+    void rarityMatch() throws IOException {
+        for (String[] p : pipeLines("RARITY")) {
+            Data.Rarity r = Data.Rarity.byKey(p[1]);
+            assertEquals(p[2], r.name, "name " + p[1]);
+            assertEquals(Integer.parseInt(p[3]), r.weight, "weight " + p[1]);
+        }
+    }
+
+    @Test
+    void decksMatch() throws IOException {
+        for (String[] p : pipeLines("DECK")) {
+            Data.Deck d = Data.deckByKey(p[1]);
+            assertEquals(p[2], d.name(), "name " + p[1]);
+            assertEquals(p[3], d.desc(), "desc " + p[1]);
+        }
+    }
+
+    @Test
+    void stakesMatch() throws IOException {
+        for (String[] p : pipeLines("STAKE")) {
+            assertEquals(p[2], stakeName(p[1]), "name " + p[1]);
+        }
+    }
+
+    @Test
+    void tagsMatch() throws IOException {
+        for (String[] p : pipeLines("TAG")) {
+            assertEquals(p[2], tagName(p[1]), "name " + p[1]);
+            assertEquals(p[3], tagDesc(p[1]), "desc " + p[1]);
+        }
+    }
+
+    @Test
+    void challengesMatch() throws IOException {
+        for (String[] p : pipeLines("CHALLENGE")) {
+            assertEquals(p[2], challengeName(p[1]), "name " + p[1]);
+            assertEquals(p[3], challengeDesc(p[1]), "desc " + p[1]);
+        }
+    }
+
+    private static String stakeName(String key) {
+        for (Data.Stake s : Data.STAKES) if (s.key().equals(key)) return s.name();
+        throw new IllegalArgumentException("unknown stake: " + key);
+    }
+
+    private static String tagName(String key) {
+        for (Data.Tag t : Data.TAGS) if (t.key().equals(key)) return t.name();
+        throw new IllegalArgumentException("unknown tag: " + key);
+    }
+
+    private static String tagDesc(String key) {
+        for (Data.Tag t : Data.TAGS) if (t.key().equals(key)) return t.desc();
+        throw new IllegalArgumentException("unknown tag: " + key);
+    }
+
+    private static String challengeName(String key) {
+        for (Data.Challenge c : Data.CHALLENGES) if (c.key().equals(key)) return c.name();
+        throw new IllegalArgumentException("unknown challenge: " + key);
+    }
+
+    private static String challengeDesc(String key) {
+        for (Data.Challenge c : Data.CHALLENGES) if (c.key().equals(key)) return c.desc();
+        throw new IllegalArgumentException("unknown challenge: " + key);
+    }
+
     // ---- 读取 data.txt，按首 token 过滤；跳过段头(HANDS/SUITS)与 END ----
     private static List<String[]> lines(String tag) throws IOException {
         List<String[]> out = new ArrayList<>();
