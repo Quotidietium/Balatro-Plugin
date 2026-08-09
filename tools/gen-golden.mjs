@@ -294,6 +294,19 @@ function genTag() {
 }
 genTag();
 
+// ============ 牌组构成黄金值 ============
+function genDeck() {
+  const { Engine } = loadBalatro(['rng.js', 'data.js', 'jokers.js', 'engine.js'], ['Engine']);
+  const L = [];
+  for (const dk of ['red', 'checkered', 'abandoned', 'erratic']) {
+    const st = Engine.createRun({ deck: dk, stake: 0, seed: 'DECK1' });
+    L.push(`DECK ${dk} ${st.fullDeck.length}`);
+    L.push(st.fullDeck.map((c) => `${c.rank}.${c.suit}${c.enh ? '.' + c.enh : ''}`).join(','));
+  }
+  writeText('deck.txt', L);
+}
+genDeck();
+
 // ============ JOKER 黄金值 ============
 // 给开局授予指定小丑后，驱动 small 盲注整回合，对比计分（验证小丑效果与计分管线）。
 function genJokers() {

@@ -60,10 +60,40 @@ public final class Engine {
     }
 
     private static void buildFullDeck(RunState s) {
-        // 0.1.0：标准 52 张（花色 0..3 × 点数 2..14）。牌组构成变体（erratic/checkered/...）= 0.5.0。
-        for (int suit = 0; suit < 4; suit++) {
-            for (int rank = 2; rank <= 14; rank++) {
-                s.fullDeck.add(s.makeCard(rank, suit));
+        Mods m = s.mods;
+        List<Card> deck = s.fullDeck;
+        Rng.Stream stream = s.stream("deckbuild");
+        if ("erratic".equals(s.deckKey)) {
+            for (int i = 0; i < 52; i++) deck.add(s.makeCard(stream.range(2, 14), stream.range(0, 3)));
+        } else if ("checkered".equals(s.deckKey) || m.checkered) {
+            for (int su = 0; su < 2; su++) {
+                int suit = su == 0 ? 0 : 1;
+                for (int rep = 0; rep < 2; rep++) for (int r = 2; r <= 14; r++) deck.add(s.makeCard(r, suit));
+            }
+        } else if (m.allStone) {
+            for (int i = 0; i < 52; i++) {
+                Card c = s.makeCard(0, -1);
+                c.setEnh(Data.Enhancement.STONE);
+                deck.add(c);
+            }
+        } else {
+            for (int su = 0; su < 4; su++) {
+                for (int r = 2; r <= 14; r++) {
+                    if ("abandoned".equals(s.deckKey) && r >= 11 && r <= 13) continue;
+                    deck.add(s.makeCard(r, su));
+                }
+            }
+        }
+        if (m.facesToStone) {
+            for (Card c : deck) {
+                if (c.rank() >= 11 && c.rank() <= 13) {
+                    c.setRank(0); c.setSuit(-1); c.setEnh(Data.Enhancement.STONE);
+                }
+            }
+        }
+        if (m.numbersToFaces) {
+            for (Card c : deck) {
+                if (c.rank() >= 2 && c.rank() <= 10) c.setRank(stream.pick(List.of(11, 12, 13)));
             }
         }
     }
