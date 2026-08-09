@@ -229,6 +229,14 @@ function genJokers() {
     ['icecream', 'GOLDEN1'],
     ['business', 'GOLDEN1'],
     ['faceless', 'GOLDEN1'],
+    ['stencil', 'GOLDEN1'],
+    ['stuntman', 'GOLDEN1'],
+    ['fourfingers', 'GOLDEN1'],
+    ['burglar', 'GOLDEN1'],
+    ['chad', 'GOLDEN1'],
+    ['moon', 'GOLDEN1'],
+    ['seeingdouble', 'GOLDEN1'],
+    ['space', 'GOLDEN1'],
   ];
   const L = [];
   for (const [jkey, seed] of cases) {

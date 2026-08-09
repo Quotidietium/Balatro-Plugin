@@ -16,6 +16,8 @@ public final class JokerInstance {
     public boolean rental;       // 租赁：每回合 -$3
     public boolean perishable;   // 易腐：5 回合后失效
     public int perishCount = 5;
+    public boolean eternal;      // 永恒：不可出售/摧毁（黑注）
+    public int sellBonus;        // 售价加成（蛋等）
 
     public JokerInstance(Joker def) {
         this.def = def;

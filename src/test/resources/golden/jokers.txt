@@ -190,3 +190,55 @@ PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
 PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
 PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
 ENDROUND
+JROUND stencil GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=60 won=0 lost=0 rs=60 hl=3
+PLAY ok=1 type=pair score=240 won=1 lost=0 rs=300 hl=2
+ENDROUND
+JROUND stuntman GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3
+PLAY ok=1 type=high score=265 won=0 lost=0 rs=265 hl=3
+PLAY ok=1 type=pair score=560 won=1 lost=0 rs=825 hl=2
+ENDROUND
+JROUND fourfingers GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
+ENDROUND
+JROUND burglar GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=6
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=5
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=4
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=105 hl=3
+PLAY ok=1 type=pair score=56 won=0 lost=0 rs=161 hl=2
+PLAY ok=1 type=pair score=64 won=0 lost=0 rs=225 hl=1
+PLAY ok=1 type=pair score=60 won=0 lost=1 rs=285 hl=0
+ENDROUND
+JROUND chad GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=100 won=0 lost=0 rs=115 hl=2
+PLAY ok=1 type=high score=35 won=0 lost=0 rs=150 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=165 hl=0
+ENDROUND
+JROUND moon GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=405 won=1 lost=0 rs=405 hl=3
+ENDROUND
+JROUND seeingdouble GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=30 won=0 lost=0 rs=30 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=90 hl=2
+PLAY ok=1 type=high score=30 won=0 lost=0 rs=120 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=135 hl=0
+ENDROUND
+JROUND space GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=50 won=0 lost=0 rs=125 hl=1
+PLAY ok=1 type=high score=105 won=0 lost=1 rs=230 hl=0
+ENDROUND

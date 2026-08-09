@@ -160,4 +160,14 @@ public final class RunState {
         jokers.remove(j);
         if (reason != null) msg(reason);
     }
+
+    /** 小丑售价（基础售价/2 + 售价加成）。 */
+    public int sellValue(JokerInstance j) {
+        return j.def.cost() / 2 + j.sellBonus;
+    }
+
+    /** 升级牌型等级。 */
+    public void levelUpHand(Data.HandType type, int n) {
+        handLevels.merge(type, n, Integer::sum);
+    }
 }

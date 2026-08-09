@@ -316,15 +316,18 @@ public final class Engine {
             }
         }
 
-        // 2) 持有牌效果（钢铁 + onHeld；哑剧重触发 → 0.4.0）
+        // 2) 持有牌效果（钢铁 + onHeld；哑剧重触发）
+        int heldRepeat = Boolean.TRUE.equals(s.flags.get("mimeRetrigger")) ? 2 : 1;
         for (Card card : heldCards) {
             if (card.debuff()) continue;
-            if (card.enh() == Data.Enhancement.STEEL) ctx.xMult(1.5);
-            for (int ji = 0; ji < activeJokers.size(); ji++) {
-                JokerInstance src = resolveCopy(activeJokers, ji);
-                if (src != null && !activeJokers.get(ji).debuffHand) {
-                    ctx.joker = src;
-                    src.def.onHeld(ctx, card);
+            for (int rep = 0; rep < heldRepeat; rep++) {
+                if (card.enh() == Data.Enhancement.STEEL) ctx.xMult(1.5);
+                for (int ji = 0; ji < activeJokers.size(); ji++) {
+                    JokerInstance src = resolveCopy(activeJokers, ji);
+                    if (src != null && !activeJokers.get(ji).debuffHand) {
+                        ctx.joker = src;
+                        src.def.onHeld(ctx, card);
+                    }
                 }
             }
         }
