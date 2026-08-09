@@ -490,6 +490,161 @@ public enum BasicJoker implements Joker {
             state.discardsLeft = 0;
             state.msg("窃贼：出牌次数 +3，弃牌次数清零");
         }
+    },
+    BLACKBOARD("blackboard", "黑板", "若手中没有红桃/方块：×3 倍率", 6) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            for (Card c : ctx.heldCards) {
+                if (c.enh() == Data.Enhancement.STONE) continue;
+                if (c.enh() == Data.Enhancement.WILD) continue;
+                if (c.suit() == 1 || c.suit() == 3) return;
+            }
+            ctx.xMult(3);
+        }
+    },
+    DNA("dna", "DNA", "回合第一次出牌仅 1 张时：复制该牌加入手中", 8) {
+        @Override
+        public void onPlayHand(RunState state, PlayHandInfo info) {
+            if (info.findJoker("dna") == null) return;
+            if (state.handsPlayedThisRound == 1 && info.playedCards.size() == 1) {
+                Card src = info.playedCards.get(0);
+                state.hand.add(state.cloneCard(src));
+                state.msg("DNA：复制了 " + state.cardName(src));
+            }
+        }
+    },
+    CONSTELLATION("constellation", "星座", "每使用一张星球牌：×0.1 倍率（累积）", 6) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.xMult(1 + gd(ctx.joker.extra, "x"));
+        }
+    },
+    HIKER("hiker", "徒步者", "每张计分牌永久 +5 筹码", 5) {
+        @Override
+        public void onScoreCard(ScoreContext ctx, Card card) {
+            card.addChipBonus(5);
+        }
+    },
+    CARDSHARP("cardsharp", "老千", "若本回合已出过该牌型：×3 倍率", 6) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            if (ctx.state.handPlayedCount.getOrDefault(ctx.handType, 0) > 1) ctx.xMult(3);
+        }
+    },
+    MADNESS("madness", "癫狂", "选择大小盲注时：销毁一张随机小丑，×0.5 倍率（累积）", 7) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.xMult(1 + gd(ctx.joker.extra, "x"));
+        }
+        @Override
+        public void onBlindSelect(RunState state, JokerInstance self, Data.BlindType blindType) {
+            if (blindType == Data.BlindType.BOSS) return;
+            List<JokerInstance> others = new java.util.ArrayList<>();
+            for (JokerInstance x : state.jokers) if (x != self && !x.eternal) others.add(x);
+            if (!others.isEmpty()) {
+                JokerInstance victim = state.stream("madness").pick(others);
+                state.destroyJoker(victim, "癫狂销毁了 " + victim.def.displayName());
+                self.extra.put("x", gd(self.extra, "x") + 0.5);
+            }
+        }
+    },
+    SEANCE("seance", "降灵会", "若打出皇家同花顺：获得一张随机幻灵牌", 6) {
+        @Override
+        public void onPlayHand(RunState state, PlayHandInfo info) {
+            if (info.handType == Data.HandType.ROYAL && info.findJoker("seance") != null) {
+                state.gainConsumable("spectral");
+            }
+        }
+    },
+    VAMPIRE("vampire", "吸血鬼", "每张计分的增强牌被移除增强：×0.1 倍率（累积）", 7) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.xMult(1 + gd(ctx.joker.extra, "x"));
+        }
+        @Override
+        public void onPlayHand(RunState state, PlayHandInfo info) {
+            JokerInstance j = info.findJoker("vampire");
+            if (j == null) return;
+            for (Card c : info.scoredCards) {
+                if (c.enh() != null && !c.debuff()) {
+                    c.setEnh(null);
+                    j.extra.put("x", gd(j.extra, "x") + 0.1);
+                    state.msg("吸血鬼：移除了增强，倍率累积");
+                }
+            }
+        }
+    },
+    SHORTCUT("shortcut", "捷径", "顺子允许间隔 1 点（如 2 4 6 8 10）", 7) {
+        @Override
+        public Map<String, Object> flags() {
+            return Map.of("shortcut", true);
+        }
+    },
+    HOLOGRAM("hologram", "全息影像", "每有一张游戏牌加入牌组：×0.25 倍率（累积）", 7) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.xMult(1 + gd(ctx.joker.extra, "x"));
+        }
+    },
+    VAGABOND("vagabond", "流浪者", "若出牌时资金 ≤ $4：获得一张塔罗牌", 8) {
+        @Override
+        public void onPlayHand(RunState state, PlayHandInfo info) {
+            if (info.findJoker("vagabond") != null && state.money <= 4) state.gainConsumable("tarot");
+        }
+    },
+    BARON("baron", "男爵", "手中每张 K ×1.5 倍率", 8) {
+        @Override
+        public void onHeld(ScoreContext ctx, Card card) {
+            if (card.rank() == 13) ctx.xMult(1.5);
+        }
+    },
+    CLOUD9("cloud9", "九霄云外", "回合结束时牌组中每张 9 +$1", 7) {
+        @Override
+        public long onRoundEnd(RunState state, JokerInstance self) {
+            int n = 0;
+            for (Card c : state.fullDeck) if (c.rank() == 9) n++;
+            return n;
+        }
+    },
+    ROCKET("rocket", "火箭", "回合结束 +$1；每击败一个 Boss 盲注 +$2（累积）", 6) {
+        @Override
+        public long onRoundEnd(RunState state, JokerInstance self) {
+            return gi(self.extra, "pay", 1);
+        }
+        @Override
+        public void onBossDefeated(RunState state, JokerInstance self) {
+            self.extra.put("pay", gi(self.extra, "pay", 1) + 2);
+        }
+    },
+    OBELISK("obelisk", "方尖碑", "连续打出非最常用牌型：×0.2 倍率（累积）；打出最常用牌型则重置", 8) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.xMult(1 + gd(ctx.joker.extra, "x"));
+        }
+        @Override
+        public void onPlayHand(RunState state, PlayHandInfo info) {
+            JokerInstance j = info.findJoker("obelisk");
+            if (j == null) return;
+            if (info.isMostPlayed) { j.extra.put("x", 0.0); state.msg("方尖碑：重置"); }
+            else j.extra.put("x", gd(j.extra, "x") + 0.2);
+        }
+    },
+    MIDAS("midas", "迈达斯面具", "每张计分的人头牌变为黄金牌", 7) {
+        @Override
+        public void onScoreCard(ScoreContext ctx, Card card) {
+            if (ctx.isFace(card) && !card.debuff()) card.setEnh(Data.Enhancement.GOLD);
+        }
+    },
+    SIXTHSENSE("sixthsense", "第六感", "回合第一次出牌为单张 6 时：销毁它并获得一张幻灵牌", 6) {
+        @Override
+        public void onPlayHand(RunState state, PlayHandInfo info) {
+            if (info.findJoker("sixthsense") == null) return;
+            if (state.handsPlayedThisRound == 1 && info.playedCards.size() == 1 && info.playedCards.get(0).rank() == 6) {
+                state.removeCardFromDeck(info.playedCards.get(0));
+                state.gainConsumable("spectral");
+                state.msg("第六感：销毁了 6，获得一张幻灵牌");
+            }
+        }
     };
 
     private final String key;
@@ -528,5 +683,11 @@ public enum BasicJoker implements Joker {
     private static int gi(Map<String, Object> extra, String key, int def) {
         Object v = extra.get(key);
         return v instanceof Number ? ((Number) v).intValue() : def;
+    }
+
+    /** 从小丑 extra 中读 double（缺失为 0）。 */
+    private static double gd(Map<String, Object> extra, String key) {
+        Object v = extra.get(key);
+        return v instanceof Number ? ((Number) v).doubleValue() : 0.0;
     }
 }

@@ -170,4 +170,33 @@ public final class RunState {
     public void levelUpHand(Data.HandType type, int n) {
         handLevels.merge(type, n, Integer::sum);
     }
+
+    /** 复制一张牌（新 id，复制增强/版本/蜡封/永久筹码）。 */
+    public Card cloneCard(Card c) {
+        Card n = new Card(nextCardId(), c.rank(), c.suit());
+        n.setEnh(c.enh());
+        n.setEdition(c.edition());
+        n.setSeal(c.seal());
+        n.addChipBonus(c.chipBonus());
+        return n;
+    }
+
+    /** 卡牌可读名。 */
+    public String cardName(Card c) {
+        if (c.isStone()) return "石头牌";
+        return Data.Suit.byIndex(c.suit()).name + Data.rankName(c.rank());
+    }
+
+    /** 从牌组/牌堆/手牌/弃牌堆移除一张牌。 */
+    public void removeCardFromDeck(Card c) {
+        fullDeck.remove(c);
+        drawPile.remove(c);
+        hand.remove(c);
+        discardPile.remove(c);
+    }
+
+    /** 获得随机消耗品（0.2.0 实现；0.1.0 占位无操作）。 */
+    public void gainConsumable(String kind) {
+        // TODO 0.2.0：按 kind 从 Tarot/Planet/Spectral 池取并加入消耗品区
+    }
 }

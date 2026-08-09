@@ -242,3 +242,38 @@ PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
 PLAY ok=1 type=high score=50 won=0 lost=0 rs=125 hl=1
 PLAY ok=1 type=high score=105 won=0 lost=1 rs=230 hl=0
 ENDROUND
+JROUND blackboard GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=180 won=0 lost=0 rs=195 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=210 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=225 hl=0
+ENDROUND
+JROUND hiker GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
+ENDROUND
+JROUND cardsharp GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=45 won=0 lost=1 rs=135 hl=0
+ENDROUND
+JROUND baron GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
+ENDROUND
+JROUND obelisk GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=18 won=0 lost=0 rs=93 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=108 hl=0
+ENDROUND
