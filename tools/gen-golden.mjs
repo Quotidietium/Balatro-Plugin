@@ -392,7 +392,7 @@ function genJokers() {
     ['faceless', 'GOLDEN1'],
     ['stencil', 'GOLDEN1'],
     ['stuntman', 'GOLDEN1'],
-    ['fourfingers', 'GOLDEN1'],
+    // fourfingers 移除：REF JS 四指判定(同花/顺子)有 bug，已修正，见 FourFingersTest
     ['burglar', 'GOLDEN1'],
     ['chad', 'GOLDEN1'],
     ['moon', 'GOLDEN1'],

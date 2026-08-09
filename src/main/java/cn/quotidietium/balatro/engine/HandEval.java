@@ -60,9 +60,10 @@ public final class HandEval {
         }
         boolean hasFlush = flushSuit >= 0;
 
-        // 顺子判定
-        int straightLen = suited.size() >= 5 ? 5 : (fourFingers ? 4 : 5);
-        boolean hasStraight = isStraight(suited, straightLen, shortcut);
+        // 顺子判定（四指：4 连续即可，即使打了 5 张）
+        int straightLen = fourFingers ? 4 : 5;
+        int[] straightWin = straightWindow(suited, straightLen, shortcut);
+        boolean hasStraight = straightWin != null;
 
         int c0 = counts.isEmpty() ? 0 : counts.get(0);
         int c1 = counts.size() < 2 ? 0 : counts.get(1);
@@ -107,6 +108,9 @@ public final class HandEval {
                     scoring.addAll(grp);
                 }
             }
+        } else if (type == Data.HandType.STRAIGHT) {
+            // 顺子计分牌：仅构成顺子的牌（四指时异点牌不计分；同点数重复均计分）
+            for (Card c : suited) if (inStraight(c, straightWin)) scoring.add(c);
         } else if (type == Data.HandType.FLUSH) {
             // 同花计分牌：仅同花色的牌（四指时非同花色牌不计分）
             for (Card c : suited) if (suitMatch(c, flushSuit, smeared)) scoring.add(c);
@@ -134,8 +138,9 @@ public final class HandEval {
         return c.suit() == s;
     }
 
-    private static boolean isStraight(List<Card> suited, int len, boolean shortcut) {
-        if (suited.size() < len) return false;
+    /** 返回构成顺子的窗口点数（升序，A 低时含 1），无顺子返回 null。 */
+    private static int[] straightWindow(List<Card> suited, int len, boolean shortcut) {
+        if (suited.size() < len) return null;
         TreeSet<Integer> set = new TreeSet<>();
         for (Card c : suited) {
             set.add(c.rank());
@@ -150,7 +155,21 @@ public final class HandEval {
                 if (d < 1 || d > maxGap) { ok = false; break; }
             }
             int span = arr[i + len - 1] - arr[i];
-            if (ok && span <= 4 * maxGap && span >= len - 1) return true;
+            if (ok && span <= 4 * maxGap && span >= len - 1) {
+                int[] win = new int[len];
+                System.arraycopy(arr, i, win, 0, len);
+                return win;
+            }
+        }
+        return null;
+    }
+
+    /** 该牌的点数是否落在顺子窗口内（A 既可作 14 也可作 1）。 */
+    private static boolean inStraight(Card c, int[] window) {
+        int mapped = (c.rank() == 14) ? 1 : c.rank();
+        for (int w : window) {
+            if (w == mapped) return true;
+            if (c.rank() == 14 && w == 14) return true; // A 也作 14 参与 10-J-Q-K-A
         }
         return false;
     }
