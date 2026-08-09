@@ -45,3 +45,148 @@ HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
 PLAY ok=1 type=high score=255 won=0 lost=0 rs=255 hl=3
 PLAY ok=1 type=pair score=300 won=1 lost=0 rs=555 hl=2
 ENDROUND
+JROUND fibonacci GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
+ENDROUND
+JROUND scaryface GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=45 won=0 lost=0 rs=45 hl=3
+PLAY ok=1 type=pair score=180 won=0 lost=0 rs=225 hl=2
+PLAY ok=1 type=high score=45 won=0 lost=0 rs=270 hl=1
+PLAY ok=1 type=high score=45 won=1 lost=0 rs=315 hl=0
+ENDROUND
+JROUND supernova GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=30 won=0 lost=0 rs=105 hl=1
+PLAY ok=1 type=high score=45 won=0 lost=1 rs=150 hl=0
+ENDROUND
+JROUND ridebus GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
+ENDROUND
+JROUND runner GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
+ENDROUND
+JROUND bull GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=23 won=0 lost=0 rs=23 hl=3
+PLAY ok=1 type=pair score=76 won=0 lost=0 rs=99 hl=2
+PLAY ok=1 type=high score=23 won=0 lost=0 rs=122 hl=1
+PLAY ok=1 type=high score=23 won=0 lost=1 rs=145 hl=0
+ENDROUND
+JROUND abstract GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=60 won=0 lost=0 rs=60 hl=3
+PLAY ok=1 type=pair score=150 won=0 lost=0 rs=210 hl=2
+PLAY ok=1 type=high score=60 won=0 lost=0 rs=270 hl=1
+PLAY ok=1 type=high score=60 won=1 lost=0 rs=330 hl=0
+ENDROUND
+JROUND smiley GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=75 won=0 lost=0 rs=75 hl=3
+PLAY ok=1 type=pair score=300 won=1 lost=0 rs=375 hl=2
+ENDROUND
+JROUND walkie GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
+ENDROUND
+JROUND scholar GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
+ENDROUND
+JROUND blue GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=103 won=0 lost=0 rs=103 hl=3
+PLAY ok=1 type=pair score=216 won=1 lost=0 rs=319 hl=2
+ENDROUND
+JROUND green GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=90 won=0 lost=0 rs=105 hl=2
+PLAY ok=1 type=high score=45 won=0 lost=0 rs=150 hl=1
+PLAY ok=1 type=high score=60 won=0 lost=1 rs=210 hl=0
+ENDROUND
+JROUND todo GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
+ENDROUND
+JROUND delayed GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
+ENDROUND
+JROUND square GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
+ENDROUND
+JROUND evensteven GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
+ENDROUND
+JROUND oddtodd GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
+ENDROUND
+JROUND golden GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
+ENDROUND
+JROUND popcorn GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=315 won=1 lost=0 rs=315 hl=3
+ENDROUND
+JROUND icecream GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=115 won=0 lost=0 rs=115 hl=3
+PLAY ok=1 type=pair score=250 won=1 lost=0 rs=365 hl=2
+ENDROUND
+JROUND business GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
+ENDROUND
+JROUND faceless GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
+ENDROUND

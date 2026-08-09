@@ -154,4 +154,10 @@ public final class RunState {
     public int handLevel(Data.HandType t) {
         return handLevels.getOrDefault(t, 1);
     }
+
+    /** 销毁一张小丑（自毁类小丑在 onRoundEnd/onPlayHand 中调用）。 */
+    public void destroyJoker(JokerInstance j, String reason) {
+        jokers.remove(j);
+        if (reason != null) msg(reason);
+    }
 }
