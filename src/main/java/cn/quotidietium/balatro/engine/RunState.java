@@ -10,74 +10,76 @@ import java.util.Set;
 
 /**
  * 一局游戏的可变状态，对应 balatro {@code createRun} 返回的 state 对象。
- * 字段包级可见，供 {@link Engine} 直接读写（对齐 JS 里函数直接改 state 的风格）。
+ *
+ * <p>字段为 {@code public}（对齐 JS 里开放的可变 state：引擎直接改写，渲染/会话层只读）。
+ * 仅 {@link #streamSource} 与卡牌 id 序列私有。
  */
 public final class RunState {
 
     // ---- 配置 ----
-    String seed;
-    String deckKey;
-    int stakeIdx;
-    String challenge; // 0.1.0 恒为 null
-    final Mods mods = new Mods();
+    public String seed;
+    public String deckKey;
+    public int stakeIdx;
+    public String challenge; // 0.1.0 恒为 null
+    public final Mods mods = new Mods();
 
     // ---- 进度 ----
-    long money;
-    int ante;
-    String bossKey;              // 当前底注的 Boss key（仅命名/复现，0.1.0 不生效）
-    List<String> bossQueue = new ArrayList<>();
-    Data.BlindType blindType;    // 当前进行/刚完成的盲注
-    String nextBlind;            // small/big/boss
-    Phase phase;
-    boolean endless;
-    boolean won;
-    boolean lost;
-    boolean endlessPending;
+    public long money;
+    public int ante;
+    public String bossKey;              // 当前底注的 Boss key（仅命名/复现，0.1.0 不生效）
+    public List<String> bossQueue = new ArrayList<>();
+    public Data.BlindType blindType;    // 当前进行/刚完成的盲注
+    public String nextBlind;            // small/big/boss
+    public Phase phase;
+    public boolean endless;
+    public boolean won;
+    public boolean lost;
+    public boolean endlessPending;
 
     // ---- 槽位/上限（base） ----
-    int jokerSlots = 5;
-    int consumableSlots = 2;
-    int handSizeBase = 8;
-    int handsBase = 4;
-    int discardsBase = 3;
-    int interestCap = 5;
-    int shopSlots = 2;
+    public int jokerSlots = 5;
+    public int consumableSlots = 2;
+    public int handSizeBase = 8;
+    public int handsBase = 4;
+    public int discardsBase = 3;
+    public int interestCap = 5;
+    public int shopSlots = 2;
 
     // ---- 持有物 ----
-    final List<JokerInstance> jokers = new ArrayList<>();
-    final List<String> vouchers = new ArrayList<>();
-    final List<String> tags = new ArrayList<>();
+    public final List<JokerInstance> jokers = new ArrayList<>();
+    public final List<String> vouchers = new ArrayList<>();
+    public final List<String> tags = new ArrayList<>();
 
     // ---- 牌堆 ----
-    List<Card> fullDeck = new ArrayList<>();
-    List<Card> drawPile = new ArrayList<>();
-    List<Card> hand = new ArrayList<>();
-    List<Card> discardPile = new ArrayList<>();
+    public List<Card> fullDeck = new ArrayList<>();
+    public List<Card> drawPile = new ArrayList<>();
+    public List<Card> hand = new ArrayList<>();
+    public List<Card> discardPile = new ArrayList<>();
 
     // ---- 牌型升级/统计 ----
-    final Map<Data.HandType, Integer> handLevels = new LinkedHashMap<>();
-    final Map<Data.HandType, Integer> handPlayedCount = new LinkedHashMap<>();
+    public final Map<Data.HandType, Integer> handLevels = new LinkedHashMap<>();
+    public final Map<Data.HandType, Integer> handPlayedCount = new LinkedHashMap<>();
 
     // ---- 回合运行时 ----
-    int handsLeft;
-    int discardsLeft;
-    long roundScore;
-    long blindTarget;
-    int handSizeRound;
-    int handsPlayedThisRound;
-    int discardsUsedThisRound;
-    boolean usedDiscardThisRound;
-    final List<Data.HandType> playedTypesThisRound = new ArrayList<>();
-    final Set<Integer> playedThisAnte = new HashSet<>(); // pillar：本底注打过的牌 id
-    Map<String, Object> flags = new HashMap<>();
-    boolean bossDisabled;
-    boolean bossTriggeredThisHand;
-    int roundCount = 0;
+    public int handsLeft;
+    public int discardsLeft;
+    public long roundScore;
+    public long blindTarget;
+    public int handSizeRound;
+    public int handsPlayedThisRound;
+    public int discardsUsedThisRound;
+    public boolean usedDiscardThisRound;
+    public final List<Data.HandType> playedTypesThisRound = new ArrayList<>();
+    public final Set<Integer> playedThisAnte = new HashSet<>(); // pillar：本底注打过的牌 id
+    public Map<String, Object> flags = new HashMap<>();
+    public boolean bossDisabled;
+    public boolean bossTriggeredThisHand;
+    public int roundCount = 0;
 
     // ---- 运行时杂项 ----
     private final StreamSource streamSource;
     private int cardIdSeq = 1;
-    final List<String> messages = new ArrayList<>();
+    public final List<String> messages = new ArrayList<>();
 
     RunState(String seed) {
         this.seed = seed;
@@ -98,8 +100,7 @@ public final class RunState {
     }
 
     Card makeCard(int rank, int suit) {
-        Card c = new Card(nextCardId(), rank, suit);
-        return c;
+        return new Card(nextCardId(), rank, suit);
     }
 
     // ---- 金钱/消息 ----

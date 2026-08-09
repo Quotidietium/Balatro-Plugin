@@ -628,15 +628,15 @@ public final class Engine {
             this.lost = lost;
         }
 
-        static PlayResult err(String msg) {
+        public static PlayResult err(String msg) {
             return new PlayResult(false, msg, 0, null, null, false, false);
         }
 
-        static PlayResult ok(long score, Data.HandType type, List<String> events, boolean won, boolean lost) {
+        public static PlayResult ok(long score, Data.HandType type, List<String> events, boolean won, boolean lost) {
             return new PlayResult(true, null, score, type, events, won, lost);
         }
 
-        static PlayResult okDiscard() {
+        public static PlayResult okDiscard() {
             return new PlayResult(true, null, 0, null, new ArrayList<>(), false, false);
         }
     }
