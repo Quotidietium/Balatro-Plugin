@@ -18,6 +18,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.entity.Interaction;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
@@ -112,15 +113,9 @@ public final class RoundBoard {
     private final Set<Integer> selected = new HashSet<>();
     private Phase activePhase = null;
 
-    /** 当前阶段所有可点击元素（板面局部坐标 + 命中盒半尺寸 + 动作），由 reflow 重建。 */
-    private final List<Clickable> clickables = new ArrayList<>();
-
-    /** 一个可点击区域：板面局部 (lx,ly) 中心 + 半宽 hw + 半高 hh + 命中动作。 */
-    private record Clickable(double lx, double ly, double hw, double hh, String action) {
-        boolean hit(double rx, double ry) {
-            return Math.abs(rx - lx) <= hw && Math.abs(ry - ly) <= hh;
-        }
-    }
+    /** 可点击元素用不可见 Interaction 命中盒承载（MC 原生交互，右键确定触发 PlayerInteractEntityEvent）。 */
+    private final List<Interaction> interactions = new ArrayList<>();
+    private int interactionIdx = 0;
 
     public RoundBoard(GameSession session) {
         this.session = session;
@@ -151,7 +146,7 @@ public final class RoundBoard {
 
     /** 状态变更后刷新（原地改写，不 clear+respawn）。 */
     public void update(RunState state) {
-        clickables.clear();
+        interactionIdx = 0;
         if (activePhase != state.phase) {
             hideAll();
             activePhase = state.phase;
@@ -161,57 +156,38 @@ public final class RoundBoard {
             case PACK -> reflowPack(state);
             default -> reflowRound(state);
         }
+        hideExtraInteractions();
     }
 
     /**
-     * 射线-板面平面相交命中检测（取代 {@code rayTraceEntities}——Display 实体命中盒极小不可靠）。
-     *
-     * <p>板面为过 {@link #origin}、法向 {@link #forward} 的平面（forward 已水平化，{@code up}=世界 Y）。
-     * 求视线射线与该平面交点，转为板面局部坐标 (rx=横向, ry=垂直)，遍历 {@link #clickables}
-     * 判断是否落在某命中盒内。返回动作串（如 {@code "card:12"}/{@code "play"}/{@code "shop:0"}）或 null。
+     * 在板面局部 (lx, ly) 中心放置一个 Interaction 命中盒（半宽 hw、半高 hh），承载点击。
+     * 复用实体池：不足则创建。命中盒 foot 在 {@code at(lx, ly-hh)}，向上 hh*2，故中心在 ly。
      */
-    public String hitTest(Location eye, Vector dir, double maxDist) {
-        double denom = dir.dot(forward);
-        if (denom < 0.02) return null; // 不朝向板面（或几乎平行）
-        Vector e = eye.toVector();
-        double t = origin.clone().subtract(e).dot(forward) / denom;
-        if (t <= 0 || t > maxDist) return null;
-        Vector p = e.clone().add(dir.clone().multiply(t));
-        Vector rel = p.clone().subtract(origin);
-        double rx = rel.dot(right);
-        double ry = rel.getY(); // up = 世界 Y
-        // 逆序：后注册（视觉在上层）优先，例如抬起的选中牌。
-        for (int i = clickables.size() - 1; i >= 0; i--) {
-            Clickable c = clickables.get(i);
-            if (c.hit(rx, ry)) return c.action;
+    private void placeInteraction(double lx, double ly, double hw, double hh, String action) {
+        Interaction inter;
+        if (interactionIdx < interactions.size()) {
+            inter = interactions.get(interactionIdx);
+        } else {
+            inter = Holo.interaction(session.plugin(), session.player(), at(0, 0), action,
+                    (float) (hw * 2), (float) (hh * 2), true);
+            interactions.add(inter);
         }
-        return null;
+        inter.setInteractionWidth((float) (hw * 2));
+        inter.setInteractionHeight((float) (hh * 2));
+        inter.teleport(at(lx, ly - hh)); // foot 在 ly-hh，命中盒中心在 ly
+        inter.getScoreboardTags().removeIf(t -> t.startsWith("balatro_i_"));
+        inter.addScoreboardTag("balatro_i_" + action);
+        interactionIdx++;
     }
 
-    /** 诊断：hitTest 未命中时的中间值，供日志定位"点不到"。 */
-    public String debugMiss(Location eye, Vector dir) {
-        double denom = dir.dot(forward);
-        Vector e = eye.toVector();
-        double t = Math.abs(denom) < 1.0E-6 ? -1 : origin.clone().subtract(e).dot(forward) / denom;
-        double rx = Double.NaN, ry = Double.NaN;
-        if (t > 0) {
-            Vector p = e.clone().add(dir.clone().multiply(t));
-            Vector rel = p.clone().subtract(origin);
-            rx = rel.dot(right);
-            ry = rel.getY();
+    /** 隐藏本轮未使用的 Interaction（零尺寸 + 去标签，使其不可命中）。 */
+    private void hideExtraInteractions() {
+        for (int i = interactionIdx; i < interactions.size(); i++) {
+            Interaction inter = interactions.get(i);
+            inter.setInteractionWidth(0f);
+            inter.setInteractionHeight(0f);
+            inter.getScoreboardTags().removeIf(t -> t.startsWith("balatro_i_"));
         }
-        Clickable nearest = null;
-        double bd = Double.MAX_VALUE;
-        for (Clickable c : clickables) {
-            double d = Math.hypot((rx - c.lx) / c.hw, (ry - c.ly) / c.hh);
-            if (d < bd) { bd = d; nearest = c; }
-        }
-        return "denom=" + (double) Math.round(denom * 100) / 100
-                + " t=" + (double) Math.round(t * 100) / 100
-                + " rx=" + (double) Math.round(rx * 100) / 100
-                + " ry=" + (double) Math.round(ry * 100) / 100
-                + " clickables=" + clickables.size()
-                + (nearest != null ? " nearest=" + nearest.action + " dist=" + (double) Math.round(bd * 100) / 100 : "");
     }
 
     private TextDisplay mkFrame(String tag, Color bg) {
@@ -313,7 +289,7 @@ public final class RoundBoard {
             d.setBackgroundColor(cardBg(card, sel));
             setCardTag(d, card.id());
             d.teleport(at(x, y));
-            clickables.add(new Clickable(x, y, CARD_HW, CARD_HH, "card:" + card.id()));
+            placeInteraction(x, y, CARD_HW, CARD_HH, "card:" + card.id());
         }
         for (int i = n; i < handSlots.size(); i++) hide(handSlots.get(i));
 
@@ -322,11 +298,11 @@ public final class RoundBoard {
         playBtn.text(Component.text("▶ 出牌" + (selN > 0 ? " (" + selN + ")" : ""), NamedTextColor.GREEN));
         ensureTag(playBtn, "balatro_act_play");
         playBtn.teleport(at(-1.15, BUTTON_Y));
-        clickables.add(new Clickable(-1.15, BUTTON_Y, BTN_HW, BTN_HH, "play"));
+        placeInteraction(-1.15, BUTTON_Y, BTN_HW, BTN_HH, "play");
         discBtn.text(Component.text("✗ 弃牌" + (selN > 0 ? " (" + selN + ")" : ""), NamedTextColor.RED));
         ensureTag(discBtn, "balatro_act_discard");
         discBtn.teleport(at(1.15, BUTTON_Y));
-        clickables.add(new Clickable(1.15, BUTTON_Y, BTN_HW, BTN_HH, "discard"));
+        placeInteraction(1.15, BUTTON_Y, BTN_HW, BTN_HH, "discard");
 
         // 回合阶段不用的按钮隐藏
         hide(rerollBtn);
@@ -425,7 +401,7 @@ public final class RoundBoard {
             d.setBackgroundColor(c.sold ? BG_SOLD : BG_NORMAL);
             setIndexedTag(d, "balatro_shopcard_", i);
             d.teleport(at(x, 1.3));
-            if (!c.sold) clickables.add(new Clickable(x, 1.3, SHOPCARD_HW, SHOPCARD_HH, "shop:" + i));
+            if (!c.sold) placeInteraction(x, 1.3, SHOPCARD_HW, SHOPCARD_HH, "shop:" + i);
         }
         for (int i = n; i < shopSlots.size(); i++) hide(shopSlots.get(i));
 
@@ -438,7 +414,7 @@ public final class RoundBoard {
             d.setBackgroundColor(p.sold ? BG_SOLD : BG_NORMAL);
             setIndexedTag(d, "balatro_shoppack_", i);
             d.teleport(at(x, 0.2));
-            if (!p.sold) clickables.add(new Clickable(x, 0.2, PACK_HW, PACK_HH, "shoppack:" + i));
+            if (!p.sold) placeInteraction(x, 0.2, PACK_HW, PACK_HH, "shoppack:" + i);
         }
         for (int i = pn; i < packSlots.size(); i++) hide(packSlots.get(i));
 
@@ -448,18 +424,18 @@ public final class RoundBoard {
             voucherEnt.setBackgroundColor(shop.voucher.sold ? BG_SOLD : BG_NORMAL);
             ensureTag(voucherEnt, "balatro_voucher");
             voucherEnt.teleport(at(0, -0.8));
-            if (!shop.voucher.sold) clickables.add(new Clickable(0, -0.8, PACK_HW, PACK_HH, "voucher"));
+            if (!shop.voucher.sold) placeInteraction(0, -0.8, PACK_HW, PACK_HH, "voucher");
         } else {
             hide(voucherEnt);
         }
         rerollBtn.text(Component.text("🔄 重掷", NamedTextColor.YELLOW));
         ensureTag(rerollBtn, "balatro_reroll");
         rerollBtn.teleport(at(-1.5, -1.7));
-        clickables.add(new Clickable(-1.5, -1.7, BTN_HW, BTN_HH, "reroll"));
+        placeInteraction(-1.5, -1.7, BTN_HW, BTN_HH, "reroll");
         nextBtn.text(Component.text("▶ 下一回合", NamedTextColor.GREEN));
         ensureTag(nextBtn, "balatro_next");
         nextBtn.teleport(at(1.5, -1.7));
-        clickables.add(new Clickable(1.5, -1.7, BTN_HW, BTN_HH, "next"));
+        placeInteraction(1.5, -1.7, BTN_HW, BTN_HH, "next");
         hide(playBtn);
         hide(discBtn);
         hide(skipackBtn);
@@ -492,14 +468,14 @@ public final class RoundBoard {
             d.setBackgroundColor(c.taken ? BG_SOLD : BG_NORMAL);
             setIndexedTag(d, "balatro_pick_", i);
             d.teleport(at(x, 0.9));
-            if (!c.taken) clickables.add(new Clickable(x, 0.9, SHOPCARD_HW, SHOPCARD_HH, "pick:" + i));
+            if (!c.taken) placeInteraction(x, 0.9, SHOPCARD_HW, SHOPCARD_HH, "pick:" + i);
         }
         for (int i = n; i < packSlots.size(); i++) hide(packSlots.get(i));
 
         skipackBtn.text(Component.text("✗ 跳过", NamedTextColor.RED));
         ensureTag(skipackBtn, "balatro_skipack");
         skipackBtn.teleport(at(0, -0.8));
-        clickables.add(new Clickable(0, -0.8, BTN_HW, BTN_HH, "skipack"));
+        placeInteraction(0, -0.8, BTN_HW, BTN_HH, "skipack");
         hide(playBtn);
         hide(discBtn);
         hide(rerollBtn);
@@ -628,7 +604,11 @@ public final class RoundBoard {
         for (TextDisplay d : all) {
             if (d.isValid()) d.remove();
         }
+        for (Interaction inter : interactions) {
+            if (inter.isValid()) inter.remove();
+        }
         all.clear();
+        interactions.clear();
         handSlots.clear();
         jokerSlots.clear();
         consSlots.clear();
@@ -636,5 +616,6 @@ public final class RoundBoard {
         packSlots.clear();
         selected.clear();
         activePhase = null;
+        interactionIdx = 0;
     }
 }

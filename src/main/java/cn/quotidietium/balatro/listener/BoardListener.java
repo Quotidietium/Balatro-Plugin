@@ -6,31 +6,32 @@ import cn.quotidietium.balatro.session.GameSession;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Interaction;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * 全息牌桌交互。
  *
- * <p><b>命中检测</b>：不用 {@code World.rayTraceEntities}（Display/TextDisplay 实体命中盒极小、几乎无法命中），
- * 改由 {@link RoundBoard#hitTest} 做「视线射线 × 板面平面」相交，再按命中盒（与视觉尺寸解耦、可独立调大）判断落点。
- * 这与 doudizhu 的 {@code raycastHand/raycastButton}（手动射线-平面相交）思路一致，点击可靠。
+ * <p><b>命中机制</b>：用 {@link Interaction} 实体承载点击——它是 MC 1.19.4+ 专为"可点击全息"设计的实体，
+ * 有明确的 width×height 命中区，玩家右键它**确定触发** {@link PlayerInteractEntityEvent}。
+ * 这不依赖 {@code TextDisplay} 那套极小且不可靠的命中盒，也不依赖手动射线计算。
+ * 每个可点击元素（手牌/按钮/商品/补充包）由 {@link RoundBoard} 放一个 Interaction 命中盒，
+ * 动作编进 scoreboard tag（{@code balatro_i_<action>}），本监听器解析后派发。
  *
- * <p>右键主手 → 命中 → 按 action 串派发（选牌/出牌/弃牌/购买/选择/重掷/下一回合/跳过）。含 150ms 节流与点击音效。
+ * <p>含每玩家 150ms 节流（防同一交互双触发）与点击音效。
  */
 public final class BoardListener implements Listener {
 
-    private static final double RANGE = 6.0;
+    private static final String TAG_PREFIX = "balatro_i_";
     private static final long THROTTLE_MS = 150;
 
     private final BalatroPlugin plugin;
@@ -41,36 +42,27 @@ public final class BoardListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onInteract(@NotNull PlayerInteractEvent event) {
+    public void onInteractEntity(@NotNull PlayerInteractEntityEvent event) {
         if (event.getHand() != EquipmentSlot.HAND) return;
-        Action action = event.getAction();
-        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
+        Entity entity = event.getRightClicked();
+        if (!(entity instanceof Interaction)) return;
+
+        String action = null;
+        for (String t : entity.getScoreboardTags()) {
+            if (t.startsWith(TAG_PREFIX)) {
+                action = t.substring(TAG_PREFIX.length());
+                break;
+            }
+        }
+        if (action == null) return;
 
         Player player = event.getPlayer();
-        plugin.getLogger().info("[Balatro-DBG] event by " + player.getName() + " action=" + action);
         GameSession session = plugin.sessionManager().get(player);
-        if (session == null || session.board() == null) {
-            plugin.getLogger().info("[Balatro-DBG] -> NO session/board (session=" + (session != null)
-                    + " board=" + (session != null && session.board() != null) + ")");
-            return;
-        }
-        if (!throttle(player)) {
-            plugin.getLogger().info("[Balatro-DBG] -> throttled");
-            return;
-        }
-
-        Location eye = player.getEyeLocation();
-        Vector dir = eye.getDirection();
-        RoundBoard board = session.board();
-        String act = board.hitTest(eye, dir, RANGE);
-        if (act == null) {
-            plugin.getLogger().info("[Balatro-DBG] -> MISS: " + board.debugMiss(eye, dir));
-            return;
-        }
-        plugin.getLogger().info("[Balatro-DBG] -> HIT action=" + act);
+        if (session == null || session.board() == null) return;
+        if (!throttle(player)) return;
 
         event.setCancelled(true);
-        dispatch(player, session, board, act);
+        dispatch(player, session, session.board(), action);
     }
 
     private void dispatch(Player player, GameSession session, RoundBoard board, String act) {
