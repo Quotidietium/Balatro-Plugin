@@ -16,6 +16,7 @@ dependencies {
 
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 // 统一 UTF-8；用 JDK 25（本机 PATH）+ --release 21 编译，避免 toolchain 触发 JDK 21 下载
