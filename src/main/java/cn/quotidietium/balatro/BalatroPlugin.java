@@ -34,6 +34,7 @@ public final class BalatroPlugin extends JavaPlugin {
 
         BalatroCommand command = new BalatroCommand(this);
         getServer().getPluginManager().registerEvents(new SessionListener(this), this);
+        getServer().getPluginManager().registerEvents(new cn.quotidietium.balatro.listener.BoardListener(this), this);
         var cmd = getCommand("balatro");
         if (cmd != null) {
             cmd.setExecutor(command);

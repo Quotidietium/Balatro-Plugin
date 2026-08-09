@@ -11,6 +11,7 @@ import cn.quotidietium.balatro.engine.Data;
 import cn.quotidietium.balatro.engine.Engine;
 import cn.quotidietium.balatro.engine.Phase;
 import cn.quotidietium.balatro.engine.RunState;
+import cn.quotidietium.balatro.render.RoundBoard;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -27,6 +28,7 @@ public final class GameSession {
     private final BalatroPlugin plugin;
     private final Player player;
     private final RunState state;
+    private RoundBoard board;
     private boolean aborted;
 
     public GameSession(BalatroPlugin plugin, Player player, String deckKey, int stakeIdx, String seed) {
@@ -35,12 +37,20 @@ public final class GameSession {
         this.state = Engine.createRun(deckKey, stakeIdx, seed);
     }
 
+    public BalatroPlugin plugin() {
+        return plugin;
+    }
+
     public Player player() {
         return player;
     }
 
     public RunState state() {
         return state;
+    }
+
+    public RoundBoard board() {
+        return board;
     }
 
     public boolean isAborted() {
@@ -55,6 +65,10 @@ public final class GameSession {
             return false;
         }
         autoAdvance();
+        if (state.phase == Phase.ROUND) {
+            board = new RoundBoard(this);
+            board.spawn(state);
+        }
         return true;
     }
 
@@ -90,18 +104,36 @@ public final class GameSession {
             plugin.fireBlindResult(player.getUniqueId(), anteBefore, bt.key, target, state.roundScore, false);
             finishRun(false, anteBefore);
         }
+        if (board != null) {
+            board.clearSelection();
+            board.update(state);
+        }
         return r;
     }
 
     /** 弃牌。 */
     public Engine.PlayResult discard(List<Integer> cardIds) {
-        return Engine.discard(state, cardIds);
+        Engine.PlayResult r = Engine.discard(state, cardIds);
+        if (board != null) {
+            board.clearSelection();
+            board.update(state);
+        }
+        return r;
+    }
+
+    /** 销毁牌桌实体（会话结束时调用）。 */
+    public void despawnBoard() {
+        if (board != null) {
+            board.despawn();
+            board = null;
+        }
     }
 
     /** 继续无尽模式（通关后）。 */
     public boolean continueEndless() {
         if (Engine.continueEndless(state)) {
             autoAdvance();
+            if (board != null) board.update(state);
             return true;
         }
         return false;

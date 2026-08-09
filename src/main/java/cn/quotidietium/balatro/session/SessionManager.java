@@ -44,7 +44,7 @@ public final class SessionManager {
     public void end(Player player) {
         GameSession s = sessions.remove(player.getUniqueId());
         if (s != null) {
-            // 渲染层回收实体的钩子（S8 起）；0.1.0-S7 仅销毁状态
+            s.despawnBoard();
         }
     }
 
