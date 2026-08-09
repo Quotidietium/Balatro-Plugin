@@ -47,23 +47,27 @@ public final class BoardListener implements Listener {
         if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
 
         Player player = event.getPlayer();
+        plugin.getLogger().info("[Balatro-DBG] event by " + player.getName() + " action=" + action);
         GameSession session = plugin.sessionManager().get(player);
         if (session == null || session.board() == null) {
-            plugin.getLogger().info("[Balatro-DBG] right-click by " + player.getName()
-                    + " -> NO session/board (session=" + (session != null) + ")");
+            plugin.getLogger().info("[Balatro-DBG] -> NO session/board (session=" + (session != null)
+                    + " board=" + (session != null && session.board() != null) + ")");
             return;
         }
-        if (!throttle(player)) return;
+        if (!throttle(player)) {
+            plugin.getLogger().info("[Balatro-DBG] -> throttled");
+            return;
+        }
 
         Location eye = player.getEyeLocation();
         Vector dir = eye.getDirection();
         RoundBoard board = session.board();
         String act = board.hitTest(eye, dir, RANGE);
         if (act == null) {
-            // 诊断：右键了但没命中任何元素——帮助定位"点不到"
-            plugin.getLogger().info("[Balatro-DBG] miss by " + player.getName() + ": " + board.debugMiss(eye, dir));
+            plugin.getLogger().info("[Balatro-DBG] -> MISS: " + board.debugMiss(eye, dir));
             return;
         }
+        plugin.getLogger().info("[Balatro-DBG] -> HIT action=" + act);
 
         event.setCancelled(true);
         dispatch(player, session, board, act);
