@@ -570,12 +570,14 @@ public final class Engine {
         }
 
         s.msg("回合结束：" + String.join("；", detail));
-        // 0.1.0：无商店，直接进入下一盲注选择
-        proceedToNextBlind(s);
+        // 胜出盲注后进入商店（0.2.0）
+        cn.quotidietium.balatro.engine.shop.Shop.openShop(s);
     }
 
-    /** 0.1.0 胜出后推进：small→big→boss，boss 后进下一底注或胜利（无商店）。 */
-    private static void proceedToNextBlind(RunState s) {
+    /** 离开商店推进到下一盲注（玩家在商店阶段调用）。返回 false 表示当前不在商店。 */
+    public static boolean nextRound(RunState s) {
+        if (s.phase != Phase.SHOP) return false;
+        if (s.mods.inflation) s.inflation++;
         if (s.blindType == Data.BlindType.SMALL) {
             s.nextBlind = "big";
             s.phase = Phase.BLIND_SELECT;
@@ -588,11 +590,12 @@ public final class Engine {
                 s.phase = Phase.END;
                 s.won = true;
                 s.endlessPending = true;
-                return;
+                return true;
             }
             s.ante++;
             startAnte(s);
         }
+        return true;
     }
 
     /** 进入无尽模式（通关后可选）。 */

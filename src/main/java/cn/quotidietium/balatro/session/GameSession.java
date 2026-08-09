@@ -97,9 +97,8 @@ public final class GameSession {
             }
             if (state.won) {
                 finishRun(true, state.ante);
-            } else {
-                autoAdvance();
             }
+            // else：phase 已为 SHOP（endRound→openShop），等待 /balatro next 推进
         } else if (r.ok && r.lost) {
             plugin.fireBlindResult(player.getUniqueId(), anteBefore, bt.key, target, state.roundScore, false);
             finishRun(false, anteBefore);
@@ -137,6 +136,43 @@ public final class GameSession {
             return true;
         }
         return false;
+    }
+
+    /** 离开商店进入下一盲注。 */
+    public boolean nextRound() {
+        if (state.phase != Phase.SHOP) return false;
+        Engine.nextRound(state);
+        if (state.won) {
+            finishRun(true, state.ante);
+            return true;
+        }
+        autoAdvance();
+        if (board != null) board.update(state);
+        return true;
+    }
+
+    /** 购买商店第 idx 张商品（卡牌行）。 */
+    public boolean buyCard(int idx) {
+        if (state.phase != Phase.SHOP) return false;
+        return cn.quotidietium.balatro.engine.shop.Shop.buyCard(state, idx);
+    }
+
+    /** 购买第 idx 个补充包。 */
+    public boolean buyPack(int idx) {
+        if (state.phase != Phase.SHOP) return false;
+        return cn.quotidietium.balatro.engine.shop.Shop.buyPack(state, idx);
+    }
+
+    /** 购买优惠券。 */
+    public boolean buyVoucher() {
+        if (state.phase != Phase.SHOP) return false;
+        return cn.quotidietium.balatro.engine.shop.Shop.buyVoucher(state);
+    }
+
+    /** 商店重掷；返回本次费用，-1 表示失败。 */
+    public long reroll() {
+        if (state.phase != Phase.SHOP) return -1;
+        return cn.quotidietium.balatro.engine.shop.Shop.reroll(state);
     }
 
     /** 盲注选择阶段自动推进到下一盲注。 */

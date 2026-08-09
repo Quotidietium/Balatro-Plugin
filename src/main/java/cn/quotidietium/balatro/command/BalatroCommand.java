@@ -21,7 +21,8 @@ import org.jetbrains.annotations.NotNull;
 public final class BalatroCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBS = Arrays.asList(
-            "play", "quit", "status", "playcard", "disc", "endless");
+            "play", "quit", "status", "playcard", "disc", "endless",
+            "shop", "buy", "buybag", "buyvoucher", "reroll", "next");
 
     private final BalatroPlugin plugin;
 
@@ -46,6 +47,12 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             case "playcard", "pc" -> cmdPlayCard(player, args);
             case "disc", "discard" -> cmdDiscard(player, args);
             case "endless" -> cmdEndless(player);
+            case "shop" -> cmdShop(player);
+            case "buy" -> cmdBuy(player, args);
+            case "buybag", "pack" -> cmdBuyPack(player, args);
+            case "buyvoucher", "voucher" -> cmdBuyVoucher(player);
+            case "reroll" -> cmdReroll(player);
+            case "next" -> cmdNext(player);
             default -> sendHelp(player);
         }
         return true;
@@ -181,6 +188,109 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    private void cmdShop(Player player) {
+        GameSession s = plugin.sessionManager().get(player);
+        if (s == null || s.state().phase != cn.quotidietium.balatro.engine.Phase.SHOP) {
+            player.sendMessage("§c当前不在商店。");
+            return;
+        }
+        var shop = s.state().shop;
+        player.sendMessage("§6=== 商店 === §e$" + s.state().money);
+        int i = 0;
+        for (var c : shop.cards) {
+            String label = shopCardLabel(c);
+            player.sendMessage("§e[" + (i + 1) + "] §f" + label + (c.sold ? " §7(已售)" : " §a$" + c.price));
+            i++;
+        }
+        int j = 0;
+        for (var p : shop.packs) {
+            player.sendMessage("§b[包" + (j + 1) + "] §f" + p.name + " §a$" + p.price + (p.sold ? " §7(已售)" : ""));
+            j++;
+        }
+        if (shop.voucher != null) {
+            player.sendMessage("§d[券] §f" + shop.voucher.name + " §a$" + shop.voucher.price
+                    + (shop.voucher.sold ? " §7(已售)" : ""));
+        }
+        player.sendMessage("§7/balatro buy <序号> | buybag <序号> | buyvoucher | reroll | next");
+    }
+
+    private String shopCardLabel(cn.quotidietium.balatro.engine.shop.Shop.CardItem c) {
+        return switch (c.kind) {
+            case "joker" -> "小丑 " + c.name + (c.joker.edition != null ? "(" + c.joker.edition.name + ")" : "");
+            case "playing" -> "游戏牌 " + c.name;
+            default -> c.kind + " " + c.name;
+        };
+    }
+
+    private void cmdBuy(Player player, String[] args) {
+        GameSession s = requireShop(player);
+        if (s == null) return;
+        int idx = parseOne(player, args);
+        if (idx < 0) return;
+        if (s.buyCard(idx)) player.sendMessage("§a购买成功！");
+        else player.sendMessage("§c购买失败（资金不足/槽满/已售）。");
+        cmdShop(player);
+    }
+
+    private void cmdBuyPack(Player player, String[] args) {
+        GameSession s = requireShop(player);
+        if (s == null) return;
+        int idx = parseOne(player, args);
+        if (idx < 0) return;
+        if (s.buyPack(idx)) player.sendMessage("§a购买补充包成功（补充包选择界面 0.2.0 后续）。");
+        else player.sendMessage("§c购买失败。");
+    }
+
+    private void cmdBuyVoucher(Player player) {
+        GameSession s = requireShop(player);
+        if (s == null) return;
+        if (s.buyVoucher()) player.sendMessage("§a购买优惠券成功！");
+        else player.sendMessage("§c购买失败。");
+    }
+
+    private void cmdReroll(Player player) {
+        GameSession s = requireShop(player);
+        if (s == null) return;
+        long cost = s.reroll();
+        if (cost < 0) player.sendMessage("§c重掷失败（资金不足）。");
+        else { player.sendMessage("§a重掷成功（-$" + cost + "）。"); cmdShop(player); }
+    }
+
+    private void cmdNext(Player player) {
+        GameSession s = plugin.sessionManager().get(player);
+        if (s == null || s.state().phase != cn.quotidietium.balatro.engine.Phase.SHOP) {
+            player.sendMessage("§c当前不在商店。");
+            return;
+        }
+        s.nextRound();
+        if (s.state().phase == cn.quotidietium.balatro.engine.Phase.ROUND) {
+            player.sendMessage("§a进入下一盲注！");
+            player.sendMessage(s.handDebug());
+        }
+    }
+
+    private GameSession requireShop(Player player) {
+        GameSession s = plugin.sessionManager().get(player);
+        if (s == null || s.state().phase != cn.quotidietium.balatro.engine.Phase.SHOP) {
+            player.sendMessage("§c当前不在商店。");
+            return null;
+        }
+        return s;
+    }
+
+    private int parseOne(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage("§c缺少序号参数。");
+            return -1;
+        }
+        try {
+            return Integer.parseInt(args[1]) - 1; // 1-based → 0-based
+        } catch (NumberFormatException e) {
+            player.sendMessage("§c无效序号：" + args[1]);
+            return -1;
+        }
+    }
+
     private void sendHelp(Player player) {
         player.sendMessage("§6=== 小丑牌 /balatro ===");
         player.sendMessage("§e/balatro play [种子] §7- 开始一局（红牌组/白注）");
@@ -188,6 +298,12 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§e/balatro disc <索引...> §7- 弃牌");
         player.sendMessage("§e/balatro status §7- 查看当前局面");
         player.sendMessage("§e/balatro endless §7- 通关后进入无尽模式");
+        player.sendMessage("§e/balatro shop §7- 查看商店");
+        player.sendMessage("§e/balatro buy <序号> §7- 购买商店卡牌");
+        player.sendMessage("§e/balatro buybag <序号> §7- 购买补充包");
+        player.sendMessage("§e/balatro buyvoucher §7- 购买优惠券");
+        player.sendMessage("§e/balatro reroll §7- 重掷商店");
+        player.sendMessage("§e/balatro next §7- 离开商店进入下一盲注");
         player.sendMessage("§e/balatro quit §7- 放弃本局");
     }
 

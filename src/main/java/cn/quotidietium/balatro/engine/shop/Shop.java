@@ -69,7 +69,7 @@ public final class Shop {
         if (hasVoucher(s, "liquidation")) p = (long) Math.ceil(p * 0.5);
         else if (hasVoucher(s, "clearance")) p = (long) Math.ceil(p * 0.75);
         if (s.mods.shopDiscount != 0) p = (long) Math.ceil(p * s.mods.shopDiscount);
-        if (s.mods.inflation) p += s.roundCount; // 通胀随回合累加（近似 inflation 字段）
+        if (s.mods.inflation) p += s.inflation;
         return Math.max(1, p);
     }
 

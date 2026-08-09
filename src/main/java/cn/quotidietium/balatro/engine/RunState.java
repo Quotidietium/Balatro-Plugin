@@ -78,6 +78,7 @@ public final class RunState {
     public boolean bossTriggeredThisHand;
     public int roundCount = 0;
     public boolean grosDead; // 格罗米歇尔已碎（决定卡文迪什是否可生成）
+    public int inflation;   // 通货膨胀挑战：商店加价累计
     public cn.quotidietium.balatro.engine.shop.Shop.ShopData shop; // 当前商店（0.2.0）
     public final Map<String, Object> nextShop = new HashMap<>();  // 标签等对下个商店的修饰
 
