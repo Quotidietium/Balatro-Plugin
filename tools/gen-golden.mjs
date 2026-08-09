@@ -123,4 +123,61 @@ function genData() {
 }
 genData();
 
+// ============ ENGINE 黄金值 ============
+// 牌型判定（纯逻辑）+ 固定种子下 small 盲注整回合出牌序列。
+// 全在"回合内 / 非 Boss"，避开 0.1.0 未实现的 Boss 干扰效果与商店差异。
+
+function genEvalHands() {
+  const { Engine } = loadBalatro(['rng.js', 'data.js', 'jokers.js', 'engine.js'], ['Engine']);
+  const sets = [
+    [[14, 0]],
+    [[5, 0], [5, 1]],
+    [[5, 0], [5, 1], [9, 2], [9, 3]],
+    [[7, 0], [7, 1], [7, 2]],
+    [[2, 0], [3, 1], [4, 2], [5, 3], [6, 0]],
+    [[14, 0], [13, 0], [12, 0], [11, 0], [10, 0]],
+    [[14, 0], [2, 1], [3, 2], [4, 3], [5, 0]],
+    [[10, 0], [11, 1], [12, 2], [13, 3], [14, 0]],
+    [[2, 0], [3, 0], [4, 0], [5, 0], [7, 0]],
+    [[2, 0], [3, 0], [4, 0], [5, 0], [6, 0]],
+    [[7, 0], [7, 1], [7, 2], [9, 3], [9, 0]],
+    [[3, 0], [3, 1], [3, 2], [3, 3], [5, 0]],
+    [[14, 1], [14, 2], [14, 3], [14, 0]],
+    [[6, 0], [6, 1], [6, 2], [6, 3], [9, 0]],
+    [[8, 0], [8, 1], [8, 2], [2, 3], [3, 0]],
+  ];
+  const L = [];
+  for (const s of sets) {
+    const cards = s.map(([r, su]) => Engine.makeCard(r, su));
+    const res = Engine.evaluateHand({ flags: {} }, cards);
+    const scoring = res.scoring.map((c) => `${c.rank}.${c.suit}`).join(',');
+    L.push(`EVAL ${s.map(([r, su]) => `${r}.${su}`).join(',')} => ${res.type} | ${scoring}`);
+  }
+  writeText('eval.txt', L);
+}
+
+function genEngineRound() {
+  const { Engine } = loadBalatro(['rng.js', 'data.js', 'jokers.js', 'engine.js'], ['Engine']);
+  const seeds = ['GOLDEN1', 'GOLDEN2', 'GOLDEN3'];
+  const L = [];
+  for (const seed of seeds) {
+    const st = Engine.createRun({ deck: 'red', stake: 0, seed });
+    Engine.selectBlind(st, 'small', false);
+    L.push(`ROUND ${seed} target=${st.blindTarget} handSize=${st.handSizeRound} hands=${st.handsLeft} discards=${st.discardsLeft}`);
+    L.push('HAND ' + st.hand.map((c) => `${c.rank}.${c.suit}`).join(','));
+    let safety = 0;
+    while (st.phase === 'round' && safety++ < 20) {
+      const ids = st.hand.slice(0, Math.min(5, st.hand.length)).map((c) => c.id);
+      const r = Engine.playHand(st, ids);
+      L.push(`PLAY ok=${r.ok ? 1 : 0} type=${r.type || '-'} score=${r.score || 0} won=${r.won ? 1 : 0} lost=${r.lost ? 1 : 0} rs=${st.roundScore} hl=${st.handsLeft}`);
+      if (!r.ok || r.won || r.lost) break;
+    }
+    L.push('ENDROUND');
+  }
+  writeText('engine.txt', L);
+}
+
+genEvalHands();
+genEngineRound();
+
 console.log('done.');

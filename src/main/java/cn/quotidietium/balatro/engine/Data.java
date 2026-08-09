@@ -253,6 +253,60 @@ public final class Data {
         }
     }
 
+    // ================= Boss 盲注（28） =================
+    // 0.1.0：仅用于 chooseBoss 的可复现选取与命名展示；Boss 特殊效果在 0.3.0 生效。
+    public enum Boss {
+        HOOK("hook", "钩子", "每次出牌后随机弃掉 2 张手牌"),
+        OX("ox", "公牛", "打出本局最常用的牌型时，金钱归零"),
+        HOUSE("house", "房子", "第一手牌全部面朝下"),
+        WALL("wall", "高墙", "超大盲注（目标分 ×4）"),
+        WHEEL("wheel", "车轮", "抽到的牌有 1/7 概率面朝下"),
+        ARM("arm", "手臂", "每次出牌后，所出牌型等级 -1"),
+        CLUB_BOSS("club", "梅花", "所有梅花牌失效"),
+        GOAD("goad", "马刺", "所有黑桃牌失效"),
+        HEAD("head", "头颅", "所有红桃牌失效"),
+        WINDOW("window", "窗口", "所有方块牌失效"),
+        FISH("fish", "鱼", "每次出牌后抽取的牌面朝下"),
+        PSYCHIC("psychic", "通灵者", "每次必须出满 5 张牌"),
+        SERPENT("serpent", "贪蛇", "出牌或弃牌后固定只抽 3 张牌"),
+        PILLAR("pillar", "支柱", "本底注中已打出过的牌失效"),
+        NEEDLE("needle", "缝衣针", "本回合只能出 1 次牌"),
+        TOOTH("tooth", "牙齿", "每打出一张牌失去 $1"),
+        FLINT("flint", "燧石", "基础筹码与基础倍率减半"),
+        MARK("mark", "标记", "所有人头牌面朝下抽取"),
+        ACORN("acorn", "琥珀橡子", "小丑牌被翻面并打乱顺序"),
+        BELL("bell", "翠绿铃", "强制 1 张手牌始终处于选中状态"),
+        HEART_BOSS("heart", "绯红之心", "每次出牌随机使 1 张小丑失效"),
+        VESSEL("vessel", "紫罗兰之瓶", "巨大盲注（目标分 ×3）"),
+        WATER("water", "水", "本回合没有弃牌次数"),
+        MANACLE("manacle", "镣铐", "手牌上限 -1"),
+        EYE("eye", "眼睛", "本回合每种牌型只能出一次"),
+        MOUTH("mouth", "嘴", "本回合只能出一种牌型"),
+        PLANT("plant", "植物", "所有人头牌失效"),
+        LEAF("leaf", "翠绿之叶", "所有牌失效，直到出售 1 张小丑");
+
+        public final String key;
+        public final String name;
+        public final String desc;
+
+        Boss(String key, String name, String desc) {
+            this.key = key;
+            this.name = name;
+            this.desc = desc;
+        }
+
+        private static final Map<String, Boss> BY_KEY = new HashMap<>();
+        static {
+            for (Boss b : values()) BY_KEY.put(b.key, b);
+        }
+
+        public static Boss byKey(String key) {
+            Boss b = BY_KEY.get(key);
+            if (b == null) throw new IllegalArgumentException("unknown boss: " + key);
+            return b;
+        }
+    }
+
     // ================= 蜡封（4） =================
     public enum Seal {
         GOLD("gold", "金色蜡封", "该牌计分时 +$3"),
