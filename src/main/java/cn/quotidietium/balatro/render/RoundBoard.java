@@ -44,7 +44,7 @@ public final class RoundBoard {
     private static final double FORWARD = 2.6;
     private static final double CARD_SPACING = 0.78;
     private static final double HAND_Y = 0.0;
-    private static final double SELECT_LIFT = 0.25;
+    private static final double SELECT_LIFT = 0.5; // 选中上移约半张牌高
     private static final double STATUS_Y = 2.5;
     private static final double EVAL_Y = 2.0;
     private static final double JOKER_Y = 1.4;
@@ -186,6 +186,32 @@ public final class RoundBoard {
             if (c.hit(rx, ry)) return c.action;
         }
         return null;
+    }
+
+    /** 诊断：hitTest 未命中时的中间值，供日志定位"点不到"。 */
+    public String debugMiss(Location eye, Vector dir) {
+        double denom = dir.dot(forward);
+        Vector e = eye.toVector();
+        double t = Math.abs(denom) < 1.0E-6 ? -1 : origin.clone().subtract(e).dot(forward) / denom;
+        double rx = Double.NaN, ry = Double.NaN;
+        if (t > 0) {
+            Vector p = e.clone().add(dir.clone().multiply(t));
+            Vector rel = p.clone().subtract(origin);
+            rx = rel.dot(right);
+            ry = rel.getY();
+        }
+        Clickable nearest = null;
+        double bd = Double.MAX_VALUE;
+        for (Clickable c : clickables) {
+            double d = Math.hypot((rx - c.lx) / c.hw, (ry - c.ly) / c.hh);
+            if (d < bd) { bd = d; nearest = c; }
+        }
+        return "denom=" + (double) Math.round(denom * 100) / 100
+                + " t=" + (double) Math.round(t * 100) / 100
+                + " rx=" + (double) Math.round(rx * 100) / 100
+                + " ry=" + (double) Math.round(ry * 100) / 100
+                + " clickables=" + clickables.size()
+                + (nearest != null ? " nearest=" + nearest.action + " dist=" + (double) Math.round(bd * 100) / 100 : "");
     }
 
     private TextDisplay mkFrame(String tag, Color bg) {
