@@ -362,7 +362,6 @@ function genJokers() {
     ['raisedfist', 'GOLDEN1'],
     ['fibonacci', 'GOLDEN1'],
     ['scaryface', 'GOLDEN1'],
-    ['supernova', 'GOLDEN1'],
     ['ridebus', 'GOLDEN1'],
     ['runner', 'GOLDEN1'],
     ['bull', 'GOLDEN1'],

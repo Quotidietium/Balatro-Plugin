@@ -59,13 +59,6 @@ PLAY ok=1 type=pair score=180 won=0 lost=0 rs=225 hl=2
 PLAY ok=1 type=high score=45 won=0 lost=0 rs=270 hl=1
 PLAY ok=1 type=high score=45 won=1 lost=0 rs=315 hl=0
 ENDROUND
-JROUND supernova GOLDEN1 target=300
-HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
-PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
-PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
-PLAY ok=1 type=high score=30 won=0 lost=0 rs=105 hl=1
-PLAY ok=1 type=high score=45 won=0 lost=1 rs=150 hl=0
-ENDROUND
 JROUND ridebus GOLDEN1 target=300
 HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
 PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3

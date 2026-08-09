@@ -176,10 +176,11 @@ public enum BasicJoker implements Joker {
             if (ctx.isFace(card) && ctx.prob(0.5)) ctx.dollars(2);
         }
     },
-    SUPERNOVA("supernova", "超新星", "本回合每出过一次该牌型 +1 倍率", 5) {
+    SUPERNOVA("supernova", "超新星", "本局每打出过一次该牌型 +1 倍率（含本次）", 5) {
         @Override
         public void onScore(ScoreContext ctx) {
-            ctx.addMult(ctx.state.handPlayedCount.getOrDefault(ctx.handType, 0));
+            // 真实规则：含当前这次出牌。handPlayedCount 在计分后才增量，故 +1。
+            ctx.addMult(ctx.state.handPlayedCount.getOrDefault(ctx.handType, 0) + 1);
         }
     },
     RIDEBUS("ridebus", "搭便车", "连续打出无人头牌的手牌：倍率 +1（累积）；含人头牌则重置", 6) {
