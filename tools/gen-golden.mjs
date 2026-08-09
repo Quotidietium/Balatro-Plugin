@@ -190,6 +190,17 @@ function genEngineRound() {
 genEvalHands();
 genEngineRound();
 
+// ============ JOKER 元数据（rarity/cost/name，供商店生成） ============
+function genJokerMeta() {
+  const { JOKERS } = loadBalatro(['rng.js', 'data.js', 'jokers.js'], ['JOKERS']);
+  const L = [];
+  for (const j of JOKERS) {
+    L.push(`JOKER|${j.key}|${j.rarity == null ? 0 : j.rarity}|${j.cost == null ? 0 : j.cost}|${j.name}`);
+  }
+  writeText('jokermeta.txt', L);
+}
+genJokerMeta();
+
 // ============ JOKER 黄金值 ============
 // 给开局授予指定小丑后，驱动 small 盲注整回合，对比计分（验证小丑效果与计分管线）。
 function genJokers() {

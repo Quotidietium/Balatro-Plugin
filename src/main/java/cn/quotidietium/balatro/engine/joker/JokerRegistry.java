@@ -2,23 +2,36 @@ package cn.quotidietium.balatro.engine.joker;
 
 import cn.quotidietium.balatro.engine.Joker;
 import cn.quotidietium.balatro.engine.JokerInstance;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * 小丑注册表：key → {@link Joker}。启动时注册 {@link BasicJoker} 全部；
- * 后续版本（0.4.0 全小丑）继续向此注册。
+ * 小丑注册表：key → {@link Joker}。启动时注册 {@link BasicJoker} 全部，
+ * 并从 {@code /jokermeta.txt}（由 {@code tools/gen-golden.mjs} 从原版 jokers.js 导出）
+ * 加载权威的稀有度/售价/名称元数据，供商店生成使用。
  *
  * <p>其他模块/插件可经 {@link #register(Joker)} 追加自定义小丑。
  */
 public final class JokerRegistry {
 
     private static final Map<String, Joker> BY_KEY = new HashMap<>();
+    private static final Map<String, Integer> RARITY = new HashMap<>();
+    private static final Map<String, Integer> COST = new HashMap<>();
+    private static final Map<String, String> NAME = new HashMap<>();
 
     static {
         for (BasicJoker j : BasicJoker.values()) {
             register(j);
         }
+        loadMeta();
     }
 
     private JokerRegistry() {
@@ -42,5 +55,44 @@ public final class JokerRegistry {
 
     public static boolean exists(String key) {
         return BY_KEY.containsKey(key);
+    }
+
+    /** 全部已注册小丑。 */
+    public static Collection<Joker> allJokers() {
+        return BY_KEY.values();
+    }
+
+    /** 稀有度（0 普通 / 1 罕见 / 2 稀有 / 3 传奇）；未登记返回 0。 */
+    public static int rarityOf(String key) {
+        return RARITY.getOrDefault(key, 0);
+    }
+
+    public static int costOf(String key) {
+        return COST.getOrDefault(key, 0);
+    }
+
+    public static String nameOf(String key) {
+        String n = NAME.get(key);
+        return n != null ? n : key;
+    }
+
+    private static void loadMeta() {
+        try (InputStream in = JokerRegistry.class.getResourceAsStream("/jokermeta.txt")) {
+            if (in == null) return;
+            try (BufferedReader r = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = r.readLine()) != null) {
+                    if (line.isEmpty()) continue;
+                    String[] p = line.split("\\|", -1);
+                    if (p.length >= 5 && p[0].equals("JOKER")) {
+                        RARITY.put(p[1], Integer.parseInt(p[2]));
+                        COST.put(p[1], Integer.parseInt(p[3]));
+                        NAME.put(p[1], p[4]);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            // 元数据缺失时退化为默认值
+        }
     }
 }
