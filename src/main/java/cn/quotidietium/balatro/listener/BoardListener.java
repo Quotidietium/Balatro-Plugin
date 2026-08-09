@@ -71,12 +71,22 @@ public final class BoardListener implements Listener {
             case "discard" -> { board.discardSelected(); click(player, 0.8f); }
             case "reroll" -> { session.reroll(); click(player, 1.0f); }
             case "next" -> { session.nextRound(); click(player, 1.2f); }
-            case "voucher" -> { session.buyVoucher(); click(player, 1.0f); }
             case "skipack" -> { session.skipPack(); click(player, 0.8f); }
+            case "voucher" -> {
+                // 先取简介再购买（购买后状态变化）
+                net.kyori.adventure.text.Component info = board.infoFor(session.state(), act);
+                session.buyVoucher();
+                click(player, 1.0f);
+                if (info != null) player.sendMessage(info);
+            }
             default -> {
+                // 功能卡/商品：先取简介（基于当前状态），再执行操作，然后发送简介
+                net.kyori.adventure.text.Component info = board.infoFor(session.state(), act);
+                boolean acted = true;
                 if (act.startsWith("card:")) {
                     board.toggleSelect(Integer.parseInt(act.substring("card:".length())));
                     click(player, 1.6f);
+                    acted = false; // 手牌扑克牌不发简介
                 } else if (act.startsWith("shop:")) {
                     session.buyCard(Integer.parseInt(act.substring("shop:".length())));
                     click(player, 1.0f);
@@ -86,7 +96,12 @@ public final class BoardListener implements Listener {
                 } else if (act.startsWith("pick:")) {
                     session.pickPack(Integer.parseInt(act.substring("pick:".length())));
                     click(player, 1.2f);
+                } else if (act.startsWith("joker:") || act.startsWith("cons:")) {
+                    click(player, 1.6f);
+                } else {
+                    acted = false;
                 }
+                if (acted && info != null) player.sendMessage(info);
             }
         }
     }

@@ -19,6 +19,7 @@ import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.entity.Interaction;
+import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
@@ -63,6 +64,10 @@ public final class RoundBoard {
     private static final double SHOPCARD_HH = 0.4;
     private static final double PACK_HW = 0.8;
     private static final double PACK_HH = 0.35;
+    private static final double JOKER_HW = 0.4;
+    private static final double JOKER_HH = 0.28;
+    private static final double CONS_HW = 0.36;
+    private static final double CONS_HH = 0.28;
 
     /** 卡牌文字缩放（默认 1.0 约 0.5 格高，偏小；放大使牌面更清晰）。 */
     private static final float CARD_TEXT_SCALE = 1.5f;
@@ -147,7 +152,8 @@ public final class RoundBoard {
     /** 状态变更后刷新（原地改写，不 clear+respawn）。 */
     public void update(RunState state) {
         interactionIdx = 0;
-        if (activePhase != state.phase) {
+        Phase prev = activePhase;
+        if (prev != state.phase) {
             hideAll();
             activePhase = state.phase;
         }
@@ -157,6 +163,11 @@ public final class RoundBoard {
             default -> reflowRound(state);
         }
         hideExtraInteractions();
+        // 进入商店/补充包时，自动把所有简介发到聊天框便于判断
+        if (prev != state.phase) {
+            if (state.phase == Phase.SHOP) sendShopInfo(state);
+            else if (state.phase == Phase.PACK) sendPackInfo(state);
+        }
     }
 
     /**
@@ -261,10 +272,11 @@ public final class RoundBoard {
             d.text(Component.text("🃏" + ji.def.displayName(), jc));
             d.setBackgroundColor(ji.debuff ? BG_DEBUFF : BG_NORMAL);
             d.teleport(at(x, JOKER_Y));
+            placeInteraction(x, JOKER_Y, JOKER_HW, JOKER_HH, "joker:" + i); // 右键查看简介
         }
         for (int i = jn; i < jokerSlots.size(); i++) hide(jokerSlots.get(i));
 
-        // 消耗品行（仅展示）
+        // 消耗品行（右键查看简介）
         int cn = state.consumables.size();
         for (int i = 0; i < cn; i++) {
             Consumable c = state.consumables.get(i);
@@ -273,6 +285,7 @@ public final class RoundBoard {
             d.text(Component.text(consLabel(c), TextColor.color(180, 220, 255)));
             d.setBackgroundColor(BG_NORMAL);
             d.teleport(at(x, CONS_Y));
+            placeInteraction(x, CONS_Y, CONS_HW, CONS_HH, "cons:" + i); // 右键查看简介
         }
         for (int i = cn; i < consSlots.size(); i++) hide(consSlots.get(i));
 
@@ -481,6 +494,101 @@ public final class RoundBoard {
         hide(rerollBtn);
         hide(nextBtn);
         hide(voucherEnt);
+    }
+
+    // ================= 聊天框简介 =================
+
+    /** 进入商店：把所有商品简介发到玩家聊天框（便于判断购买）。 */
+    private void sendShopInfo(RunState state) {
+        var shop = state.shop;
+        if (shop == null) return;
+        Player p = session.player();
+        p.sendMessage(Component.text("━━ 商店（持有 $" + state.money + "）━━", NamedTextColor.GOLD));
+        for (int i = 0; i < shop.cards.size(); i++) {
+            var c = shop.cards.get(i);
+            p.sendMessage(infoLine((i + 1) + ". ", kindLabel(c.kind), c.name, c.price, c.sold, c.desc));
+        }
+        for (var pk : shop.packs) {
+            p.sendMessage(infoLine("📦 ", "补充包", pk.name, pk.price, pk.sold, pk.desc));
+        }
+        if (shop.voucher != null) {
+            p.sendMessage(infoLine("🎫 ", "优惠券", shop.voucher.name, shop.voucher.price, shop.voucher.sold, shop.voucher.desc));
+        }
+        p.sendMessage(Component.text("右键商品购买 · 重掷/下一回合（右键手牌的小丑/消耗品查看简介）", NamedTextColor.GRAY));
+    }
+
+    /** 进入补充包：把所有卡简介发到玩家聊天框。 */
+    private void sendPackInfo(RunState state) {
+        var pack = state.pack;
+        if (pack == null) return;
+        Player p = session.player();
+        p.sendMessage(Component.text("━━ 补充包：" + pack.def.name + "（还可选 " + pack.left + " 张）━━", NamedTextColor.GOLD));
+        for (int i = 0; i < pack.cards.size(); i++) {
+            var c = pack.cards.get(i);
+            p.sendMessage(infoLine((i + 1) + ". ", kindLabel(c.kind), c.name, 0, c.taken, c.desc));
+        }
+        p.sendMessage(Component.text("右键选择 · 跳过", NamedTextColor.GRAY));
+    }
+
+    private static Component infoLine(String prefix, String tag, String name, long price, boolean gone, String desc) {
+        return Component.text(prefix + "[" + tag + "] " + name + (price > 0 ? "  $" + price : "") + (gone ? "  (已售/选)" : ""),
+                        NamedTextColor.YELLOW)
+                .appendNewline().append(Component.text(desc == null ? "" : desc, NamedTextColor.GRAY));
+    }
+
+    private static String kindLabel(String kind) {
+        return switch (kind) {
+            case "joker" -> "小丑";
+            case "tarot" -> "塔罗";
+            case "planet" -> "星球";
+            case "spectral" -> "幻灵";
+            case "playing" -> "游戏牌";
+            default -> kind;
+        };
+    }
+
+    /** 右键单个元素时返回其简介（小丑/消耗品/商品/补充包卡/优惠券；其余如手牌/按钮返回 null）。 */
+    public Component infoFor(RunState state, String action) {
+        try {
+            if (action.startsWith("joker:")) {
+                int i = Integer.parseInt(action.substring("joker:".length()));
+                if (i >= 0 && i < state.jokers.size()) {
+                    JokerInstance j = state.jokers.get(i);
+                    return Component.text("🃏 " + j.def.displayName() + (j.debuff ? "（失效）" : ""), NamedTextColor.GOLD)
+                            .appendNewline().append(Component.text(j.def.desc(), NamedTextColor.GRAY));
+                }
+            } else if (action.startsWith("cons:")) {
+                int i = Integer.parseInt(action.substring("cons:".length()));
+                if (i >= 0 && i < state.consumables.size()) {
+                    Consumable c = state.consumables.get(i);
+                    return Component.text("[" + kindLabel(c.kind) + "] " + c.name(), NamedTextColor.AQUA)
+                            .appendNewline().append(Component.text(c.desc(), NamedTextColor.GRAY));
+                }
+            } else if (action.startsWith("shop:") && state.shop != null) {
+                int i = Integer.parseInt(action.substring("shop:".length()));
+                if (i >= 0 && i < state.shop.cards.size()) {
+                    var c = state.shop.cards.get(i);
+                    return infoLine((i + 1) + ". ", kindLabel(c.kind), c.name, c.price, c.sold, c.desc);
+                }
+            } else if (action.startsWith("shoppack:") && state.shop != null) {
+                int i = Integer.parseInt(action.substring("shoppack:".length()));
+                if (i >= 0 && i < state.shop.packs.size()) {
+                    var pk = state.shop.packs.get(i);
+                    return infoLine("📦 ", "补充包", pk.name, pk.price, pk.sold, pk.desc);
+                }
+            } else if (action.equals("voucher") && state.shop != null && state.shop.voucher != null) {
+                var v = state.shop.voucher;
+                return infoLine("🎫 ", "优惠券", v.name, v.price, v.sold, v.desc);
+            } else if (action.startsWith("pick:") && state.pack != null) {
+                int i = Integer.parseInt(action.substring("pick:".length()));
+                if (i >= 0 && i < state.pack.cards.size()) {
+                    var c = state.pack.cards.get(i);
+                    return infoLine((i + 1) + ". ", kindLabel(c.kind), c.name, 0, c.taken, c.desc);
+                }
+            }
+        } catch (NumberFormatException ignored) {
+        }
+        return null;
     }
 
     // ================= 角标 / 标签 =================
