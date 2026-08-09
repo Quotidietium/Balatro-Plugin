@@ -184,9 +184,44 @@ public final class RunState {
         if (reason != null) msg(reason);
     }
 
-    /** 小丑售价（基础售价/2 + 售价加成）。 */
+    /** 小丑售价（含版本加成，max(1)）。 */
     public int sellValue(JokerInstance j) {
-        return j.def.cost() / 2 + j.sellBonus;
+        int cost = j.def.cost();
+        if (j.edition == Data.Edition.FOIL) cost += 2;
+        else if (j.edition == Data.Edition.HOLO) cost += 3;
+        else if (j.edition == Data.Edition.POLY) cost += 5;
+        else if (j.edition == Data.Edition.NEGATIVE) cost += 5;
+        return Math.max(1, cost / 2 + j.sellBonus);
+    }
+
+    /** 出售第 idx 张小丑（永恒不可出售；触发 onSell/onAnySell；解除翠绿之叶）。 */
+    public boolean sellJoker(int idx) {
+        if (idx < 0 || idx >= jokers.size()) return false;
+        JokerInstance j = jokers.get(idx);
+        if (j.eternal) { msg("永恒小丑不可出售"); return false; }
+        int val = sellValue(j);
+        jokers.remove(idx);
+        money += val;
+        msg("出售 " + j.def.displayName() + " +$" + val);
+        j.def.onSell(this, j);
+        for (JokerInstance o : new ArrayList<>(jokers)) if (!o.debuff) o.def.onAnySell(this, o);
+        if (bossLeaf) {
+            bossLeaf = false;
+            for (Card c : hand) c.setDebuff(false);
+            msg("翠绿之叶：失效解除");
+        }
+        Engine.recomputeFlags(this);
+        return true;
+    }
+
+    /** 出售第 idx 个消耗品。 */
+    public boolean sellConsumable(int idx) {
+        if (idx < 0 || idx >= consumables.size()) return false;
+        Consumable c = consumables.remove(idx);
+        int val = Math.max(1, 1 + c.sellBonus);
+        money += val;
+        msg("出售消耗品 +$" + val);
+        return true;
     }
 
     /** 升级牌型等级。 */

@@ -204,6 +204,18 @@ public final class GameSession {
         return ok;
     }
 
+    /** 出售第 idx 张小丑。 */
+    public boolean sellJoker(int idx) {
+        boolean ok = state.sellJoker(idx);
+        if (ok && board != null) board.update(state);
+        return ok;
+    }
+
+    /** 出售第 idx 个消耗品。 */
+    public boolean sellConsumable(int idx) {
+        return state.sellConsumable(idx);
+    }
+
     /** 盲注选择阶段自动推进到下一盲注。 */
     private void autoAdvance() {
         if (state.phase == Phase.BLIND_SELECT && !state.endlessPending) {

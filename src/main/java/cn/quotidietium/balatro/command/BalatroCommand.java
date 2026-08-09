@@ -59,6 +59,8 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             case "pick" -> cmdPick(player, args);
             case "skipack" -> cmdSkipPack(player);
             case "top" -> cmdTop(player);
+            case "sellj" -> cmdSellJoker(player, args);
+            case "sellc" -> cmdSellConsumable(player, args);
             default -> sendHelp(player);
         }
         return true;
@@ -361,6 +363,24 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         if (s == null || s.state().pack == null) { player.sendMessage("§c当前没有补充包。"); return; }
         s.skipPack();
         player.sendMessage("§e已跳过补充包。");
+    }
+
+    private void cmdSellJoker(Player player, String[] args) {
+        GameSession s = plugin.sessionManager().get(player);
+        if (s == null) { player.sendMessage("§c当前没有进行中的局。"); return; }
+        int idx = parseOne(player, args);
+        if (idx < 0) return;
+        if (s.sellJoker(idx)) player.sendMessage("§a小丑已出售！");
+        else player.sendMessage("§c出售失败（永恒/无效）。");
+    }
+
+    private void cmdSellConsumable(Player player, String[] args) {
+        GameSession s = plugin.sessionManager().get(player);
+        if (s == null) { player.sendMessage("§c当前没有进行中的局。"); return; }
+        int idx = parseOne(player, args);
+        if (idx < 0) return;
+        if (s.sellConsumable(idx)) player.sendMessage("§a消耗品已出售！");
+        else player.sendMessage("§c出售失败（无效）。");
     }
 
     private void cmdTop(Player player) {
