@@ -49,17 +49,14 @@ public final class HandEval {
         boolean shortcut = Boolean.TRUE.equals(f.get("shortcut"));
         boolean splash = Boolean.TRUE.equals(f.get("splash"));
 
-        // 花色匹配（万能牌全适配；污渍合并）
+        // 花色匹配（万能牌全适配；污渍合并）。
+        // 四指(Four Fingers)：同花只需 need(4) 张同花色，第 5 张可为任意花色（不阻止同花）。
         int need = fourFingers ? 4 : 5;
         int flushSuit = -1;
         for (int s = 0; s < 4; s++) {
             int cnt = 0;
             for (Card c : suited) if (suitMatch(c, s, smeared)) cnt++;
-            if (cnt >= need && suited.size() >= need) {
-                boolean ok = true;
-                for (Card c : suited) if (!suitMatch(c, s, smeared)) { ok = false; break; }
-                if (ok) { flushSuit = s; break; }
-            }
+            if (cnt >= need) { flushSuit = s; break; }
         }
         boolean hasFlush = flushSuit >= 0;
 
@@ -110,6 +107,9 @@ public final class HandEval {
                     scoring.addAll(grp);
                 }
             }
+        } else if (type == Data.HandType.FLUSH) {
+            // 同花计分牌：仅同花色的牌（四指时非同花色牌不计分）
+            for (Card c : suited) if (suitMatch(c, flushSuit, smeared)) scoring.add(c);
         } else {
             scoring.addAll(suited);
         }

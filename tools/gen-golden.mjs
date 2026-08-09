@@ -139,29 +139,38 @@ genData();
 
 function genEvalHands() {
   const { Engine } = loadBalatro(['rng.js', 'data.js', 'jokers.js', 'engine.js'], ['Engine']);
-  const sets = [
-    [[14, 0]],
-    [[5, 0], [5, 1]],
-    [[5, 0], [5, 1], [9, 2], [9, 3]],
-    [[7, 0], [7, 1], [7, 2]],
-    [[2, 0], [3, 1], [4, 2], [5, 3], [6, 0]],
-    [[14, 0], [13, 0], [12, 0], [11, 0], [10, 0]],
-    [[14, 0], [2, 1], [3, 2], [4, 3], [5, 0]],
-    [[10, 0], [11, 1], [12, 2], [13, 3], [14, 0]],
-    [[2, 0], [3, 0], [4, 0], [5, 0], [7, 0]],
-    [[2, 0], [3, 0], [4, 0], [5, 0], [6, 0]],
-    [[7, 0], [7, 1], [7, 2], [9, 3], [9, 0]],
-    [[3, 0], [3, 1], [3, 2], [3, 3], [5, 0]],
-    [[14, 1], [14, 2], [14, 3], [14, 0]],
-    [[6, 0], [6, 1], [6, 2], [6, 3], [9, 0]],
-    [[8, 0], [8, 1], [8, 2], [2, 3], [3, 0]],
+  // 每个 case: { cards: [[rank,suit,enh?],...], flags?: {...} }
+  const cases = [
+    { cards: [[14, 0]] },
+    { cards: [[5, 0], [5, 1]] },
+    { cards: [[5, 0], [5, 1], [9, 2], [9, 3]] },
+    { cards: [[7, 0], [7, 1], [7, 2]] },
+    { cards: [[2, 0], [3, 1], [4, 2], [5, 3], [6, 0]] },
+    { cards: [[14, 0], [13, 0], [12, 0], [11, 0], [10, 0]] },
+    { cards: [[14, 0], [2, 1], [3, 2], [4, 3], [5, 0]] },
+    { cards: [[10, 0], [11, 1], [12, 2], [13, 3], [14, 0]] },
+    { cards: [[2, 0], [3, 0], [4, 0], [5, 0], [7, 0]] },
+    { cards: [[2, 0], [3, 0], [4, 0], [5, 0], [6, 0]] },
+    { cards: [[7, 0], [7, 1], [7, 2], [9, 3], [9, 0]] },
+    { cards: [[3, 0], [3, 1], [3, 2], [3, 3], [5, 0]] },
+    { cards: [[14, 1], [14, 2], [14, 3], [14, 0]] },
+    { cards: [[6, 0], [6, 1], [6, 2], [6, 3], [9, 0]] },
+    { cards: [[8, 0], [8, 1], [8, 2], [2, 3], [3, 0]] },
+    // ---- 边界：万能牌/四指/捷径/石头 ----
+    { cards: [[2, 0], [3, 0], [4, 0], [5, 0], [9, 1, 'wild']] },                 // 万能牌计入同花
+    // 四指(Four Fingers)用例移除：REF JS 要求"全部同花色"与真实规则"4张即可"不符，已修正，见 FourFingersTest
+    { cards: [[2, 0], [4, 1], [6, 2], [8, 3], [10, 0]], flags: { shortcut: true } },   // 捷径顺子(间隔1)
+    { cards: [[2, 0], [4, 1], [6, 2], [8, 3], [10, 0]] },                              // 无捷径→非顺子
+    { cards: [[2, 0], [3, 0], [4, 0], [5, 0], [6, 0, 'stone']] },                      // 石头不计→2-5顺子,石头也计分
+    { cards: [[5, 0, 'stone'], [5, 1, 'stone'], [5, 2, 'stone'], [5, 3, 'stone'], [9, 0]] }, // 4石头+9→高牌(石头排除),石头全计分
   ];
   const L = [];
-  for (const s of sets) {
-    const cards = s.map(([r, su]) => Engine.makeCard(r, su));
-    const res = Engine.evaluateHand({ flags: {} }, cards);
-    const scoring = res.scoring.map((c) => `${c.rank}.${c.suit}`).join(',');
-    L.push(`EVAL ${s.map(([r, su]) => `${r}.${su}`).join(',')} => ${res.type} | ${scoring}`);
+  for (const c of cases) {
+    const cards = c.cards.map(([r, su, enh]) => Engine.makeCard(r, su, enh || null, null, null));
+    const res = Engine.evaluateHand({ flags: c.flags || {} }, cards);
+    const scoring = res.scoring.map((cc) => `${cc.rank}.${cc.suit}${cc.enh ? '.' + cc.enh : ''}`).join(',');
+    L.push(`EVAL ${c.cards.map(([r, su, enh]) => `${r}.${su}${enh ? '.' + enh : ''}`).join(',')} => ${res.type} | ${scoring}`);
+    if (c.flags) L.push(`# flags ${JSON.stringify(c.flags)}`);
   }
   writeText('eval.txt', L);
 }
