@@ -702,10 +702,11 @@ public enum BasicJoker implements Joker {
             return 0;
         }
     },
-    TOTHEMOON("tothemoon", "奔月", "回合结束时每张剩余出牌次数 +$1", 5) {
+    TOTHEMOON("tothemoon", "奔月", "每持有 $5：利息 +$1（额外，不受上限）", 5) {
         @Override
         public long onRoundEnd(RunState state, JokerInstance self) {
-            return state.handsLeft;
+            // 真实规则：额外利息 = floor(money/5)（在基础利息之上，不受 $5 上限）
+            return state.money / 5;
         }
     },
     FORTUNE("fortune", "算命先生", "每使用一张塔罗牌：+1 倍率（累积）", 6) {
