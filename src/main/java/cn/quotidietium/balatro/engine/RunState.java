@@ -101,7 +101,7 @@ public final class RunState {
         return cardIdSeq++;
     }
 
-    Card makeCard(int rank, int suit) {
+    public Card makeCard(int rank, int suit) {
         return new Card(nextCardId(), rank, suit);
     }
 
@@ -215,5 +215,44 @@ public final class RunState {
     /** 评估一组手牌的牌型（供小丑钩子调用，如烧焦小丑）。 */
     public HandEval.Result evaluateHand(List<Card> cards) {
         return HandEval.evaluate(this, cards);
+    }
+
+    /** 剩余小丑槽。 */
+    public int jokerSpace() {
+        return jokerSlots - jokers.size();
+    }
+
+    /** 获得一张指定小丑（0.2.0 商店/效果共用）。 */
+    public boolean gainJoker(String key, Data.Edition edition) {
+        if (jokerSpace() <= 0) return false;
+        JokerInstance j = cn.quotidietium.balatro.engine.joker.JokerRegistry.create(key);
+        if (j == null) return false;
+        if (edition != null) j.edition = edition;
+        jokers.add(j);
+        msg("获得小丑：" + cn.quotidietium.balatro.engine.joker.JokerRegistry.nameOf(key));
+        return true;
+    }
+
+    /** 随机获得一张指定稀有度的小丑。 */
+    public void gainRandomJoker(int rarity) {
+        java.util.List<Joker> pool = new java.util.ArrayList<>();
+        for (Joker j : cn.quotidietium.balatro.engine.joker.JokerRegistry.allJokers()) {
+            if (cn.quotidietium.balatro.engine.joker.JokerRegistry.rarityOf(j.key()) == rarity) pool.add(j);
+        }
+        if (pool.isEmpty()) return;
+        Joker pick = stream("jokergrant").pick(pool);
+        gainJoker(pick.key(), null);
+    }
+
+    /** 把一张牌加入牌组（触发 onCardAdded）。 */
+    public void addCardToDeck(Card c) {
+        fullDeck.add(c);
+        for (JokerInstance j : new java.util.ArrayList<>(jokers)) j.def.onCardAdded(this, c, j);
+    }
+
+    /** 生成一张随机游戏牌（rpc 流）。 */
+    public Card randomPlayingCard() {
+        Rng.Stream s = stream("rpc");
+        return makeCard(s.range(2, 14), s.range(0, 3));
     }
 }

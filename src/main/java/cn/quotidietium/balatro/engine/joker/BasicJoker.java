@@ -1131,6 +1131,136 @@ public enum BasicJoker implements Joker {
             // TODO 0.2.0：随机复制一张消耗品为负片
             return 0;
         }
+    },
+    CLEVER("clever", "聪明小丑", "若牌型为两对：+80 筹码", 4) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            if (ctx.handIs("twopair")) ctx.addChips(80);
+        }
+    },
+    CRAZY("crazy", "癫狂小丑", "若牌型为顺子：+12 倍率", 4) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            if (ctx.handIs("straight")) ctx.addMult(12);
+        }
+    },
+    DROLL("droll", "古怪小丑", "若牌型为同花：+10 倍率", 4) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            if (ctx.handIs("flush")) ctx.addMult(10);
+        }
+    },
+    MAD_JOKER("mad", "疯狂小丑", "若牌型为两对：+10 倍率", 4) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            if (ctx.handIs("twopair")) ctx.addMult(10);
+        }
+    },
+    EGG("egg", "蛋", "回合结束时售价 +$3", 4) {
+        @Override
+        public long onRoundEnd(RunState state, JokerInstance self) {
+            self.sellBonus += 3;
+            return 0;
+        }
+    },
+    CREDITCARD("creditcard", "信用卡", "可以欠债消费（至多 -$20）", 1) {
+        @Override
+        public Map<String, Object> flags() {
+            return Map.of("credit", 20);
+        }
+    },
+    EIGHTBALL("eightball", "8 号球", "每张计分的 8 有 1/4 概率生成一张塔罗牌", 5) {
+        @Override
+        public void onScoreCard(ScoreContext ctx, Card card) {
+            if (card.rank() == 8 && ctx.prob(0.25)) ctx.gainConsumable("tarot");
+        }
+    },
+    HALLUCINATION("hallucination", "幻觉", "开启任何补充包时有 1/2 概率生成一张塔罗牌", 4) {
+        @Override
+        public void onPackOpen(RunState state, JokerInstance self) {
+            if (state.stream("hallucination").chance(0.5)) state.gainConsumable("tarot");
+        }
+    },
+    REDCARD("redcard", "红牌", "每次跳过补充包：+3 倍率（累积）", 5) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            ctx.addMult(gi(ctx.joker.extra, "mult", 0));
+        }
+        @Override
+        public void onPackSkip(RunState state, JokerInstance self) {
+            self.extra.put("mult", gi(self.extra, "mult", 0) + 3);
+            state.msg("红牌：倍率累积至 +" + gi(self.extra, "mult", 0));
+        }
+    },
+    SUPERPOSITION("superposition", "叠加态", "若出牌含一张 A 且构成顺子：获得一张塔罗牌", 4) {
+        @Override
+        public void onPlayHand(RunState state, PlayHandInfo info) {
+            if (info.handType == Data.HandType.STRAIGHT && info.hasRank(14)) {
+                if (info.findJoker("superposition") != null) state.gainConsumable("tarot");
+            }
+        }
+    },
+    RIFFRAFF("riffraff", "杂牌军", "每个盲注开始时获得 2 张随机普通小丑", 6) {
+        @Override
+        public void onBlindStart(RunState state, JokerInstance self) {
+            state.gainRandomJoker(0);
+            state.gainRandomJoker(0);
+        }
+    },
+    BASEBALL("baseball", "棒球卡", "每张罕见小丑 ×1.5 倍率", 8) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            for (JokerInstance j : ctx.state.jokers) {
+                if (JokerRegistry.rarityOf(j.def.key()) == 1) ctx.xMult(1.5);
+            }
+        }
+    },
+    MARBLE("marble", "大理石小丑", "每个盲注开始时给牌组添加 1 张石头牌", 6) {
+        @Override
+        public void onBlindStart(RunState state, JokerInstance self) {
+            Card c = state.makeCard(0, -1);
+            c.setEnh(Data.Enhancement.STONE);
+            state.addCardToDeck(c);
+            state.msg("大理石小丑：牌组加入了 1 张石头牌");
+        }
+    },
+    CERTIFICATE("certificate", "证书", "回合开始时给手中添加一张带随机蜡封的牌", 6) {
+        private final List<Data.Seal> seals = List.of(Data.Seal.GOLD, Data.Seal.RED, Data.Seal.BLUE, Data.Seal.PURPLE);
+        @Override
+        public void onRoundStart(RunState state, JokerInstance self) {
+            Card c = state.randomPlayingCard();
+            c.setSeal(state.stream("certificate").pick(seals));
+            state.hand.add(c);
+            state.fullDeck.add(c);
+            state.msg("证书：获得 " + state.cardName(c));
+        }
+    },
+    DEVIOUS("devious", "阴险小丑", "若牌型为顺子：+100 筹码", 4) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            if (ctx.handIs("straight")) ctx.addChips(100);
+        }
+    },
+    INVISIBLE("invisible", "隐形小丑", "持有 3 回合后出售：复制一张随机其他小丑", 10) {
+        @Override
+        public long onRoundEnd(RunState state, JokerInstance self) {
+            self.extra.put("rounds", gi(self.extra, "rounds", 3) - 1);
+            return 0;
+        }
+        @Override
+        public void onSell(RunState state, JokerInstance self) {
+            if (gi(self.extra, "rounds", 3) > 0) {
+                state.msg("隐形小丑：还未显形（需持有 3 回合）");
+                return;
+            }
+            List<JokerInstance> others = new java.util.ArrayList<>();
+            for (JokerInstance x : state.jokers) if (x != self) others.add(x);
+            if (!others.isEmpty() && state.jokerSpace() > 0) {
+                JokerInstance src = state.stream("invisible").pick(others);
+                state.gainJoker(src.def.key(), src.edition);
+                state.msg("隐形小丑：复制了 " + src.def.displayName());
+            }
+        }
     };
 
     private final String key;
