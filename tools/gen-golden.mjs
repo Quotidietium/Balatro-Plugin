@@ -107,6 +107,18 @@ function genData() {
   L.push('SUITS');
   for (const s of DATA.SUITS) L.push(`SUIT ${s.key} ${s.name} ${s.symbol} ${s.color}`);
   L.push('END');
+  for (const k of Object.keys(DATA.ENHANCEMENTS)) {
+    const e = DATA.ENHANCEMENTS[k];
+    L.push(`ENH|${k}|${e.name}|${e.desc}`);
+  }
+  for (const k of Object.keys(DATA.EDITIONS)) {
+    const e = DATA.EDITIONS[k];
+    L.push(`EDITION|${k}|${e.name}|${e.desc}|${e.chance}`);
+  }
+  for (const k of Object.keys(DATA.SEALS)) {
+    const s = DATA.SEALS[k];
+    L.push(`SEAL|${k}|${s.name}|${s.desc}`);
+  }
   writeText('data.txt', L);
 }
 genData();

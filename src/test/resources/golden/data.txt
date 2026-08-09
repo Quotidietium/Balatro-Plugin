@@ -60,3 +60,19 @@ SUIT heart 红桃 ♥ red
 SUIT club 梅花 ♣ dark
 SUIT diamond 方块 ♦ red
 END
+ENH|bonus|奖励牌|+30 筹码
+ENH|mult|倍率牌|+4 倍率
+ENH|wild|万能牌|可视为任意花色
+ENH|glass|玻璃牌|×2 倍率；计分后 1/4 概率破碎
+ENH|steel|钢铁牌|持有在手时 ×1.5 倍率
+ENH|stone|石头牌|+50 筹码；无点数与花色
+ENH|gold|黄金牌|回合结束时若仍在手中 +$3
+ENH|lucky|幸运牌|1/5 概率 +20 倍率，1/15 概率 +$20
+EDITION|foil|闪膜|+50 筹码|0.5
+EDITION|holo|镭射|+10 倍率|0.35
+EDITION|poly|多彩|×1.5 倍率|0.15
+EDITION|negative|负片|槽位 +1（小丑/消耗品）|0
+SEAL|gold|金色蜡封|该牌计分时 +$3
+SEAL|red|红色蜡封|该牌重新触发一次
+SEAL|blue|蓝色蜡封|回合结束时若仍在手中，获得对应星球牌
+SEAL|purple|紫色蜡封|弃掉该牌时获得一张塔罗牌

@@ -75,6 +75,34 @@ class DataGoldenTest {
         }
     }
 
+    @Test
+    void enhancementsMatch() throws IOException {
+        for (String[] p : pipeLines("ENH")) {
+            Data.Enhancement e = Data.Enhancement.byKey(p[1]);
+            assertEquals(p[2], e.name, "name " + p[1]);
+            assertEquals(p[3], e.desc, "desc " + p[1]);
+        }
+    }
+
+    @Test
+    void editionsMatch() throws IOException {
+        for (String[] p : pipeLines("EDITION")) {
+            Data.Edition e = Data.Edition.byKey(p[1]);
+            assertEquals(p[2], e.name, "name " + p[1]);
+            assertEquals(p[3], e.desc, "desc " + p[1]);
+            assertEquals(Double.parseDouble(p[4]), e.chance, 0.0, "chance " + p[1]);
+        }
+    }
+
+    @Test
+    void sealsMatch() throws IOException {
+        for (String[] p : pipeLines("SEAL")) {
+            Data.Seal s = Data.Seal.byKey(p[1]);
+            assertEquals(p[2], s.name, "name " + p[1]);
+            assertEquals(p[3], s.desc, "desc " + p[1]);
+        }
+    }
+
     // ---- 读取 data.txt，按首 token 过滤；跳过段头(HANDS/SUITS)与 END ----
     private static List<String[]> lines(String tag) throws IOException {
         List<String[]> out = new ArrayList<>();
@@ -87,6 +115,23 @@ class DataGoldenTest {
                 if (line.isEmpty() || line.equals("END") || line.equals("HANDS") || line.equals("SUITS")) continue;
                 String[] p = line.split(" ");
                 if (p[0].equals(tag)) out.add(p);
+            }
+        }
+        return out;
+    }
+
+    // 读取 data.txt 中以 "prefix|" 开头的行，按 "|" 分割（用于 ENH/EDITION/SEAL，其 desc 含空格）。
+    private static List<String[]> pipeLines(String prefix) throws IOException {
+        List<String[]> out = new ArrayList<>();
+        try (BufferedReader r = new BufferedReader(new InputStreamReader(
+                Objects.requireNonNull(DataGoldenTest.class.getResourceAsStream("/golden/data.txt"),
+                        "missing golden/data.txt"),
+                StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = r.readLine()) != null) {
+                if (line.startsWith(prefix + "|")) {
+                    out.add(line.split("\\|", -1));
+                }
             }
         }
         return out;

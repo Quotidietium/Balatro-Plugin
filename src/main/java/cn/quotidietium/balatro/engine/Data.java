@@ -188,4 +188,97 @@ public final class Data {
             return b;
         }
     }
+
+    // ================= 增强（8） =================
+    public enum Enhancement {
+        BONUS("bonus", "奖励牌", "+30 筹码"),
+        MULT("mult", "倍率牌", "+4 倍率"),
+        WILD("wild", "万能牌", "可视为任意花色"),
+        GLASS("glass", "玻璃牌", "×2 倍率；计分后 1/4 概率破碎"),
+        STEEL("steel", "钢铁牌", "持有在手时 ×1.5 倍率"),
+        STONE("stone", "石头牌", "+50 筹码；无点数与花色"),
+        GOLD("gold", "黄金牌", "回合结束时若仍在手中 +$3"),
+        LUCKY("lucky", "幸运牌", "1/5 概率 +20 倍率，1/15 概率 +$20");
+
+        public final String key;
+        public final String name;
+        public final String desc;
+
+        Enhancement(String key, String name, String desc) {
+            this.key = key;
+            this.name = name;
+            this.desc = desc;
+        }
+
+        private static final Map<String, Enhancement> BY_KEY = new HashMap<>();
+        static {
+            for (Enhancement e : values()) BY_KEY.put(e.key, e);
+        }
+
+        public static Enhancement byKey(String key) {
+            Enhancement e = BY_KEY.get(key);
+            if (e == null) throw new IllegalArgumentException("unknown enhancement: " + key);
+            return e;
+        }
+    }
+
+    // ================= 版本（4，不含原版） =================
+    public enum Edition {
+        FOIL("foil", "闪膜", "+50 筹码", 0.50),
+        HOLO("holo", "镭射", "+10 倍率", 0.35),
+        POLY("poly", "多彩", "×1.5 倍率", 0.15),
+        NEGATIVE("negative", "负片", "槽位 +1（小丑/消耗品）", 0.0);
+
+        public final String key;
+        public final String name;
+        public final String desc;
+        public final double chance; // 商店出现权重（相对）
+
+        Edition(String key, String name, String desc, double chance) {
+            this.key = key;
+            this.name = name;
+            this.desc = desc;
+            this.chance = chance;
+        }
+
+        private static final Map<String, Edition> BY_KEY = new HashMap<>();
+        static {
+            for (Edition e : values()) BY_KEY.put(e.key, e);
+        }
+
+        public static Edition byKey(String key) {
+            Edition e = BY_KEY.get(key);
+            if (e == null) throw new IllegalArgumentException("unknown edition: " + key);
+            return e;
+        }
+    }
+
+    // ================= 蜡封（4） =================
+    public enum Seal {
+        GOLD("gold", "金色蜡封", "该牌计分时 +$3"),
+        RED("red", "红色蜡封", "该牌重新触发一次"),
+        BLUE("blue", "蓝色蜡封", "回合结束时若仍在手中，获得对应星球牌"),
+        PURPLE("purple", "紫色蜡封", "弃掉该牌时获得一张塔罗牌");
+
+        public final String key;
+        public final String name;
+        public final String desc;
+
+        Seal(String key, String name, String desc) {
+            this.key = key;
+            this.name = name;
+            this.desc = desc;
+        }
+
+        private static final Map<String, Seal> BY_KEY = new HashMap<>();
+        static {
+            for (Seal s : values()) BY_KEY.put(s.key, s);
+        }
+
+        public static Seal byKey(String key) {
+            Seal s = BY_KEY.get(key);
+            if (s == null) throw new IllegalArgumentException("unknown seal: " + key);
+            return s;
+        }
+    }
 }
