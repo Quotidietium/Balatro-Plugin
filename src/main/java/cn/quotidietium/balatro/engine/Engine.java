@@ -532,7 +532,7 @@ public final class Engine {
         for (JokerInstance j : snap) {
             if (j.debuff || !s.jokers.contains(j)) continue;
             long g = j.def.onRoundEnd(s, j);
-            if (g > 0) { gain += g; detail.add(j.def.name() + " +$" + g); }
+            if (g > 0) { gain += g; detail.add(j.def.displayName() + " +$" + g); }
         }
 
         // 租赁 / 易腐小丑（0.2.0 商店属性，0.1.0 无）

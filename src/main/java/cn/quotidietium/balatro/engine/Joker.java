@@ -14,7 +14,8 @@ public interface Joker {
 
     String key();
 
-    String name();
+    /** 显示名（注意：不能用 name()，与 Enum.name() 冲突）。 */
+    String displayName();
 
     /** 简介文本。 */
     default String desc() {

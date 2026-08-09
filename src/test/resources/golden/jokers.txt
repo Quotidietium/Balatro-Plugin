@@ -1,0 +1,47 @@
+JROUND joker GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=75 won=0 lost=0 rs=75 hl=3
+PLAY ok=1 type=pair score=180 won=0 lost=0 rs=255 hl=2
+PLAY ok=1 type=high score=75 won=1 lost=0 rs=330 hl=1
+ENDROUND
+JROUND greedy GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=150 won=0 lost=0 rs=165 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=180 hl=1
+PLAY ok=1 type=high score=60 won=0 lost=1 rs=240 hl=0
+ENDROUND
+JROUND jolly GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=300 won=1 lost=0 rs=315 hl=2
+ENDROUND
+JROUND sly GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=160 won=0 lost=0 rs=175 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=190 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=205 hl=0
+ENDROUND
+JROUND half GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=15 hl=3
+PLAY ok=1 type=pair score=60 won=0 lost=0 rs=75 hl=2
+PLAY ok=1 type=high score=15 won=0 lost=0 rs=90 hl=1
+PLAY ok=1 type=high score=15 won=0 lost=1 rs=105 hl=0
+ENDROUND
+JROUND banner GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=175 won=0 lost=0 rs=175 hl=3
+PLAY ok=1 type=pair score=380 won=1 lost=0 rs=555 hl=2
+ENDROUND
+JROUND misprint GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=180 won=0 lost=0 rs=180 hl=3
+PLAY ok=1 type=pair score=750 won=1 lost=0 rs=930 hl=2
+ENDROUND
+JROUND raisedfist GOLDEN1 target=300
+HAND 10.1,9.3,3.2,6.2,13.1,12.3,8.0,12.0
+PLAY ok=1 type=high score=255 won=0 lost=0 rs=255 hl=3
+PLAY ok=1 type=pair score=300 won=1 lost=0 rs=555 hl=2
+ENDROUND

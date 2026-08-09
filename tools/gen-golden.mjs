@@ -180,4 +180,42 @@ function genEngineRound() {
 genEvalHands();
 genEngineRound();
 
+// ============ JOKER 黄金值 ============
+// 给开局授予指定小丑后，驱动 small 盲注整回合，对比计分（验证小丑效果与计分管线）。
+function genJokers() {
+  const { Engine, JOKERS } = loadBalatro(['rng.js', 'data.js', 'jokers.js', 'engine.js'], ['Engine', 'JOKERS']);
+  function grantJoker(state, key) {
+    const def = JOKERS.find((j) => j.key === key);
+    state.jokers.push({ def, debuff: false, debuffHand: false, edition: null, extra: {} });
+  }
+  const cases = [
+    ['joker', 'GOLDEN1'],
+    ['greedy', 'GOLDEN1'],
+    ['jolly', 'GOLDEN1'],
+    ['sly', 'GOLDEN1'],
+    ['half', 'GOLDEN1'],
+    ['banner', 'GOLDEN1'],
+    ['misprint', 'GOLDEN1'],
+    ['raisedfist', 'GOLDEN1'],
+  ];
+  const L = [];
+  for (const [jkey, seed] of cases) {
+    const st = Engine.createRun({ deck: 'red', stake: 0, seed });
+    grantJoker(st, jkey);
+    Engine.selectBlind(st, 'small', false);
+    L.push(`JROUND ${jkey} ${seed} target=${st.blindTarget}`);
+    L.push('HAND ' + st.hand.map((c) => `${c.rank}.${c.suit}`).join(','));
+    let safety = 0;
+    while (st.phase === 'round' && safety++ < 20) {
+      const ids = st.hand.slice(0, Math.min(5, st.hand.length)).map((c) => c.id);
+      const r = Engine.playHand(st, ids);
+      L.push(`PLAY ok=${r.ok ? 1 : 0} type=${r.type || '-'} score=${r.score || 0} won=${r.won ? 1 : 0} lost=${r.lost ? 1 : 0} rs=${st.roundScore} hl=${st.handsLeft}`);
+      if (!r.ok || r.won || r.lost) break;
+    }
+    L.push('ENDROUND');
+  }
+  writeText('jokers.txt', L);
+}
+genJokers();
+
 console.log('done.');
