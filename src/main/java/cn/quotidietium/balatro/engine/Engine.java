@@ -511,10 +511,9 @@ public final class Engine {
             if (card.enh() == Data.Enhancement.GLASS && !card.debuff()) {
                 double p = s.mods.glassDouble ? 0.5 : 0.25;
                 if (s.stream("glass").chance(p)) {
-                    card.addChipBonus(0); // 占位：标记破碎（0.2.0 用 broken 标志移除）
+                    card.setBroken(true);
                     events.add("玻璃牌破碎了");
                     for (JokerInstance j : s.jokers) j.def.onGlassBreak(s, j);
-                    // 0.1.0 无玻璃牌；破碎移除在下方 removeCardEverywhere（0.2.0）
                 }
             }
         }
@@ -580,9 +579,12 @@ public final class Engine {
             s.bossTriggeredThisHand = true;
         }
 
-        // 移除打出的牌
+        // 移除打出的牌（破碎的玻璃牌从牌组销毁，其余进弃牌堆）
         s.hand.removeIf(c -> cardIds.contains(c.id()));
-        for (Card c : cards) s.discardPile.add(c);
+        for (Card c : cards) {
+            if (c.isBroken()) s.removeCardFromDeck(c);
+            else s.discardPile.add(c);
+        }
 
         // 小丑 onPlayHand
         PlayHandInfo info = new PlayHandInfo(s, type, cards, scoringCards);
@@ -683,8 +685,9 @@ public final class Engine {
     private static void applyJokerScore(RunState s, ScoreContext ctx, JokerInstance joker, int idx, List<JokerInstance> active) {
         JokerInstance src = resolveCopy(active, idx);
         if (src == null) return;
-        src.def.onScore(ctx);
         ctx.joker = src;
+        src.def.onScore(ctx);
+        // 小丑自身版本加成
         if (joker.edition == Data.Edition.FOIL) ctx.addChips(50);
         if (joker.edition == Data.Edition.HOLO) ctx.addMult(10);
         if (joker.edition == Data.Edition.POLY) ctx.xMult(1.5);

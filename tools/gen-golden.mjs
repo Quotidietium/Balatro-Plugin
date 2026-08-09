@@ -345,8 +345,11 @@ genChallengeEffect();
 function genJokers() {
   const { Engine, JOKERS } = loadBalatro(['rng.js', 'data.js', 'jokers.js', 'engine.js'], ['Engine', 'JOKERS']);
   function grantJoker(state, key) {
-    const def = JOKERS.find((j) => j.key === key);
-    state.jokers.push({ def, debuff: false, debuffHand: false, edition: null, extra: {} });
+    // 支持 "a+b" 同时授予多个小丑（验证多小丑计分顺序）
+    for (const k of key.split('+')) {
+      const def = JOKERS.find((j) => j.key === k);
+      if (def) state.jokers.push({ def, debuff: false, debuffHand: false, edition: null, extra: {} });
+    }
   }
   const cases = [
     ['joker', 'GOLDEN1'],
@@ -387,9 +390,9 @@ function genJokers() {
     ['moon', 'GOLDEN1'],
     ['seeingdouble', 'GOLDEN1'],
     ['space', 'GOLDEN1'],
+    // cardsharp 移除：REF JS 用 run 级计数(与其 desc/真实规则"本回合"不符)，已改为回合级，见 CardSharpTest
     ['blackboard', 'GOLDEN1'],
     ['hiker', 'GOLDEN1'],
-    ['cardsharp', 'GOLDEN1'],
     ['baron', 'GOLDEN1'],
     ['obelisk', 'GOLDEN1'],
     ['photograph', 'GOLDEN1'],
@@ -414,6 +417,8 @@ function genJokers() {
     ['hittheroad', 'GOLDEN1'],
     ['devious', 'GOLDEN1'],
     ['egg', 'GOLDEN1'],
+    ['joker+greedy', 'GOLDEN1'],
+    ['icecream+runner', 'GOLDEN1'],
   ];
   const L = [];
   for (const [jkey, seed] of cases) {

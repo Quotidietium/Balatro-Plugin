@@ -22,6 +22,7 @@ public final class Card {
     private long chipBonus;
     private boolean debuff;
     private boolean facedown;
+    private boolean broken; // 玻璃牌破碎（计分后销毁，从牌组移除）
 
     public Card(int id, int rank, int suit) {
         this.id = id;
@@ -95,6 +96,14 @@ public final class Card {
 
     public void setFacedown(boolean facedown) {
         this.facedown = facedown;
+    }
+
+    public boolean isBroken() {
+        return broken;
+    }
+
+    public void setBroken(boolean broken) {
+        this.broken = broken;
     }
 
     /** 石头牌：无点数/花色。 */

@@ -530,7 +530,8 @@ public enum BasicJoker implements Joker {
     CARDSHARP("cardsharp", "老千", "若本回合已出过该牌型：×3 倍率", 6) {
         @Override
         public void onScore(ScoreContext ctx) {
-            if (ctx.state.handPlayedCount.getOrDefault(ctx.handType, 0) > 1) ctx.xMult(3);
+            // 同一回合内再次打出该牌型（playedTypesThisRound 在计分后才加入当前牌型）
+            if (ctx.state.playedTypesThisRound.contains(ctx.handType)) ctx.xMult(3);
         }
     },
     MADNESS("madness", "癫狂", "选择大小盲注时：销毁一张随机小丑，×0.5 倍率（累积）", 7) {

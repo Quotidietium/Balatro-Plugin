@@ -45,10 +45,12 @@ class JokerGoldenTest {
             String[] handTokens = handLine.substring(5).split(",");
 
             RunState st = Engine.createRun("red", 0, seed);
-            // 授予小丑（须在 selectBlind/startRound 前）
-            JokerInstance inst = JokerRegistry.create(jkey);
-            assertNotNull(inst, "unknown joker " + jkey);
-            st.jokers.add(inst);
+            // 授予小丑（支持 "a+b" 多小丑，须在 selectBlind/startRound 前）
+            for (String k : jkey.split("\\+")) {
+                JokerInstance inst = JokerRegistry.create(k);
+                assertNotNull(inst, "unknown joker " + k);
+                st.jokers.add(inst);
+            }
             Engine.selectBlind(st, Data.BlindType.SMALL, false);
             assertEquals(target, st.blindTarget, jkey + " target");
             assertEquals(handTokens.length, st.hand.size(), jkey + " hand size");
