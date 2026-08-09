@@ -85,6 +85,8 @@ public final class RunState {
     public int inflation;   // 通货膨胀挑战：商店加价累计
     public int useSeq;      // 消耗品使用序号（构造唯一流）
     public TarotPlanet lastTarotPlanet; // 愚人复制用：上一张使用的塔罗/星球
+    public boolean doubleTagPending;    // 翻倍标签待复制
+    public int statsHandsPlayed, statsDiscardsUnused, statsBlindsSkipped; // 标签/统计用
 
     /** 上一张使用的塔罗/星球（供愚人复制）。 */
     public static final class TarotPlanet {
@@ -234,9 +236,9 @@ public final class RunState {
         bossDisabled = true;
     }
 
-    /** 获得跳过标签（0.1.0 仅入列表，效果 0.3.0）。 */
+    /** 获得跳过标签（应用效果）。 */
     public void gainTag(String key) {
-        tags.add(key);
+        Engine.gainTag(this, key);
     }
 
     /** 评估一组手牌的牌型（供小丑钩子调用，如烧焦小丑）。 */

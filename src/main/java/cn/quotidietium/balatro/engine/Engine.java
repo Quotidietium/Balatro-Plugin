@@ -97,6 +97,65 @@ public final class Engine {
         return Data.Boss.byKey(s.bossQueue.get(0));
     }
 
+    // ================= 标签 =================
+
+    public static void gainTag(RunState s, String key) {
+        gainTagOne(s, key);
+        if (s.doubleTagPending && !key.equals("double")) {
+            s.doubleTagPending = false;
+            s.msg("翻倍标签：复制了标签");
+            gainTagOne(s, key);
+        }
+    }
+
+    private static void gainTagOne(RunState s, String key) {
+        Data.Tag tag = null;
+        for (Data.Tag t : Data.TAGS) if (t.key().equals(key)) { tag = t; break; }
+        if (tag == null) return;
+        s.tags.add(key);
+        s.msg("获得标签：" + tag.name());
+        Rng.Stream st = s.stream("tag");
+        switch (key) {
+            case "double" -> s.doubleTagPending = true;
+            case "uncommon" -> s.nextShop.put("rarity", 1);
+            case "rare" -> s.nextShop.put("rarity", 2);
+            case "negative" -> s.nextShop.put("edition", "negative");
+            case "foil" -> s.nextShop.put("edition", "foil");
+            case "holo" -> s.nextShop.put("edition", "holo");
+            case "poly" -> s.nextShop.put("edition", "poly");
+            case "invest" -> s.nextShop.put("invest", true);
+            case "voucher" -> s.nextShop.put("extraVoucher", true);
+            case "boss" -> rerollBoss(s, true);
+            case "standard", "buffoon" -> { /* openFreePack → 0.2.0 补充包开启待实现 */ }
+            case "charm" -> s.nextShop.put("freeTarot", true);
+            case "meteor" -> s.nextShop.put("freePlanet", true);
+            case "ethereal" -> s.nextShop.put("etherealPack", true);
+            case "coupon" -> s.nextShop.put("coupon", true);
+            case "d6" -> s.nextShop.put("freeReroll", true);
+            case "topup" -> { s.gainRandomJoker(0); s.gainRandomJoker(0); }
+            case "handy" -> s.gainMoney(s.statsHandsPlayed);
+            case "garbage" -> s.gainMoney(s.statsDiscardsUnused);
+            case "speed" -> s.gainMoney(5L * s.statsBlindsSkipped);
+            case "economy" -> s.gainMoney(Math.min(25, s.money / 5));
+            case "orbital" -> s.levelUpHand(st.pick(List.of(Data.HandType.values())), 3);
+            case "juggle" -> s.nextShop.put("juggle", true);
+            default -> { }
+        }
+    }
+
+    /** 重掷 Boss 盲注；free=true 时免费。 */
+    public static void rerollBoss(RunState s, boolean free) {
+        if (!free) {
+            if (!s.vouchers.contains("director") && !s.vouchers.contains("retcon")) return;
+            if (!s.vouchers.contains("retcon")) {
+                if (s.money < 10) return;
+                s.money -= 10;
+            }
+        }
+        chooseBoss(s);
+        s.msg("Boss 盲注已重掷为：" + bossDef(s).name);
+    }
+
     /** 盲注目标分。 */
     public static long blindTarget(RunState s, Data.BlindType type) {
         double base = Data.blindBase(s.ante);
@@ -120,7 +179,13 @@ public final class Engine {
         if (!type.key.equals(s.nextBlind)) return false;
         if (skip) {
             if (type == Data.BlindType.BOSS) return false;
-            // TODO 0.3.0：获得标签 + 小丑 onSkip
+            s.statsBlindsSkipped++;
+            Data.Tag tag = s.stream("skiptag").pick(Data.TAGS);
+            gainTag(s, tag.key());
+            List<JokerInstance> skipSnap = new ArrayList<>(s.jokers);
+            for (JokerInstance j : skipSnap) {
+                if (!j.debuff && s.jokers.contains(j)) j.def.onSkip(s, j);
+            }
             s.nextBlind = type == Data.BlindType.SMALL ? "big" : "boss";
             return true;
         }
@@ -191,6 +256,7 @@ public final class Engine {
 
         s.blindTarget = blindTarget(s, s.blindType);
         s.handSizeRound = Math.max(1, s.handSizeBase + intFlag(f, "handSize"));
+        if (s.nextShop.get("juggle") != null) { s.handSizeRound += 3; s.nextShop.remove("juggle"); }
         s.handsLeft = Math.max(0, s.handsBase + intFlag(f, "hands"));
         s.discardsLeft = Math.max(0, s.discardsBase + intFlag(f, "discards"));
 
@@ -455,6 +521,7 @@ public final class Engine {
         // ---------- 出牌后处理 ----------
         s.handsLeft--;
         s.handsPlayedThisRound++;
+        s.statsHandsPlayed++;
         s.handPlayedCount.merge(type, 1, Integer::sum);
         s.playedTypesThisRound.add(type);
         for (Card c : cards) s.playedThisAnte.add(c.id());
@@ -674,7 +741,15 @@ public final class Engine {
 
         // 租赁 / 易腐小丑（0.2.0 商店属性，0.1.0 无）
 
+        s.statsDiscardsUnused += s.discardsLeft;
         s.money += gain;
+
+        // 投资标签：击败 Boss 后 +$25
+        if (s.blindType == Data.BlindType.BOSS && s.nextShop.get("invest") != null) {
+            s.money += 25;
+            detail.add("投资标签 +$25");
+            s.nextShop.remove("invest");
+        }
 
         // 击败 Boss
         if (s.blindType == Data.BlindType.BOSS) {

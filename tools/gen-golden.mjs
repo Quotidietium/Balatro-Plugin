@@ -276,6 +276,24 @@ function genConsumable() {
 }
 genConsumable();
 
+// ============ 标签黄金值（gainTag 效果：money/nextShop/小丑数/牌型级） ============
+function genTag() {
+  const { Engine, DATA } = loadBalatro(['rng.js', 'data.js', 'jokers.js', 'engine.js'], ['Engine', 'DATA']);
+  const L = [];
+  for (const t of DATA.TAGS) {
+    const st = Engine.createRun({ deck: 'red', stake: 0, seed: 'TAG1' });
+    st.phase = 'round'; // 便于某些效果
+    st.gainTag(t.key);
+    const ns = Object.keys(st.nextShop).sort().map((k) => `${k}=${st.nextShop[k]}`).join(',');
+    // 牌型等级变化（orbital 使某牌型 +3）
+    const levels = Object.keys(st.handLevels).filter((k) => st.handLevels[k] !== 1)
+      .sort().map((k) => `${k}:${st.handLevels[k]}`).join(',');
+    L.push(`TAG ${t.key} money=${st.money} jokers=${st.jokers.length} nextshop=${ns} levels=${levels}`);
+  }
+  writeText('tag.txt', L);
+}
+genTag();
+
 // ============ JOKER 黄金值 ============
 // 给开局授予指定小丑后，驱动 small 盲注整回合，对比计分（验证小丑效果与计分管线）。
 function genJokers() {
