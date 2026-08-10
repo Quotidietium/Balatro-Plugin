@@ -33,6 +33,27 @@ public final class Rng {
         return h;
     }
 
+    /** 种子最大长度（防止超长用户输入进入 RNG/统计文件/聊天）。 */
+    public static final int MAX_SEED_LEN = 32;
+
+    /**
+     * 合法用户种子：长度 1~{@value #MAX_SEED_LEN}，仅限字母/数字/下划线/连字符。
+     *
+     * <p>种子来自客户端输入，不可信：限制字符集与长度，避免控制字符/分隔符（破坏
+     * 统计文件格式）与超长串（存储/展示/RNG 哈希成本）。功能上 FNV-1a 可哈希任意串，
+     * 此校验纯属输入卫生策略。
+     */
+    public static boolean isValidSeed(String s) {
+        if (s == null || s.isEmpty() || s.length() > MAX_SEED_LEN) return false;
+        for (int i = 0; i < s.length(); i++) {
+            char ch = s.charAt(i);
+            boolean ok = (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')
+                    || (ch >= '0' && ch <= '9') || ch == '_' || ch == '-';
+            if (!ok) return false;
+        }
+        return true;
+    }
+
     /** 生成 8 位随机种子字符串（仅当用户留空种子时使用一次；不属于可复现流）。 */
     public static String randomSeedString() {
         String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";

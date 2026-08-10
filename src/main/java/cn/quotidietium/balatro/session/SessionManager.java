@@ -28,6 +28,11 @@ public final class SessionManager {
     public GameSession start(Player player, String deckKey, int stakeIdx, String seed, String challenge) {
         UUID id = player.getUniqueId();
         if (sessions.containsKey(id)) return null;
+        // 兜底校验（命令层已先行校验并提示）：种子来自客户端，不接受超长/非法字符集
+        if (seed != null && !cn.quotidietium.balatro.engine.Rng.isValidSeed(seed)) {
+            plugin.getLogger().warning("拒绝非法种子输入（玩家 " + player.getName() + "）");
+            return null;
+        }
         GameSession session = new GameSession(plugin, player, deckKey, stakeIdx, seed, challenge);
         if (!session.start()) {
             // RunStart 被取消
@@ -53,8 +58,15 @@ public final class SessionManager {
         }
     }
 
-    /** 关闭全部（onDisable）。 */
+    /** 关闭全部（onDisable / reload）：逐一销毁牌桌实体，避免世界内残留全息。 */
     public void shutdownAll() {
+        for (GameSession s : sessions.values()) {
+            try {
+                s.despawnBoard();
+            } catch (RuntimeException ignored) {
+                // 关停阶段实体可能已随世界卸载失效，忽略个别清理失败
+            }
+        }
         sessions.clear();
     }
 }

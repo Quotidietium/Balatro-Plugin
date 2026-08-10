@@ -84,14 +84,19 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         for (int i = 1; i < args.length; i++) {
             String a = args[i];
             if (isStakeArg(a)) {
-                stake = Integer.parseInt(a);
-            } else if (isDeckArg(a)) {
-                deck = a;
-            } else if (isChallengeArg(a)) {
-                challenge = a;
+                stake = a.charAt(0) - '0';
+            } else if (deckKeyOf(a) != null) {
+                deck = deckKeyOf(a); // 规范化为表内 key（引擎大小写敏感）
+            } else if (challengeKeyOf(a) != null) {
+                challenge = challengeKeyOf(a);
             } else {
                 seed = a;
             }
+        }
+        // 种子来自客户端，必须校验（长度/字符集），拒绝非法输入
+        if (seed != null && !cn.quotidietium.balatro.engine.Rng.isValidSeed(seed)) {
+            player.sendMessage("§c无效种子：仅允许字母/数字/下划线/连字符，长度 1~32。");
+            return;
         }
         GameSession s = plugin.sessionManager().start(player, deck, stake, seed, challenge);
         if (s == null) {
@@ -158,18 +163,20 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         return n >= 0 && n <= 7;
     }
 
-    private static boolean isDeckArg(String a) {
+    /** 大小写不敏感匹配牌组，返回表内规范 key；不匹配返回 null。 */
+    private static String deckKeyOf(String a) {
         for (var d : cn.quotidietium.balatro.engine.Data.DECKS) {
-            if (d.key().equalsIgnoreCase(a)) return true;
+            if (d.key().equalsIgnoreCase(a)) return d.key();
         }
-        return false;
+        return null;
     }
 
-    private static boolean isChallengeArg(String a) {
+    /** 大小写不敏感匹配挑战，返回表内规范 key；不匹配返回 null。 */
+    private static String challengeKeyOf(String a) {
         for (var c : cn.quotidietium.balatro.engine.Data.CHALLENGES) {
-            if (c.key().equalsIgnoreCase(a)) return true;
+            if (c.key().equalsIgnoreCase(a)) return c.key();
         }
-        return false;
+        return null;
     }
 
     private void cmdHelp(Player player, String[] args) {
@@ -414,9 +421,10 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         if (s.state().phase != cn.quotidietium.balatro.engine.Phase.BLIND_SELECT) return;
         var bt = cn.quotidietium.balatro.engine.Data.BlindType.byKey(s.state().nextBlind);
         long target = cn.quotidietium.balatro.engine.Engine.blindTarget(s.state(), bt);
-        String boss = bt == cn.quotidietium.balatro.engine.Data.BlindType.BOSS
-                ? "（" + cn.quotidietium.balatro.engine.Data.Boss.byKey(s.state().bossQueue.isEmpty() ? "" : s.state().bossQueue.get(0)).name + "）"
-                : "";
+        String boss = "";
+        if (bt == cn.quotidietium.balatro.engine.Data.BlindType.BOSS && !s.state().bossQueue.isEmpty()) {
+            boss = "（" + cn.quotidietium.balatro.engine.Data.Boss.byKey(s.state().bossQueue.get(0)).name + "）";
+        }
         player.sendMessage("§6下一盲注：§f底注 " + s.state().ante + " · " + blindName(bt.key) + boss
                 + " · 目标 " + target + " 分");
         player.sendMessage("§e/balatro go §7开始盲注    §e/balatro skip §7跳过并获标签" + (bt == cn.quotidietium.balatro.engine.Data.BlindType.BOSS ? "（Boss 不可跳过）" : ""));
@@ -473,7 +481,13 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         try { cidx = Integer.parseInt(args[1]) - 1; } catch (NumberFormatException e) { player.sendMessage("§c无效序号"); return; }
         List<Integer> cardIds = new ArrayList<>();
         for (int i = 2; i < args.length; i++) {
-            int hi = Integer.parseInt(args[i]);
+            int hi;
+            try {
+                hi = Integer.parseInt(args[i]);
+            } catch (NumberFormatException e) {
+                player.sendMessage("§c无效的手牌序号：" + args[i]);
+                return;
+            }
             if (hi < 1 || hi > s.state().hand.size()) { player.sendMessage("§c手牌序号越界：" + args[i]); return; }
             cardIds.add(s.state().hand.get(hi - 1).id());
         }
