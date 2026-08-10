@@ -172,6 +172,7 @@ public final class RoundBoard {
         switch (state.phase) {
             case SHOP -> reflowShop(state);
             case PACK -> reflowPack(state);
+            case BLIND_SELECT -> reflowBlindSelect(state);
             default -> reflowRound(state);
         }
         hideExtraInteractions();
@@ -396,6 +397,41 @@ public final class RoundBoard {
     private void setCardTag(TextDisplay d, int cardId) {
         d.getScoreboardTags().removeIf(t -> t.startsWith("balatro_card_"));
         d.addScoreboardTag("balatro_card_" + cardId);
+    }
+
+    // ================= 盲注选择视图 =================
+
+    private void reflowBlindSelect(RunState state) {
+        Data.BlindType bt = Data.BlindType.byKey(state.nextBlind);
+        long target = Engine.blindTarget(state, bt);
+        String boss = bt == Data.BlindType.BOSS && !state.bossQueue.isEmpty()
+                ? "（" + Data.Boss.byKey(state.bossQueue.get(0)).name + "）" : "";
+        statusBar.text(Component.text()
+                .append(Component.text("底注 " + state.ante + "  " + blindName(bt.key) + boss, NamedTextColor.GOLD)).appendNewline()
+                .append(Component.text("目标 " + target + " 分", NamedTextColor.WHITE)).appendNewline()
+                .append(Component.text("$" + state.money + "  右键▶开始 · 右键✗跳过(获标签)", NamedTextColor.YELLOW))
+                .build());
+        statusBar.teleport(at(0, STATUS_Y));
+        hide(evalBar);
+
+        playBtn.text(Component.text("▶ 开始盲注", NamedTextColor.GREEN));
+        ensureTag(playBtn, "balatro_act_play");
+        playBtn.teleport(at(-1.15, BUTTON_Y));
+        placeInteraction(-1.15, BUTTON_Y, BTN_HW, BTN_HH, "go");
+
+        boolean canSkip = bt != Data.BlindType.BOSS;
+        discBtn.text(Component.text(canSkip ? "✗ 跳过(标签)" : "✗ Boss 不可跳过",
+                canSkip ? NamedTextColor.RED : NamedTextColor.DARK_GRAY));
+        ensureTag(discBtn, "balatro_act_discard");
+        discBtn.teleport(at(1.15, BUTTON_Y));
+        if (canSkip) placeInteraction(1.15, BUTTON_Y, BTN_HW, BTN_HH, "skip");
+
+        hide(rerollBtn);
+        hide(nextBtn);
+        hide(voucherEnt);
+        hide(skipackBtn);
+        clearRoundSlots();
+        clearShopPackSlots();
     }
 
     // ================= 商店视图 =================

@@ -142,7 +142,7 @@ public final class GameSession {
         return false;
     }
 
-    /** 离开商店进入下一盲注。 */
+    /** 离开商店，进入下一盲注的【选择阶段】（不自动开始；用 go/skip 选择）。 */
     public boolean nextRound() {
         if (state.phase != Phase.SHOP) return false;
         Engine.nextRound(state);
@@ -150,8 +150,20 @@ public final class GameSession {
             finishRun(true, state.ante);
             return true;
         }
-        autoAdvance();
+        // 停在 BLIND_SELECT，等待玩家 go（开始）/ skip（跳过获标签）
         if (board != null) board.update(state);
+        return true;
+    }
+
+    /**
+     * 在盲注选择阶段：开始当前盲注（{@code skip=false}）或跳过并获标签（{@code skip=true}）。
+     * Boss 盲注不可跳过。返回是否成功推进。
+     */
+    public boolean chooseBlind(boolean skip) {
+        if (state.phase != Phase.BLIND_SELECT) return false;
+        boolean ok = Engine.selectBlind(state, Data.BlindType.byKey(state.nextBlind), skip);
+        if (!ok) return false;
+        if (board != null) board.update(state); // 开始→回合；跳过→下一盲注选择
         return true;
     }
 

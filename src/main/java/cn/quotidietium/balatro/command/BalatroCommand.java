@@ -22,7 +22,7 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBS = Arrays.asList(
             "help", "play", "quit", "status", "playcard", "disc", "endless",
-            "shop", "buy", "buybag", "buyvoucher", "reroll", "next",
+            "shop", "buy", "buybag", "buyvoucher", "reroll", "next", "go", "skip",
             "cons", "use", "packs", "pick", "skipack", "sellj", "sellc", "top");
 
     private final BalatroPlugin plugin;
@@ -55,6 +55,8 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             case "buyvoucher", "voucher" -> cmdBuyVoucher(player);
             case "reroll" -> cmdReroll(player);
             case "next" -> cmdNext(player);
+            case "go" -> cmdGo(player);
+            case "skip" -> cmdSkip(player);
             case "cons", "consumables" -> cmdCons(player);
             case "use" -> cmdUse(player, args);
             case "packs" -> cmdPack(player);
@@ -326,10 +328,54 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             return;
         }
         s.nextRound();
-        if (s.state().phase == cn.quotidietium.balatro.engine.Phase.ROUND) {
-            player.sendMessage("§a进入下一盲注！");
+        promptBlindSelect(player, s);
+    }
+
+    private void cmdGo(Player player) {
+        GameSession s = plugin.sessionManager().get(player);
+        if (s == null || s.state().phase != cn.quotidietium.balatro.engine.Phase.BLIND_SELECT) {
+            player.sendMessage("§c当前不在盲注选择阶段。");
+            return;
+        }
+        if (s.chooseBlind(false)) {
+            player.sendMessage("§a开始盲注！");
             player.sendMessage(s.handDebug());
         }
+    }
+
+    private void cmdSkip(Player player) {
+        GameSession s = plugin.sessionManager().get(player);
+        if (s == null || s.state().phase != cn.quotidietium.balatro.engine.Phase.BLIND_SELECT) {
+            player.sendMessage("§c当前不在盲注选择阶段。");
+            return;
+        }
+        if (!s.chooseBlind(true)) {
+            player.sendMessage("§c无法跳过（Boss 盲注不可跳过）。");
+            return;
+        }
+        promptBlindSelect(player, s);
+    }
+
+    /** 提示当前盲注选择（开始/跳过）。 */
+    private void promptBlindSelect(Player player, GameSession s) {
+        if (s.state().phase != cn.quotidietium.balatro.engine.Phase.BLIND_SELECT) return;
+        var bt = cn.quotidietium.balatro.engine.Data.BlindType.byKey(s.state().nextBlind);
+        long target = cn.quotidietium.balatro.engine.Engine.blindTarget(s.state(), bt);
+        String boss = bt == cn.quotidietium.balatro.engine.Data.BlindType.BOSS
+                ? "（" + cn.quotidietium.balatro.engine.Data.Boss.byKey(s.state().bossQueue.isEmpty() ? "" : s.state().bossQueue.get(0)).name + "）"
+                : "";
+        player.sendMessage("§6下一盲注：§f底注 " + s.state().ante + " · " + blindName(bt.key) + boss
+                + " · 目标 " + target + " 分");
+        player.sendMessage("§e/balatro go §7开始盲注    §e/balatro skip §7跳过并获标签" + (bt == cn.quotidietium.balatro.engine.Data.BlindType.BOSS ? "（Boss 不可跳过）" : ""));
+    }
+
+    private static String blindName(String key) {
+        return switch (key) {
+            case "small" -> "小盲注";
+            case "big" -> "大盲注";
+            case "boss" -> "Boss 盲注";
+            default -> key;
+        };
     }
 
     private GameSession requireShop(Player player) {

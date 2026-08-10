@@ -65,7 +65,7 @@ final class BalatroHelp {
                 "§e/balatro buy <序号>§f 购买卡牌  §7|§e buybag <序号>§f 购买补充包",
                 "§e/balatro buyvoucher§f   购买优惠券",
                 "§e/balatro reroll§f   重掷商店商品",
-                "§e/balatro next§f   离开商店，进入下一盲注"
+                "§e/balatro next§f 离开商店 → §ego§f 开始盲注 / §eskip§f 跳过(获标签)"
         });
         add("消耗品与补充包", new String[]{
                 "§e/balatro cons§f   查看持有的消耗品（塔罗/星球/幻灵）",

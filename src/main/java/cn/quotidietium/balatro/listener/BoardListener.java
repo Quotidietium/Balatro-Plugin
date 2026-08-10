@@ -86,6 +86,8 @@ public final class BoardListener implements Listener {
             case "discard" -> { board.discardSelected(); click(player, 0.8f); }
             case "reroll" -> { session.reroll(); click(player, 1.0f); }
             case "next" -> { session.nextRound(); click(player, 1.2f); }
+            case "go" -> { session.chooseBlind(false); click(player, 1.2f); }
+            case "skip" -> { session.chooseBlind(true); click(player, 0.8f); }
             case "skipack" -> { session.skipPack(); click(player, 0.8f); }
             case "voucher" -> { session.buyVoucher(); click(player, 1.0f); }
             default -> {
