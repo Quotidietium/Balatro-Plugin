@@ -942,6 +942,8 @@ public final class Engine {
         if (!s.endlessPending) return false;
         s.endless = true;
         s.endlessPending = false;
+        s.won = false; // 重置通关标记：通关(ante 8)的 finishRun 已在 nextRound 触发一次，
+                       // 此后无尽模式不再视为已通关，避免 play()/nextRound 重复触发 finishRun。
         s.phase = Phase.BLIND_SELECT;
         s.ante++;
         startAnte(s);

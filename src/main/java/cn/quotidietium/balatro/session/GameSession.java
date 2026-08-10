@@ -245,6 +245,45 @@ public final class GameSession {
         plugin.services().stats().record(new RunSummary(
                 player.getUniqueId(), won, anteReached, state.seed, state.deckKey, state.stakeIdx,
                 System.currentTimeMillis()));
+        sendRunStats(won, anteReached);
+        if (!won) {
+            // 失败：销毁牌桌并移除会话，玩家可立刻 /balatro play 再来一局
+            plugin.sessionManager().end(player);
+        }
+        // 通关(won)：保留会话与牌桌，玩家可选 /endless 继续或 /quit 结束
+    }
+
+    /** 向玩家发送本局统计（任何结束情况都发）。 */
+    private void sendRunStats(boolean won, int anteReached) {
+        player.sendMessage("§6━━ 本局结束 ━━");
+        player.sendMessage((won ? "§a§l通关！" : "§c§l本局失败")
+                + "§r  §e到达底注 " + anteReached + " / 8");
+        String deckName = state.deckKey;
+        try {
+            deckName = Data.deckByKey(state.deckKey).name();
+        } catch (IllegalArgumentException ignored) {
+        }
+        String stakeName = (state.stakeIdx >= 0 && state.stakeIdx < Data.STAKES.size())
+                ? Data.STAKES.get(state.stakeIdx).name() : String.valueOf(state.stakeIdx);
+        StringBuilder mode = new StringBuilder("§e种子 ").append(state.seed)
+                .append(" §7·§e 牌组 ").append(deckName)
+                .append(" §7·§e 赌注 ").append(stakeName);
+        if (state.challenge != null) {
+            for (Data.Challenge c : Data.CHALLENGES) {
+                if (c.key().equals(state.challenge)) {
+                    mode.append(" §7·§e 挑战 ").append(c.name());
+                    break;
+                }
+            }
+        }
+        player.sendMessage(mode.toString());
+        player.sendMessage("§7打出 §f" + state.statsHandsPlayed + " §7手牌 · 持有 §f"
+                + state.jokers.size() + " §7张小丑 · 剩余 §f$" + state.money);
+        if (won) {
+            player.sendMessage("§e/balatro endless §7继续无尽模式  §e/balatro quit §7结束本局");
+        } else {
+            player.sendMessage("§e/balatro play §7再来一局");
+        }
     }
 
     /** 调试用：手牌的可读简报。 */
