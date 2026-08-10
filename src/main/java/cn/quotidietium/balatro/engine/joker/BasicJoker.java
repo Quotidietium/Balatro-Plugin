@@ -524,6 +524,10 @@ public enum BasicJoker implements Joker {
         public void onScore(ScoreContext ctx) {
             ctx.xMult(1 + gd(ctx.joker.extra, "x"));
         }
+        @Override
+        public void onUsePlanet(RunState state, JokerInstance self) {
+            self.extra.put("x", gd(self.extra, "x") + 0.1);
+        }
     },
     HIKER("hiker", "徒步者", "每张计分牌永久 +5 筹码", 5) {
         @Override
@@ -591,6 +595,10 @@ public enum BasicJoker implements Joker {
         @Override
         public void onScore(ScoreContext ctx) {
             ctx.xMult(1 + gd(ctx.joker.extra, "x"));
+        }
+        @Override
+        public void onCardAdded(RunState state, Card card, JokerInstance self) {
+            self.extra.put("x", gd(self.extra, "x") + 0.25);
         }
     },
     VAGABOND("vagabond", "流浪者", "若出牌时资金 ≤ $4：获得一张塔罗牌", 8) {
