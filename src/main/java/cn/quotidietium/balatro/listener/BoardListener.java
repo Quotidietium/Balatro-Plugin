@@ -16,6 +16,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.jetbrains.annotations.NotNull;
 
@@ -50,6 +51,13 @@ public final class BoardListener implements Listener {
         Entity entity = event.getRightClicked();
         if (!(entity instanceof Interaction)) return;
 
+        Player player = event.getPlayer();
+        GameSession session = plugin.sessionManager().get(player);
+        if (session == null || session.board() == null) return;
+        // 归属校验：只接受本人本牌桌创建的命中盒。客户端不可信（可被篡改、可对任意
+        // 实体 id 发交互包），其他玩家牌桌或来路不明的 balatro_i_* 标签实体一律拒绝。
+        if (!session.board().ownsInteraction(entity)) return;
+
         String action = null;
         for (String t : entity.getScoreboardTags()) {
             if (t.startsWith(TAG_PREFIX)) {
@@ -58,14 +66,16 @@ public final class BoardListener implements Listener {
             }
         }
         if (action == null) return;
-
-        Player player = event.getPlayer();
-        GameSession session = plugin.sessionManager().get(player);
-        if (session == null || session.board() == null) return;
         if (!throttle(player)) return;
 
         event.setCancelled(true);
-        dispatch(player, session, session.board(), action, player.isSneaking());
+        try {
+            dispatch(player, session, session.board(), action, player.isSneaking());
+        } catch (RuntimeException ex) {
+            // 交互派发绝不向事件/网络层抛异常（防止异常客户端输入造成踢出/报错）
+            plugin.getLogger().warning("牌桌交互处理异常（玩家 " + player.getName()
+                    + "，动作 " + action + "）：" + ex);
+        }
     }
 
     private void dispatch(Player player, GameSession session, RoundBoard board, String act, boolean sneak) {
@@ -84,34 +94,78 @@ public final class BoardListener implements Listener {
         switch (act) {
             case "play" -> { board.playSelected(); click(player, 1.2f); }
             case "discard" -> { board.discardSelected(); click(player, 0.8f); }
-            case "reroll" -> { session.reroll(); click(player, 1.0f); }
+            case "reroll" -> {
+                if (session.reroll() < 0) fail(player, "重掷失败（资金不足）");
+                click(player, 1.0f);
+            }
             case "next" -> { session.nextRound(); click(player, 1.2f); }
             case "go" -> { session.chooseBlind(false); click(player, 1.2f); }
-            case "skip" -> { session.chooseBlind(true); click(player, 0.8f); }
+            case "skip" -> {
+                if (!session.chooseBlind(true)) fail(player, "无法跳过（Boss 盲注不可跳过）");
+                click(player, 0.8f);
+            }
             case "skipack" -> { session.skipPack(); click(player, 0.8f); }
-            case "voucher" -> { session.buyVoucher(); click(player, 1.0f); }
+            case "voucher" -> {
+                if (!session.buyVoucher()) fail(player, "购买失败（资金不足/已售）");
+                click(player, 1.0f);
+            }
             default -> {
                 if (act.startsWith("card:")) {
-                    boolean changed = board.toggleSelect(Integer.parseInt(act.substring("card:".length())));
-                    if (changed) click(player, 1.6f); // 超限拒绝时不播音效（不作出反应）
+                    Integer id = parseIntSafe(act.substring("card:".length()));
+                    if (id != null) {
+                        boolean changed = board.toggleSelect(id);
+                        if (changed) click(player, 1.6f); // 超限拒绝时不播音效（不作出反应）
+                    }
                 } else if (act.startsWith("shop:")) {
-                    session.buyCard(Integer.parseInt(act.substring("shop:".length())));
-                    click(player, 1.0f);
+                    Integer i = parseIntSafe(act.substring("shop:".length()));
+                    if (i != null) {
+                        if (!session.buyCard(i)) fail(player, "购买失败（资金不足/槽满/已售）");
+                        click(player, 1.0f);
+                    }
                 } else if (act.startsWith("shoppack:")) {
-                    session.buyPack(Integer.parseInt(act.substring("shoppack:".length())));
-                    click(player, 1.0f);
+                    Integer i = parseIntSafe(act.substring("shoppack:".length()));
+                    if (i != null) {
+                        if (!session.buyPack(i)) fail(player, "购买失败（资金不足/已售）");
+                        click(player, 1.0f);
+                    }
                 } else if (act.startsWith("pick:")) {
-                    session.pickPack(Integer.parseInt(act.substring("pick:".length())));
-                    click(player, 1.2f);
+                    Integer i = parseIntSafe(act.substring("pick:".length()));
+                    if (i != null) {
+                        if (!session.pickPack(i)) fail(player, "选择失败（槽满/已选）");
+                        click(player, 1.2f);
+                    }
                 } else if (act.startsWith("joker:")) {
-                    board.sendSellConfirm(player, Integer.parseInt(act.substring("joker:".length())));
-                    click(player, 0.8f);
+                    Integer i = parseIntSafe(act.substring("joker:".length()));
+                    if (i != null) {
+                        board.sendSellConfirm(player, i);
+                        click(player, 0.8f);
+                    }
                 } else if (act.startsWith("cons:")) {
-                    board.sendUseConfirm(player, Integer.parseInt(act.substring("cons:".length())));
-                    click(player, 1.0f);
+                    Integer i = parseIntSafe(act.substring("cons:".length()));
+                    if (i != null) {
+                        board.sendUseConfirm(player, i);
+                        click(player, 1.0f);
+                    }
                 }
             }
         }
+    }
+
+    /** 交互失败提示（聊天框）。 */
+    private static void fail(Player player, String msg) {
+        player.sendMessage(Component.text(msg, net.kyori.adventure.text.format.NamedTextColor.RED));
+    }
+
+    /** 宽松整数解析：非法（含越界/空/非数字）返回 null，绝不抛出。 */
+    private static Integer parseIntSafe(String s) {
+        if (s == null || s.isEmpty() || s.length() > 9) return null;
+        int v = 0;
+        for (int i = 0; i < s.length(); i++) {
+            char ch = s.charAt(i);
+            if (ch < '0' || ch > '9') return null;
+            v = v * 10 + (ch - '0');
+        }
+        return v;
     }
 
     private void click(Player player, float pitch) {
@@ -124,5 +178,11 @@ public final class BoardListener implements Listener {
         if (now - last < THROTTLE_MS) return false;
         lastClick.put(player.getUniqueId(), now);
         return true;
+    }
+
+    /** 玩家离线即清理其节流记录，避免长期运行下 map 无限增长。 */
+    @EventHandler
+    public void onQuit(@NotNull PlayerQuitEvent event) {
+        lastClick.remove(event.getPlayer().getUniqueId());
     }
 }

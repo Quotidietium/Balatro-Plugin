@@ -113,9 +113,11 @@ public final class RoundBoard {
     private static final TextColor C_EDITION = TextColor.color(220, 180, 255);
 
     private final GameSession session;
-    private final Vector origin;
-    private final Vector forward;
-    private final Vector right; // 玩家右手方向（板面横向）
+    /** 牌桌所在世界（生成/迁移时锁定；不随玩家实时位置取值，避免跨世界混放实体）。 */
+    private org.bukkit.World world;
+    private Vector origin;
+    private Vector forward;
+    private Vector right; // 玩家右手方向（板面横向）
 
     // ---- 持久实体 ----
     private final List<TextDisplay> all = new ArrayList<>(); // 全部实体（despawn 用）
@@ -142,16 +144,37 @@ public final class RoundBoard {
 
     public RoundBoard(GameSession session) {
         this.session = session;
-        Location eye = session.player().getEyeLocation();
-        // 水平化朝向：牌桌正立悬浮于眼前（不随玩家俯仰倾斜），且命中平面与实体位置平面一致。
+        setBasis(session.player().getEyeLocation());
+    }
+
+    /**
+     * 由眼部位置重算板面基（origin/forward/right/world）。
+     * 水平化朝向：牌桌正立悬浮于眼前（不随玩家俯仰倾斜），且命中平面与实体位置平面一致。
+     */
+    private void setBasis(Location eye) {
         Vector dir = eye.getDirection();
         dir.setY(0);
         if (dir.lengthSquared() < 1.0E-6) dir.setX(1); // 玩家纯俯/仰视时给默认水平方向
         dir.normalize();
+        this.world = eye.getWorld();
         this.origin = eye.toVector().add(dir.clone().multiply(FORWARD));
         this.forward = dir;
         Vector up = new Vector(0, 1, 0);
         this.right = dir.clone().getCrossProduct(up).normalize();
+    }
+
+    /**
+     * 把整张牌桌迁移到玩家当前眼前（跨世界传送 / 重生 / 远距离传送后调用）。
+     *
+     * <p>牌桌实体锚定世界坐标；玩家换世界或远传后旧板留在原地（甚至不同世界），
+     * 必须按新位置重建：重算基 → despawn 旧实体 → 原位 respawn。保留已选中牌。
+     */
+    public void relocate(Location eye) {
+        Set<Integer> keep = new HashSet<>(selected);
+        setBasis(eye);
+        despawn();
+        selected.addAll(keep);
+        spawn(session.state());
     }
 
     /** 初次生成。 */
@@ -181,6 +204,16 @@ public final class RoundBoard {
 
     /** 状态变更后刷新（原地改写，不 clear+respawn）。 */
     public void update(RunState state) {
+        // 自愈：核心实体已失效（如所在区块被卸载移除非持久实体）→ 在玩家眼前整体重建。
+        if (statusBar != null && !statusBar.isValid()) {
+            relocate(session.player().getEyeLocation());
+            return; // relocate 内 spawn→update 已完成本次刷新
+        }
+        // 剪除已不在手牌中的选中 id（消耗品销毁/改写手牌、出牌弃牌等都会改变手牌构成），
+        // 避免陈旧选中导致「选中 N」计数虚高、出牌时混入无效 id。
+        if (!selected.isEmpty()) {
+            selected.removeIf(id -> findInHand(state, id) == null);
+        }
         interactionIdx = 0;
         Phase prev = activePhase;
         if (prev != state.phase) {
@@ -815,12 +848,12 @@ public final class RoundBoard {
         for (TextDisplay d : packSlots) hide(d);
     }
 
-    /** 板面上某 (横向, 垂直) 偏移处的世界坐标。 */
+    /** 板面上某 (横向, 垂直) 偏移处的世界坐标（世界取生成/迁移时锁定的世界）。 */
     private Location at(double rightOffset, double upOffset) {
         Vector v = origin.clone()
                 .add(right.clone().multiply(rightOffset))
                 .add(new Vector(0, upOffset, 0));
-        return new Location(session.player().getWorld(), v.getX(), v.getY(), v.getZ());
+        return new Location(world, v.getX(), v.getY(), v.getZ());
     }
 
     // ---- 交互（由 BoardListener 经 tag 派发） ----
@@ -836,6 +869,8 @@ public final class RoundBoard {
             update(session.state());
             return true;
         }
+        // 拒绝不在当前手牌中的 id（陈旧实体点击/伪造交互均不可选中）
+        if (findInHand(session.state(), cardId) == null) return false;
         if (selected.size() >= MAX_SELECT) {
             session.player().sendMessage(Component.text(
                     "选牌上限为 " + MAX_SELECT + " 张（出牌/弃牌最多 5 张），请先取消部分牌再选。",
@@ -847,16 +882,29 @@ public final class RoundBoard {
         return true;
     }
 
+    private static Card findInHand(RunState state, int cardId) {
+        for (Card c : state.hand) {
+            if (c.id() == cardId) return c;
+        }
+        return null;
+    }
+
     public void playSelected() {
         if (selected.isEmpty()) return;
-        session.play(new ArrayList<>(selected));
+        cn.quotidietium.balatro.engine.Engine.PlayResult r = session.play(new ArrayList<>(selected));
         selected.clear();
+        if (!r.ok && r.err != null) {
+            session.player().sendMessage(Component.text(r.err, NamedTextColor.RED));
+        }
     }
 
     public void discardSelected() {
         if (selected.isEmpty()) return;
-        session.discard(new ArrayList<>(selected));
+        cn.quotidietium.balatro.engine.Engine.PlayResult r = session.discard(new ArrayList<>(selected));
         selected.clear();
+        if (!r.ok && r.err != null) {
+            session.player().sendMessage(Component.text(r.err, NamedTextColor.RED));
+        }
     }
 
     public void clearSelection() {
@@ -915,6 +963,17 @@ public final class RoundBoard {
                 .clickEvent(ClickEvent.runCommand("/balatro cancel"))
                 .hoverEvent(HoverEvent.showText(Component.text("点击取消", NamedTextColor.GRAY)));
         return Component.text(" ").append(confirm).append(Component.text("   ")).append(cancel);
+    }
+
+    /**
+     * 该实体是否属于本牌桌（交互归属校验）。
+     *
+     * <p>牌桌实体虽为本人私有可见，但客户端可被篡改、且实体 id 可被枚举/探测：
+     * 玩家可尝试对任意实体 id 发送交互包（服务端仅校验距离）。交互派发前必须确认
+     * 被点击的 {@link Interaction} 确实由本玩家的本牌桌创建，否则拒绝。
+     */
+    public boolean ownsInteraction(org.bukkit.entity.Entity entity) {
+        return entity != null && interactions.contains(entity);
     }
 
     /** 销毁全部实体。 */
