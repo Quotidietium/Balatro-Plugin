@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * 蜡封效果测试：紫色蜡封（弃牌→塔罗）、蓝色蜡封（手中回合结束→星球）。
- * 0.2.7 新实现，对齐 engine.js discard/endRound，黄金套件不覆盖故单独锁定。
+ * 0.3.0 新实现，对齐 engine.js discard/endRound，黄金套件不覆盖故单独锁定。
  */
 class SealTest {
 

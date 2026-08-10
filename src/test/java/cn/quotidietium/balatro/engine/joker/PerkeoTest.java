@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * perkeo（佩尔凯奥）小丑测试：回合结束时复制一张随机消耗品为负片。
- * 0.2.7 前为 TODO 桩，对齐 jokers.js perkeo，单独锁定。
+ * 0.3.0 前为 TODO 桩，对齐 jokers.js perkeo，单独锁定。
  */
 class PerkeoTest {
 

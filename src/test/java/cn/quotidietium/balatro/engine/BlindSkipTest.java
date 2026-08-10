@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * 跳过盲注流程测试：selectBlind(skip=true) 推进 nextBlind 并获标签；Boss 不可跳过。
- * 0.2.7 将此路径接入会话层（/balatro go · /balatro skip），单独锁定其引擎语义。
+ * 0.3.0 将此路径接入会话层（/balatro go · /balatro skip），单独锁定其引擎语义。
  */
 class BlindSkipTest {
 

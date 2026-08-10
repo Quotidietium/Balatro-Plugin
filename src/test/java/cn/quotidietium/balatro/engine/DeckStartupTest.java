@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * 牌组开局效果测试：magic/ghost/zodiac/nebula 的优惠券与消耗品开局（对齐 engine.js createRun）。
- * 这些牌组在 0.2.7 前是 TODO，且黄金套件不覆盖，故单独锁定。
+ * 这些牌组在 0.3.0 前是 TODO，且黄金套件不覆盖，故单独锁定。
  */
 class DeckStartupTest {
 
