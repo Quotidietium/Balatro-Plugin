@@ -24,6 +24,7 @@ public final class MemoryLeaderboard implements LeaderboardProvider {
 
     @Override
     public List<RunSummary> top(int n) {
+        if (n <= 0) return new ArrayList<>();
         List<RunSummary> all = new ArrayList<>(stats.all());
         all.sort(RANK);
         if (all.size() <= n) return all;

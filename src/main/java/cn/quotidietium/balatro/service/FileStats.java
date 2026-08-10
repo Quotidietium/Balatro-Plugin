@@ -11,25 +11,47 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * 基于行文本文件的持久化统计（无外部依赖）。
  * 每条记录一行：{@code player|won|anteReached|seed|deckKey|stakeIdx|epochMilli}。
  * 重启后仍保留，供 {@code MemoryLeaderboard} 排名。
+ *
+ * <p><b>长期运行边界</b>：内存与文件均以 {@link #MAX_RECORDS} 为上限——
+ * 只保留最近 N 条（排行榜语义即"最近最佳"）。加载时若文件超限则一次性压缩重写；
+ * 运行期内存恒定有界，保证 {@code top()} 的复制+排序成本可控（主线程安全）。
+ *
+ * <p>种子等字段来自客户端输入，上游（命令/会话层）已做字符集与长度校验；
+ * 解码侧对分隔符错位/非法行一律丢弃，不让脏数据进入内存。
  */
 public final class FileStats implements StatsService {
 
+    /** 记录条数上限（内存 + 文件压缩后均不超过此值）。 */
+    static final int MAX_RECORDS = 10_000;
+
     private final Path file;
+    private final Logger logger;
     private final List<RunSummary> records = new ArrayList<>();
 
     public FileStats(Path file) {
+        this(file, null);
+    }
+
+    public FileStats(Path file, Logger logger) {
         this.file = file;
+        this.logger = logger;
         load();
     }
 
     @Override
     public synchronized void record(RunSummary s) {
         records.add(s);
+        // 内存有界：超出上限丢弃最旧记录（文件端在下次启动加载时压缩）
+        while (records.size() > MAX_RECORDS) {
+            records.remove(0);
+        }
         try {
             if (file.getParent() != null) Files.createDirectories(file.getParent());
             try (BufferedWriter w = Files.newBufferedWriter(file, StandardCharsets.UTF_8,
@@ -38,7 +60,8 @@ public final class FileStats implements StatsService {
                 w.newLine();
             }
         } catch (IOException e) {
-            // 持久化失败不影响局内
+            // 持久化失败不影响局内，但记日志便于排查磁盘/权限问题
+            if (logger != null) logger.log(Level.WARNING, "统计写入失败：" + file, e);
         }
     }
 
@@ -50,12 +73,35 @@ public final class FileStats implements StatsService {
     private void load() {
         if (!Files.isRegularFile(file)) return;
         try {
-            for (String line : Files.readAllLines(file, StandardCharsets.UTF_8)) {
-                RunSummary s = decode(line);
+            List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
+            // 只保留最近 MAX_RECORDS 条（文件可能随长期运行超出上限）
+            int from = Math.max(0, lines.size() - MAX_RECORDS);
+            for (int i = from; i < lines.size(); i++) {
+                RunSummary s = decode(lines.get(i));
                 if (s != null) records.add(s);
             }
+            // 超限则压缩重写，避免文件与启动耗时无限增长
+            if (from > 0) {
+                compact();
+            }
         } catch (IOException e) {
-            // 读取失败则从空开始
+            if (logger != null) logger.log(Level.WARNING, "统计读取失败（从空记录开始）：" + file, e);
+        }
+    }
+
+    /** 用当前内存记录重写文件（启动时检测到超限后调用一次）。 */
+    private void compact() {
+        try {
+            try (BufferedWriter w = Files.newBufferedWriter(file, StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+                for (RunSummary s : records) {
+                    w.write(encode(s));
+                    w.newLine();
+                }
+            }
+            if (logger != null) logger.info("统计文件已压缩至最近 " + records.size() + " 条：" + file);
+        } catch (IOException e) {
+            if (logger != null) logger.log(Level.WARNING, "统计文件压缩失败（不影响运行）：" + file, e);
         }
     }
 
@@ -66,12 +112,22 @@ public final class FileStats implements StatsService {
 
     private static RunSummary decode(String line) {
         String[] p = line.split("\\|", -1);
-        if (p.length < 7) return null;
+        if (p.length != 7) return null; // 严格 7 段：拒绝被分隔符污染的脏行
         try {
+            String seed = p[3];
+            // 展示与解析防御：截断超长种子、拒绝含控制字符的脏数据（历史文件兼容）
+            if (seed.length() > 64 || hasControlChars(seed)) return null;
             return new RunSummary(UUID.fromString(p[0]), Boolean.parseBoolean(p[1]), Integer.parseInt(p[2]),
-                    p[3], p[4], Integer.parseInt(p[5]), Long.parseLong(p[6]));
+                    seed, p[4], Integer.parseInt(p[5]), Long.parseLong(p[6]));
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private static boolean hasControlChars(String s) {
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) < 0x20) return true;
+        }
+        return false;
     }
 }

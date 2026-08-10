@@ -31,7 +31,8 @@ public final class BalatroPlugin extends JavaPlugin {
     public void onEnable() {
         services = new Services();
         // 持久化统计（文件）+ 基于其的排行榜
-        services.setStats(new cn.quotidietium.balatro.service.FileStats(getDataFolder().toPath().resolve("stats.txt")));
+        services.setStats(new cn.quotidietium.balatro.service.FileStats(
+                getDataFolder().toPath().resolve("stats.txt"), getLogger()));
         services.setLeaderboard(new cn.quotidietium.balatro.service.MemoryLeaderboard(services.stats()));
         if (getServer().getPluginManager().isPluginEnabled("Vault")) {
             cn.quotidietium.balatro.service.VaultEconomy ve = new cn.quotidietium.balatro.service.VaultEconomy();
@@ -45,6 +46,7 @@ public final class BalatroPlugin extends JavaPlugin {
         BalatroCommand command = new BalatroCommand(this);
         getServer().getPluginManager().registerEvents(new SessionListener(this), this);
         getServer().getPluginManager().registerEvents(new cn.quotidietium.balatro.listener.BoardListener(this), this);
+        getServer().getPluginManager().registerEvents(new cn.quotidietium.balatro.listener.BoardMoveListener(this), this);
         var cmd = getCommand("balatro");
         if (cmd != null) {
             cmd.setExecutor(command);
