@@ -308,7 +308,7 @@ public final class RunState {
         return jokerSlots - jokers.size();
     }
 
-    /** 获得一张指定小丑（0.2.0 商店/效果共用）。 */
+    /** 获得一张指定小丑（0.2.0 商店/效果共用）。对齐 engine.js gainJoker：加入后重算 flags。 */
     public boolean gainJoker(String key, Data.Edition edition) {
         if (jokerSpace() <= 0) return false;
         JokerInstance j = cn.quotidietium.balatro.engine.joker.JokerRegistry.create(key);
@@ -316,21 +316,29 @@ public final class RunState {
         if (edition != null) j.edition = edition;
         jokers.add(j);
         msg("获得小丑：" + cn.quotidietium.balatro.engine.joker.JokerRegistry.nameOf(key));
+        // 原版 gainJoker 即 computeFlags：新小丑的 flags（fourFingers/splash/handSize 等）
+        // 须立即对后续计分/回合生效（如回合中用「审判」获得带 flags 的小丑）
+        Engine.recomputeFlags(this);
         return true;
     }
 
-    /** 随机获得一张指定稀有度的小丑；rarity=null 则按权重随机稀有度。 */
+    /**
+     * 随机获得一张指定稀有度的小丑（对齐 engine.js gainRandomJoker）。
+     *
+     * <p>rarity=null 时从 普通+罕见+稀有 混合池**均匀**抽取（原版语义，无传奇）；
+     * 否则取该稀有度池。流名 {@code randomjoker}、满槽先返回不耗流，均与原版逐字一致
+     * （此前误用 jokergrant 流 + 70/25/5 分段掷稀有度，属移植错误，破坏种子复现）。
+     */
     public boolean gainRandomJoker(Integer rarity) {
-        if (rarity == null) {
-            double r = stream("jokergrant").next() * 100;
-            rarity = r < 70 ? 0 : r < 95 ? 1 : 2;
-        }
+        if (jokerSpace() <= 0) return false;
+        Rng.Stream st = stream("randomjoker");
         java.util.List<Joker> pool = new java.util.ArrayList<>();
         for (Joker j : cn.quotidietium.balatro.engine.joker.JokerRegistry.allJokersOrdered()) {
-            if (cn.quotidietium.balatro.engine.joker.JokerRegistry.rarityOf(j.key()) == rarity) pool.add(j);
+            int r = cn.quotidietium.balatro.engine.joker.JokerRegistry.rarityOf(j.key());
+            if (rarity == null ? r < 3 : r == rarity) pool.add(j);
         }
         if (pool.isEmpty()) return false;
-        Joker pick = stream("jokergrant").pick(pool);
+        Joker pick = st.pick(pool);
         return gainJoker(pick.key(), null);
     }
 
