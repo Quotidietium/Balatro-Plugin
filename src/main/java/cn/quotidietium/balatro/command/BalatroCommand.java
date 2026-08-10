@@ -97,12 +97,58 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§c开局失败（可能 RunStart 被其他插件取消）。");
             return;
         }
-        StringBuilder head = new StringBuilder("§a开始一局小丑牌！种子=").append(s.state().seed);
-        head.append("  牌组=").append(deck);
-        if (stake > 0) head.append("  赌注=").append(stake);
-        if (challenge != null) head.append("  挑战=").append(challenge);
-        player.sendMessage(head.toString());
+        sendRunInfo(player, s, deck, stake, challenge);
         player.sendMessage(s.handDebug());
+    }
+
+    /**
+     * 开局时在聊天框给出本局完整信息，便于新手快速了解：
+     * 种子/牌组/赌注/挑战名 + 各自效果 + 开局特殊持有（券/消耗品）+ 第一个 Boss + 操作提示。
+     */
+    private void sendRunInfo(Player player, GameSession s, String deck, int stake, String challenge) {
+        cn.quotidietium.balatro.engine.RunState st = s.state();
+        cn.quotidietium.balatro.engine.Data.Deck dk = cn.quotidietium.balatro.engine.Data.deckByKey(deck);
+        cn.quotidietium.balatro.engine.Data.Stake sk = cn.quotidietium.balatro.engine.Data.STAKES.get(stake);
+
+        player.sendMessage("§6━━ 小丑牌 · 本局信息 ━━");
+        StringBuilder head = new StringBuilder("§e种子 §f").append(st.seed)
+                .append("  §e牌组 §f").append(dk.name())
+                .append("  §e赌注 §f").append(sk.name());
+        if (challenge != null) {
+            cn.quotidietium.balatro.engine.Data.Challenge ch = findChallenge(challenge);
+            if (ch != null) head.append("  §e挑战 §f").append(ch.name());
+        }
+        player.sendMessage(head.toString());
+        player.sendMessage("§6牌组效果：§f" + dk.desc());
+        player.sendMessage("§6赌注效果：§f" + sk.desc());
+        if (challenge != null) {
+            cn.quotidietium.balatro.engine.Data.Challenge ch = findChallenge(challenge);
+            if (ch != null) player.sendMessage("§6挑战效果：§f" + ch.desc());
+        }
+        // 开局特殊持有：本局初始拥有的优惠券 / 消耗品（牌组或挑战带来）
+        java.util.List<String> startItems = new java.util.ArrayList<>();
+        for (String vk : st.vouchers) {
+            try {
+                startItems.add(cn.quotidietium.balatro.engine.Data.voucherByKey(vk).name + "(券)");
+            } catch (IllegalArgumentException ignored) {
+                startItems.add(vk + "(券)");
+            }
+        }
+        for (var c : st.consumables) startItems.add(c.name());
+        if (!startItems.isEmpty()) {
+            player.sendMessage("§6开局持有：§f" + String.join(" §7·§f ", startItems));
+        }
+        // 第一个 Boss 盲注（让玩家提前规划）
+        cn.quotidietium.balatro.engine.Data.Boss boss = Engine.bossDef(st);
+        player.sendMessage("§6第 1 底注 Boss：§f" + boss.name + " §7— " + boss.desc);
+        player.sendMessage("§7右键手牌选中 · 出牌/弃牌；§e/balatro help§7 查看完整玩法");
+    }
+
+    private static cn.quotidietium.balatro.engine.Data.Challenge findChallenge(String key) {
+        for (cn.quotidietium.balatro.engine.Data.Challenge c : cn.quotidietium.balatro.engine.Data.CHALLENGES) {
+            if (c.key().equals(key)) return c;
+        }
+        return null;
     }
 
     private static boolean isStakeArg(String a) {
