@@ -14,6 +14,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Color;
@@ -857,6 +859,60 @@ public final class RoundBoard {
 
     public void clearSelection() {
         selected.clear();
+    }
+
+    // ---- 使用/出售确认提示（聊天框可点击按钮）----
+
+    /**
+     * 右键小丑：在聊天框弹出「确认出售」提示（名称 · 说明 · 售价 · 永恒判定），
+     * 附可点击的「[确认出售]」(→ /balatro sellj) 与「[取消]」(→ /balatro cancel) 按钮。
+     * 永恒小丑直接提示不可出售，不给按钮。
+     */
+    public void sendSellConfirm(Player player, int i) {
+        RunState st = session.state();
+        if (i < 0 || i >= st.jokers.size()) return;
+        JokerInstance j = st.jokers.get(i);
+        if (j.eternal) {
+            player.sendMessage(Component.text(j.def.displayName() + " 是永恒小丑，不可出售。", NamedTextColor.RED));
+            return;
+        }
+        int val = st.sellValue(j);
+        player.sendMessage(Component.text("━━ 确认出售 ━━", NamedTextColor.GOLD));
+        player.sendMessage(Component.text("🃏 " + j.def.displayName() + (j.debuff ? "（失效中）" : ""), NamedTextColor.YELLOW));
+        player.sendMessage(Component.text(j.def.desc(), NamedTextColor.GRAY));
+        player.sendMessage(Component.text("售价：$" + val, NamedTextColor.GREEN));
+        player.sendMessage(confirmButtons("/balatro sellj " + (i + 1), "出售", "$" + val));
+    }
+
+    /**
+     * 右键消耗品：在聊天框弹出「确认使用」提示（名称 · 说明 · 出售价 · 目标提示），
+     * 附「[确认使用]」(→ /balatro use，无目标) 与「[取消]」按钮。
+     */
+    public void sendUseConfirm(Player player, int i) {
+        RunState st = session.state();
+        if (i < 0 || i >= st.consumables.size()) return;
+        Consumable c = st.consumables.get(i);
+        int sellVal = Math.max(1, 1 + c.sellBonus);
+        player.sendMessage(Component.text("━━ 确认使用 ━━", NamedTextColor.GOLD));
+        player.sendMessage(Component.text("[" + kindLabel(c.kind) + "] " + c.name(), NamedTextColor.AQUA));
+        player.sendMessage(Component.text(c.desc(), NamedTextColor.GRAY));
+        player.sendMessage(Component.text(
+                "需指定目标时用 /balatro use " + (i + 1) + " <手牌序号...>；可出售 $" + sellVal
+                        + "（/balatro sellc " + (i + 1) + "）",
+                NamedTextColor.DARK_GRAY));
+        player.sendMessage(confirmButtons("/balatro use " + (i + 1), "使用", null));
+    }
+
+    /** 生成「[确认X] [取消]」两个可点击按钮。 */
+    private static Component confirmButtons(String confirmCmd, String action, String gain) {
+        String confirmHover = "点击确认" + action + (gain != null ? "（" + gain + "）" : "");
+        Component confirm = Component.text("[确认" + action + "]", NamedTextColor.GREEN)
+                .clickEvent(ClickEvent.runCommand(confirmCmd))
+                .hoverEvent(HoverEvent.showText(Component.text(confirmHover, NamedTextColor.GRAY)));
+        Component cancel = Component.text("[取消]", NamedTextColor.RED)
+                .clickEvent(ClickEvent.runCommand("/balatro cancel"))
+                .hoverEvent(HoverEvent.showText(Component.text("点击取消", NamedTextColor.GRAY)));
+        return Component.text(" ").append(confirm).append(Component.text("   ")).append(cancel);
     }
 
     /** 销毁全部实体。 */

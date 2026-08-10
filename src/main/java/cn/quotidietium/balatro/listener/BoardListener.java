@@ -104,10 +104,10 @@ public final class BoardListener implements Listener {
                     session.pickPack(Integer.parseInt(act.substring("pick:".length())));
                     click(player, 1.2f);
                 } else if (act.startsWith("joker:")) {
-                    session.sellJoker(Integer.parseInt(act.substring("joker:".length())));
+                    board.sendSellConfirm(player, Integer.parseInt(act.substring("joker:".length())));
                     click(player, 0.8f);
                 } else if (act.startsWith("cons:")) {
-                    session.useConsumable(Integer.parseInt(act.substring("cons:".length())), null);
+                    board.sendUseConfirm(player, Integer.parseInt(act.substring("cons:".length())));
                     click(player, 1.0f);
                 }
             }

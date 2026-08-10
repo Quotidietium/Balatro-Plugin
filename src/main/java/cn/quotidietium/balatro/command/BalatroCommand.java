@@ -23,7 +23,7 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
     private static final List<String> SUBS = Arrays.asList(
             "help", "play", "quit", "status", "playcard", "disc", "endless",
             "shop", "buy", "buybag", "buyvoucher", "reroll", "next", "go", "skip",
-            "cons", "use", "packs", "pick", "skipack", "sellj", "sellc", "top");
+            "cons", "use", "packs", "pick", "skipack", "sellj", "sellc", "top", "cancel");
 
     private final BalatroPlugin plugin;
 
@@ -62,6 +62,7 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             case "packs" -> cmdPack(player);
             case "pick" -> cmdPick(player, args);
             case "skipack" -> cmdSkipPack(player);
+            case "cancel" -> player.sendMessage("§7已取消操作。");
             case "top" -> cmdTop(player);
             case "sellj" -> cmdSellJoker(player, args);
             case "sellc" -> cmdSellConsumable(player, args);
