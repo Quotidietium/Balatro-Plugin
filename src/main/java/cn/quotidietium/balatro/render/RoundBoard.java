@@ -63,6 +63,8 @@ public final class RoundBoard {
     private static final double CARD_W = 0.682;   // 牌面全宽 = 0.62 × CARD_H
     private static final double CARD_HW = CARD_W / 2.0;  // 命中半宽 0.341
     private static final double CARD_HH = CARD_H / 2.0;  // 命中半高 0.55
+    /** 选牌数量上限（对齐引擎出牌/弃牌最多 5 张）。超过则拒绝选中并聊天提示。 */
+    private static final int MAX_SELECT = 5;
 
     // ---- 其余命中盒（点击检测用，与视觉尺寸解耦；可独立调大以保证好点） ----
     private static final double BTN_HW = 0.55;
@@ -819,9 +821,26 @@ public final class RoundBoard {
 
     // ---- 交互（由 BoardListener 经 tag 派发） ----
 
-    public void toggleSelect(int cardId) {
-        if (!selected.remove(cardId)) selected.add(cardId);
+    /**
+     * 切换某张手牌的选中态。
+     *
+     * <p>选牌上限 {@value #MAX_SELECT} 张（对齐引擎出牌/弃牌 1~5 张）。已达上限再选新牌时：
+     * <b>不作出反应</b>（不选中、不重渲染、不播音效），仅在聊天框提醒上限。返回是否真的改变了选中态。
+     */
+    public boolean toggleSelect(int cardId) {
+        if (selected.remove(cardId)) {
+            update(session.state());
+            return true;
+        }
+        if (selected.size() >= MAX_SELECT) {
+            session.player().sendMessage(Component.text(
+                    "选牌上限为 " + MAX_SELECT + " 张（出牌/弃牌最多 5 张），请先取消部分牌再选。",
+                    NamedTextColor.RED));
+            return false;
+        }
+        selected.add(cardId);
         update(session.state());
+        return true;
     }
 
     public void playSelected() {

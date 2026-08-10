@@ -92,8 +92,8 @@ public final class BoardListener implements Listener {
             case "voucher" -> { session.buyVoucher(); click(player, 1.0f); }
             default -> {
                 if (act.startsWith("card:")) {
-                    board.toggleSelect(Integer.parseInt(act.substring("card:".length())));
-                    click(player, 1.6f);
+                    boolean changed = board.toggleSelect(Integer.parseInt(act.substring("card:".length())));
+                    if (changed) click(player, 1.6f); // 超限拒绝时不播音效（不作出反应）
                 } else if (act.startsWith("shop:")) {
                     session.buyCard(Integer.parseInt(act.substring("shop:".length())));
                     click(player, 1.0f);
