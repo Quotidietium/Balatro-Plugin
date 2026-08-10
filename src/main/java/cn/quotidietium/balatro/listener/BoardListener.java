@@ -96,6 +96,7 @@ public final class BoardListener implements Listener {
             case "discard" -> { board.discardSelected(); click(player, 0.8f); }
             case "reroll" -> {
                 if (session.reroll() < 0) fail(player, "重掷失败（资金不足）");
+                else board.refreshShopInfo(); // 商品/价格全变，刷新聊天框简介防误导
                 click(player, 1.0f);
             }
             case "next" -> { session.nextRound(); click(player, 1.2f); }

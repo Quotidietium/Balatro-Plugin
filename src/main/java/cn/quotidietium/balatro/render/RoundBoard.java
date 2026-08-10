@@ -644,6 +644,11 @@ public final class RoundBoard {
 
     // ================= 聊天框简介 =================
 
+    /** 重新发送商店简介（重掷后商品/价格全变，此前自动发送的简介已过期）。 */
+    public void refreshShopInfo() {
+        if (session.state().phase == Phase.SHOP) sendShopInfo(session.state());
+    }
+
     /** 进入商店：把所有商品简介发到玩家聊天框（便于判断购买）。 */
     private void sendShopInfo(RunState state) {
         var shop = state.shop;
