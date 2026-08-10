@@ -1,6 +1,7 @@
 package cn.quotidietium.balatro.engine.joker;
 
 import cn.quotidietium.balatro.engine.Card;
+import cn.quotidietium.balatro.engine.Consumable;
 import cn.quotidietium.balatro.engine.Data;
 import cn.quotidietium.balatro.engine.HandEval;
 import cn.quotidietium.balatro.engine.Joker;
@@ -1129,9 +1130,14 @@ public enum BasicJoker implements Joker {
     PERKEO("perkeo", "佩尔凯奥", "回合结束时复制一张随机消耗品（负片）", 20) {
         @Override
         public long onRoundEnd(RunState state, JokerInstance self) {
-            // 0.1.0 消耗品区为空；0.2.0 实现复制逻辑
+            // 对齐 jokers.js perkeo：随机复制一张消耗品为负片（直接 push，可超槽位上限）
             if (state.consumables.isEmpty()) return 0;
-            // TODO 0.2.0：随机复制一张消耗品为负片
+            Consumable src = state.stream("perkeo").pick(state.consumables);
+            Consumable copy = new Consumable(src.kind, src.key);
+            copy.edition = Data.Edition.NEGATIVE;
+            copy.sellBonus = 0;
+            state.consumables.add(copy);
+            state.msg("佩尔凯奥：复制了 " + copy.name() + "（负片）");
             return 0;
         }
     },
