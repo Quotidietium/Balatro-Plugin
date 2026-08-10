@@ -55,9 +55,16 @@ public final class RoundBoard {
     private static final double CONS_SPACING = 0.72;
     private static final double BUTTON_Y = -1.15;
 
-    // ---- 命中盒（点击检测用，与视觉尺寸解耦；可独立调大以保证好点） ----
-    private static final double CARD_HW = 0.36;   // 卡牌命中半宽（全宽 0.72）
-    private static final double CARD_HH = 0.55;   // 卡牌命中半高（全高 1.10）
+    // ---- 牌面单元尺寸（设计规则：高:宽 = 1:0.62，竖向扑克牌）----
+    // 全高 1.10 × 全宽 0.682 ≈ 1 : 0.620。命中盒沿用此比例，保证点击区与牌位
+    // 布局呈 1:0.62。渲染牌面（TextDisplay）见 cardFace，随文字自适应、字符宽度
+    // 不一，像素比例需实机以 CARD_TEXT_SCALE / 牌面行结构微调。
+    private static final double CARD_H = 1.10;    // 牌面全高
+    private static final double CARD_W = 0.682;   // 牌面全宽 = 0.62 × CARD_H
+    private static final double CARD_HW = CARD_W / 2.0;  // 命中半宽 0.341
+    private static final double CARD_HH = CARD_H / 2.0;  // 命中半高 0.55
+
+    // ---- 其余命中盒（点击检测用，与视觉尺寸解耦；可独立调大以保证好点） ----
     private static final double BTN_HW = 0.55;
     private static final double BTN_HH = 0.24;
     private static final double SHOPCARD_HW = 0.6;
@@ -362,12 +369,24 @@ public final class RoundBoard {
                 .build();
     }
 
+    /**
+     * 牌面文本：统一 3 行的竖向块（行1=版本/点数/蜡封 · 行2=花色 · 行3=失效或增强）。
+     *
+     * <p>设计目标高:宽 = 1:0.62（见 {@link #CARD_W}/{@link #CARD_H}）。所有牌固定 3 行 →
+     * 背景色块高度一致、呈稳定竖向矩形。宽度随内容（点数位数、增强中文）略有变化，
+     * 故渲染像素比例近似 1:0.62，精确值需实机以 {@link #CARD_TEXT_SCALE} / 行结构微调。
+     */
     private Component cardFace(Card card, boolean selected) {
         if (card.facedown()) {
-            return Component.text("？", NamedTextColor.WHITE);
+            // 3 行：保持与其余牌同高
+            return Component.text("？", NamedTextColor.WHITE)
+                    .appendNewline().append(Component.text(" "))
+                    .appendNewline().append(Component.text(" "));
         }
         if (card.isStone()) {
-            return Component.text("石\n头", NamedTextColor.GRAY);
+            return Component.text("石", NamedTextColor.GRAY)
+                    .appendNewline().append(Component.text("头", NamedTextColor.GRAY))
+                    .appendNewline().append(Component.text(" "));
         }
         Data.Suit s = Data.Suit.byIndex(card.suit());
         TextColor col = selected ? NamedTextColor.WHITE : (s.isRed() ? C_RED : C_DARK);
@@ -376,11 +395,13 @@ public final class RoundBoard {
                 .append(Component.text(Data.rankName(card.rank()), col))
                 .append(Component.text(sealSym(card.seal()), C_SEAL));
         face = face.appendNewline().append(Component.text(s.symbol, col));
-        if (card.enh() != null) {
-            face = face.appendNewline().append(Component.text(shortEnh(card.enh()), C_ENH));
-        }
+        // 第 3 行：失效 / 增强缩写 / 占位（保证统一 3 行）
         if (card.debuff()) {
             face = face.appendNewline().append(Component.text("失效", NamedTextColor.DARK_GRAY));
+        } else if (card.enh() != null) {
+            face = face.appendNewline().append(Component.text(shortEnh(card.enh()), C_ENH));
+        } else {
+            face = face.appendNewline().append(Component.text(" "));
         }
         return face;
     }
