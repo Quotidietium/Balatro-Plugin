@@ -455,7 +455,9 @@ public enum BasicJoker implements Joker {
     DUSK("dusk", "黄昏", "回合最后一次出牌：重新触发所有计分牌", 5) {
         @Override
         public int retrigger(Card card, ScoreContext ctx) {
-            return ctx.state.handsLeft == 0 ? 1 : 0;
+            // 真实规则：回合"最后一手"重触发。计分发生在 handsLeft-- 之前，
+            // 故最后一手计分时 handsLeft==1（原版网页误写 ==0，永不触发，按审计惯例修正）。
+            return ctx.state.handsLeft == 1 ? 1 : 0;
         }
     },
     HACK("hack", "黑客", "重新触发每张计分的 2/3/4/5", 6) {
@@ -661,6 +663,8 @@ public enum BasicJoker implements Joker {
         @Override
         public long onRoundEnd(RunState state, JokerInstance self) {
             for (JokerInstance j : state.jokers) j.sellBonus += 1;
+            // 对齐原版：消耗品售价同样 +$1（此前移植遗漏，只加了小丑）
+            for (cn.quotidietium.balatro.engine.Consumable c : state.consumables) c.sellBonus += 1;
             return 0;
         }
     },
@@ -834,7 +838,8 @@ public enum BasicJoker implements Joker {
     ACROBAT("acrobat", "杂技演员", "回合最后一次出牌：×3 倍率", 6) {
         @Override
         public void onScore(ScoreContext ctx) {
-            if (ctx.state.handsLeft == 0) ctx.xMult(3);
+            // 同 dusk：计分时 handsLeft 尚未自减，最后一手为 ==1（原版 ==0 为永不触发的 bug）
+            if (ctx.state.handsLeft == 1) ctx.xMult(3);
         }
     },
     SOCK("sock", "袜子与布偶", "重新触发所有计分的人头牌", 6) {
