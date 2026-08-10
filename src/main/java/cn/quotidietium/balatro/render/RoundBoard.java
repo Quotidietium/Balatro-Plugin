@@ -333,7 +333,9 @@ public final class RoundBoard {
             d.text(cardFace(card, sel));
             d.setBackgroundColor(cardBg(card, sel));
             setCardTag(d, card.id());
-            d.teleport(at(x, y));
+            // 显示向下平移半个牌高：TextDisplay 文字自实体位置向上生长，而命中盒以 y 为中心，
+            // 两者差半张牌；下移 CARD_H/2 使可见牌面中心对齐命中盒中心。
+            d.teleport(at(x, y - CARD_HH));
             placeInteraction(x, y, CARD_HW, CARD_HH, "card:" + card.id());
         }
         for (int i = n; i < handSlots.size(); i++) hide(handSlots.get(i));
