@@ -53,10 +53,31 @@ public final class Engine {
         if (stakeIdx >= 6) s.mods.orangeStake = true;
         if (stakeIdx >= 7) s.mods.goldStake = true;
 
-        // 牌组效果（仅状态类；magic/ghost/zodiac 涉及优惠券/消耗品，留待 0.5.0）
+        // 牌组效果（逐字对齐 engine.js createRun 牌组段）
         if ("yellow".equals(deckKey)) s.money += 10;
         if ("green".equals(deckKey)) s.mods.noInterest = true;
         if ("plasma".equals(deckKey)) s.mods.plasma = true;
+        if ("magic".equals(deckKey)) {
+            // 魔法牌组：开局拥有「水晶球」+ 2 张「愚人」（此时 consumableSlots=2，恰好放下）
+            s.vouchers.add("crystal");
+            s.addConsumableKey("tarot", "fool");
+            s.addConsumableKey("tarot", "fool");
+        }
+        if ("nebula".equals(deckKey)) {
+            // 星云牌组：开局拥有「望远镜」（消耗品槽 -1 已由 applyVouchersPassive 处理）
+            s.vouchers.add("telescope");
+        }
+        if ("ghost".equals(deckKey)) {
+            // 幽灵牌组：幻灵牌进商店 + 开局拥有 1 张「妖术」
+            s.mods.spectralInShop = true;
+            s.addConsumableKey("spectral", "hex");
+        }
+        if ("zodiac".equals(deckKey)) {
+            // 黄道牌组：开局拥有「塔罗商人」「星球商人」「多重库存」
+            s.vouchers.add("tarotm");
+            s.vouchers.add("planetm");
+            s.vouchers.add("overstock");
+        }
 
         // 挑战修饰（jokers/money 立即生效；handSize/handsSet 由 applyVouchersPassive 应用）
         if (challenge != null) ChallengeMods.applyTo(s, challenge);
@@ -251,7 +272,20 @@ public final class Engine {
         if (s.mods.handsSet != 0) s.handsBase = s.mods.handsSet;
         if (s.mods.handSize != 0) s.handSizeBase += s.mods.handSize;
         s.interestCap = 5;
-        // 优惠券加成（0.1.0 无优惠券）
+
+        // 优惠券槽位/上限加成（逐字对齐 engine.js applyVouchersPassive）
+        if (s.vouchers.contains("antimatter")) s.jokerSlots += 1;       // 反物质：小丑槽 +1
+        if (s.vouchers.contains("crystal")) s.consumableSlots += 1;     // 水晶球：消耗品槽 +1
+        if (s.vouchers.contains("overstock")) s.shopSlots += 1;         // 多重库存：商店卡牌位 +1
+        if (s.vouchers.contains("overstock2")) s.shopSlots += 1;        // 多重库存+：再 +1
+        if (s.vouchers.contains("seedmoney")) s.interestCap = 10;       // 种子基金：利息上限 $10
+        if (s.vouchers.contains("moneytree")) s.interestCap = 20;       // 摇钱树：利息上限 $20
+        if (s.vouchers.contains("grabber")) s.handsBase += 1;           // 补给手：出牌 +1
+        if (s.vouchers.contains("nacho")) s.handsBase += 1;             // 顺手牵羊：出牌再 +1
+        if (s.vouchers.contains("wasteful")) s.discardsBase += 1;       // 挥霍无度：弃牌 +1
+        if (s.vouchers.contains("recyclo")) s.discardsBase += 1;        // 回收狂人：弃牌再 +1
+        if (s.vouchers.contains("paintbrush")) s.handSizeBase += 1;     // 油漆刷：手牌上限 +1
+        if (s.vouchers.contains("palette")) s.handSizeBase += 1;        // 调色板：手牌上限再 +1
     }
 
     private static void computeFlags(RunState s) {
@@ -760,7 +794,11 @@ public final class Engine {
         s.hand.removeIf(c -> cardIds.contains(c.id()));
         for (Card c : cards) {
             c.setFacedown(false);
-            // 紫色蜡封 → 塔罗牌（0.2.0）
+            // 紫色蜡封 → 塔罗牌（对齐 engine.js discard）
+            if (c.seal() == Data.Seal.PURPLE && !c.debuff()) {
+                Data.Tarot t = s.stream("consumable").pick(List.of(Data.Tarot.values()));
+                if (s.addConsumableKey("tarot", t.key)) s.msg("紫色蜡封：获得 " + t.name);
+            }
             s.discardPile.add(c);
         }
 
@@ -816,7 +854,15 @@ public final class Engine {
         for (Card c : s.hand) {
             if (c.enh() == Data.Enhancement.GOLD && !c.debuff()) gain += 3;
         }
-        // 蓝色蜡封 → 星球牌（0.2.0）
+        // 蓝色蜡封（手中）→ 对应星球牌（对齐 engine.js endRound）
+        for (Card c : s.hand) {
+            if (c.seal() == Data.Seal.BLUE && !c.debuff()) {
+                Data.HandType lastType = s.playedTypesThisRound.isEmpty()
+                        ? Data.HandType.HIGH : s.playedTypesThisRound.get(s.playedTypesThisRound.size() - 1);
+                Data.Planet p = Data.Planet.byHand(lastType);
+                if (p != null && s.addConsumableKey("planet", p.key)) detail.add("蓝色蜡封：获得 " + p.name);
+            }
+        }
 
         // 小丑回合结束钩子
         List<JokerInstance> snap = new ArrayList<>(s.jokers);

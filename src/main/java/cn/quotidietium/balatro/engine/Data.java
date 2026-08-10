@@ -398,6 +398,11 @@ public final class Data {
         private static final Map<String, Planet> BY_KEY = new HashMap<>();
         static { for (Planet p : values()) BY_KEY.put(p.key, p); }
         public static Planet byKey(String k) { Planet p = BY_KEY.get(k); if (p == null) throw new IllegalArgumentException("unknown planet: " + k); return p; }
+        /** 按所升级的牌型查星球牌（无则 null）。蓝蜡封用。 */
+        public static Planet byHand(HandType h) {
+            for (Planet p : values()) if (p.hand == h) return p;
+            return null;
+        }
     }
 
     // ================= 幻灵牌（18） =================
