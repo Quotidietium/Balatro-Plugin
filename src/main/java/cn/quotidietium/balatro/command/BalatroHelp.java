@@ -23,7 +23,7 @@ final class BalatroHelp {
                 "计分 = 筹码 × 倍率；小丑牌与增强牌会大幅加成。",
                 "开局：§e/balatro play [牌组] [赌注] [挑战] [种子]",
                 "参数顺序不限：牌组名/赌注数字/挑战名会自动识别，其余视作种子。",
-                "翻页：§e/balatro help <页码>§f（每页不超过 6 行）。"
+                "翻页：§e/balatro help <页码>§f；查命令：§e/balatro help <命令名>§f（如 help play）。"
         });
         add("牌组（共 15，play 传牌组名）", new String[]{
                 "§ered红§f(+弃牌) §eblue蓝§f(+出牌) §eyellow黄§f(开局+$10) §egreen绿§f(+钱/无利息)",
@@ -133,6 +133,165 @@ final class BalatroHelp {
         lines.add("§6━━ 小丑牌 · 帮助 §e" + page + "/" + PAGES.size() + " §6· " + p.title + " ━━");
         for (String line : p.body) lines.add("§f" + line);
         return lines;
+    }
+
+    // ================= 单命令详情（/balatro help <命令名>） =================
+
+    /** 一条命令的帮助：主键、别名、标题、正文行。 */
+    private record CmdHelp(String key, String[] aliases, String title, String[] body) {
+    }
+
+    private static final List<CmdHelp> COMMANDS = new ArrayList<>();
+
+    static {
+        cmd("help", new String[]{"?"}, "帮助", new String[]{
+                "§e/balatro help [页码 | 命令名]",
+                "· 不带参数 / 数字 → 分页帮助（每页 ≤ 6 行）。",
+                "· 命令名（如 §eplay§f）→ 该命令的详细说明。",
+                "例：§e/balatro help§f · §e/balatro help 2§f · §e/balatro help play"
+        });
+        cmd("play", new String[]{}, "开始一局", new String[]{
+                "§e/balatro play [牌组] [赌注] [挑战] [种子]",
+                "参数顺序不限，自动识别：牌组名(15)/赌注数字(0~7)/挑战名(20)，其余视作种子。",
+                "例：§e/balatro play blue 1§f · §e/balatro play red 0 omelette",
+                "留空 = 随机种子 · 红牌组 · 白注。牌组/赌注/挑战详见 §e/balatro help 2~5"
+        });
+        cmd("playcard", new String[]{"pc"}, "出牌", new String[]{
+                "§e/balatro playcard <手牌序号...>",
+                "选 1~5 张手牌出牌计分（序号从 1 起，见 §e/balatro status§f）。",
+                "例：§e/balatro playcard 1 2 3",
+                "也可全息：右键手牌选中 → 右键「▶ 出牌」。"
+        });
+        cmd("disc", new String[]{"discard"}, "弃牌", new String[]{
+                "§e/balatro disc <手牌序号...>",
+                "弃 1~5 张手牌并补满（序号从 1 起）。",
+                "紫色蜡封的牌被弃时会获得一张塔罗牌。",
+                "全息：右键选中 → 右键「✗ 弃牌」。"
+        });
+        cmd("status", new String[]{"hand"}, "查看当前局面", new String[]{
+                "§e/balatro status",
+                "显示底注 / 盲注 / 分数 / 出牌·弃牌次数 / 金钱 / 手牌。"
+        });
+        cmd("shop", new String[]{}, "查看商店", new String[]{
+                "§e/balatro shop",
+                "列出商品(小丑/塔罗/星球/幻灵/游戏牌) · 补充包 · 优惠券 及价格。",
+                "仅在击败盲注后的商店阶段可用。"
+        });
+        cmd("buy", new String[]{}, "购买商店卡牌", new String[]{
+                "§e/balatro buy <序号>",
+                "购买商店第 N 张卡牌（序号见 §e/balatro shop§f，从 1 起）。",
+                "全息：右键商品卡。"
+        });
+        cmd("buybag", new String[]{"pack"}, "购买补充包", new String[]{
+                "§e/balatro buybag <序号>",
+                "购买商店第 N 个补充包，购买后进入补充包选择。"
+        });
+        cmd("buyvoucher", new String[]{"voucher"}, "购买优惠券", new String[]{
+                "§e/balatro buyvoucher",
+                "购买商店当前陈列的优惠券（若有）。"
+        });
+        cmd("reroll", new String[]{}, "重掷商店", new String[]{
+                "§e/balatro reroll",
+                "花费重掷商店商品（费用逐次 +1，优惠券「重掷红利」等可减免）。"
+        });
+        cmd("next", new String[]{}, "离开商店", new String[]{
+                "§e/balatro next",
+                "离开商店，进入下一盲注的【选择阶段】（再用 §ego§f/skip 决定）。"
+        });
+        cmd("go", new String[]{}, "开始当前盲注", new String[]{
+                "§e/balatro go",
+                "在盲注选择阶段开始当前盲注，进入出牌回合。",
+                "全息：右键「▶ 开始盲注」。"
+        });
+        cmd("skip", new String[]{}, "跳过当前盲注", new String[]{
+                "§e/balatro skip",
+                "跳过当前盲注并获 1 个随机标签（Boss 盲注不可跳过）。",
+                "全息：右键「✗ 跳过(标签)」。"
+        });
+        cmd("cons", new String[]{"consumables"}, "查看消耗品", new String[]{
+                "§e/balatro cons",
+                "列出持有的消耗品（塔罗/星球/幻灵）及说明与序号。"
+        });
+        cmd("use", new String[]{}, "使用消耗品", new String[]{
+                "§e/balatro use <消耗品序号> [手牌序号...]",
+                "需指定目标的消耗品（如改写手牌的塔罗）要传手牌序号（从 1 起）。",
+                "例：§e/balatro use 1 2 3§f（用第 1 个消耗品作用于第 2、3 张手牌）。",
+                "全息右键为「无目标使用」，需目标时请用命令。"
+        });
+        cmd("packs", new String[]{}, "查看补充包", new String[]{
+                "§e/balatro packs",
+                "列出正在开启的补充包内容（仅补充包阶段）。"
+        });
+        cmd("pick", new String[]{}, "从补充包选卡", new String[]{
+                "§e/balatro pick <序号>",
+                "从当前补充包选第 N 张（可选张数视包而定）。"
+        });
+        cmd("skipack", new String[]{}, "跳过补充包", new String[]{
+                "§e/balatro skipack",
+                "跳过当前补充包的剩余选择。"
+        });
+        cmd("sellj", new String[]{}, "出售小丑", new String[]{
+                "§e/balatro sellj <序号>",
+                "出售第 N 张小丑（永恒小丑不可出售）。",
+                "全息：右键小丑牌。"
+        });
+        cmd("sellc", new String[]{}, "出售消耗品", new String[]{
+                "§e/balatro sellc <序号>",
+                "出售第 N 个消耗品。"
+        });
+        cmd("endless", new String[]{}, "进入无尽模式", new String[]{
+                "§e/balatro endless",
+                "通关（底注 8）后进入无尽模式：底注 9+，目标分指数增长。"
+        });
+        cmd("top", new String[]{}, "查看排行榜", new String[]{
+                "§e/balatro top",
+                "查看小丑牌排行榜（排序：通关 > 到达底注 > 时间）。"
+        });
+        cmd("quit", new String[]{}, "放弃本局", new String[]{
+                "§e/balatro quit",
+                "放弃当前局（退出即弃，不存档）。下线也会自动放弃。"
+        });
+    }
+
+    private static void cmd(String key, String[] aliases, String title, String[] body) {
+        COMMANDS.add(new CmdHelp(key, aliases, title, body));
+    }
+
+    /** 按主键或别名查找（大小写不敏感）；未找到返回 null。 */
+    private static CmdHelp findCommand(String name) {
+        if (name == null) return null;
+        String n = name.toLowerCase();
+        for (CmdHelp c : COMMANDS) {
+            if (c.key.equalsIgnoreCase(n)) return c;
+            for (String a : c.aliases) if (a.equalsIgnoreCase(n)) return c;
+        }
+        return null;
+    }
+
+    /**
+     * 发送指定命令的详情；未找到返回 false。
+     */
+    static boolean sendCommandHelp(org.bukkit.command.CommandSender sender, String name) {
+        CmdHelp c = findCommand(name);
+        if (c == null) return false;
+        sender.sendMessage("§6■ §e" + c.key + "§6 — " + c.title);
+        for (String line : c.body) sender.sendMessage("§f" + line);
+        return true;
+    }
+
+    /** 全部命令主键 + 别名（供 Tab 补全）。 */
+    static List<String> commandKeys() {
+        List<String> out = new ArrayList<>();
+        for (CmdHelp c : COMMANDS) {
+            out.add(c.key);
+            for (String a : c.aliases) out.add(a);
+        }
+        return out;
+    }
+
+    /** 是否存在该命令（主键或别名）的帮助；大小写不敏感。供测试与外部查询。 */
+    static boolean hasCommandHelp(String name) {
+        return findCommand(name) != null;
     }
 
     private BalatroHelp() {

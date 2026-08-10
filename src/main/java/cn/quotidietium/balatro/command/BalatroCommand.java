@@ -126,16 +126,22 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
     }
 
     private void cmdHelp(Player player, String[] args) {
-        int page = 1;
-        if (args.length >= 2) {
-            try {
-                page = Integer.parseInt(args[1]);
-            } catch (NumberFormatException e) {
-                player.sendMessage("§c页码需为数字，用法：/balatro help <页码>");
-                return;
-            }
+        if (args.length < 2) {
+            BalatroHelp.sendPage(player, 1);
+            return;
         }
-        BalatroHelp.sendPage(player, page);
+        String arg = args[1];
+        // 数字 → 分页帮助
+        try {
+            int page = Integer.parseInt(arg);
+            BalatroHelp.sendPage(player, page);
+            return;
+        } catch (NumberFormatException ignored) {
+            // 非数字 → 视作命令名
+        }
+        if (!BalatroHelp.sendCommandHelp(player, arg)) {
+            player.sendMessage("§c未知命令：§e" + arg + "§c。输入 §e/balatro help§c 看分页帮助，或 §e/balatro help <命令名>§c。");
+        }
     }
 
     private void cmdQuit(Player player) {
@@ -525,9 +531,11 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             return filter(args[args.length - 1], decks);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("help")) {
-            java.util.List<String> pages = new java.util.ArrayList<>();
-            for (int p = 1; p <= BalatroHelp.totalPages(); p++) pages.add(Integer.toString(p));
-            return filter(args[1], pages);
+            // 页码 + 命令名（含别名）
+            java.util.List<String> opts = new java.util.ArrayList<>();
+            for (int p = 1; p <= BalatroHelp.totalPages(); p++) opts.add(Integer.toString(p));
+            opts.addAll(BalatroHelp.commandKeys());
+            return filter(args[1], opts);
         }
         return List.of();
     }
