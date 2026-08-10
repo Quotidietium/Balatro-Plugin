@@ -87,10 +87,13 @@ public final class GameSession {
 
         Engine.PlayResult r = Engine.playHand(state, cardIds);
 
-        // 计分事件（用于实时展示）
-        plugin.fireHandScore(player.getUniqueId(),
-                r.type == null ? "-" : r.type.key,
-                r.score, state.roundScore, target, state.handsLeft);
+        // 计分事件（用于实时展示）——仅在实际发生计分时发出；
+        // 被拒绝的出牌（选牌非法/Boss 限制等）不产生计分，不应发事件。
+        if (r.ok) {
+            plugin.fireHandScore(player.getUniqueId(),
+                    r.type == null ? "-" : r.type.key,
+                    r.score, state.roundScore, target, state.handsLeft);
+        }
 
         if (r.ok && r.won) {
             plugin.fireBlindResult(player.getUniqueId(), anteBefore, bt.key, target, state.roundScore, true);
@@ -229,7 +232,9 @@ public final class GameSession {
 
     /** 出售第 idx 个消耗品。 */
     public boolean sellConsumable(int idx) {
-        return state.sellConsumable(idx);
+        boolean ok = state.sellConsumable(idx);
+        if (ok && board != null) board.update(state);
+        return ok;
     }
 
     /** 盲注选择阶段自动推进到下一盲注。 */

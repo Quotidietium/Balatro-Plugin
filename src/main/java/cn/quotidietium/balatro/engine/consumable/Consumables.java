@@ -71,8 +71,21 @@ public final class Consumables {
         return arr;
     }
 
+    /** 需要以手牌为目标的消耗品 key（非回合阶段无法使用）。 */
+    private static final Set<String> NEED_ROUND_TARGET = Set.of(
+            "magician", "empress", "hierophant",
+            "lovers", "chariot", "justice", "devil", "tower",
+            "strength", "hanged", "death",
+            "star", "moon", "sun", "world",
+            "talisman", "dejavu", "trance", "medium", "aura", "cryptid");
+
     private static Result apply(RunState s, Consumable c, List<Integer> targetIds, boolean inRound) {
         Rng.Stream st = s.stream("use:" + c.key + ":" + s.roundCount + ":" + (s.useSeq = (s.useSeq) + 1));
+
+        // 需指定手牌目标的消耗品只能在出牌回合使用（提前给出明确提示，避免误导性报错）
+        if (!inRound && NEED_ROUND_TARGET.contains(c.key)) {
+            return Result.err("该消耗品需要指定手牌目标，请在出牌回合使用");
+        }
 
         if (c.kind.equals("planet")) {
             Data.Planet p = Data.Planet.byKey(c.key);
