@@ -38,6 +38,27 @@ class JokerAccumulateTest {
     }
 
     @Test
+    void marbleStoneUsesTwoOfSpadesShell() {
+        // 对齐 jokers.js marble + engine.js makeCard 默认壳：rank=2/suit=0 + STONE。
+        // 壳点数在增强被移除（吸血鬼）或纯点数匹配（邮寄返利目标 2）时暴露，须与原版一致。
+        RunState s = Engine.createRun("red", 0, "MARBLE");
+        Engine.selectBlind(s, Data.BlindType.SMALL, false);
+        s.jokers.add(JokerRegistry.create("marble"));
+        int deckBefore = s.fullDeck.size();
+
+        // onBlindStart 由 startRound 派发；直接重进一个盲注触发
+        s.phase = cn.quotidietium.balatro.engine.Phase.BLIND_SELECT;
+        s.nextBlind = "big";
+        Engine.selectBlind(s, Data.BlindType.BIG, false);
+
+        assertEquals(deckBefore + 1, s.fullDeck.size(), "应加入 1 张石头牌");
+        cn.quotidietium.balatro.engine.Card stone = s.fullDeck.get(s.fullDeck.size() - 1);
+        assertTrue(stone.isStone() && stone.enh() == Data.Enhancement.STONE);
+        assertEquals(2, stone.rank(), "大理石石头牌壳应为 rank=2（对齐原版）");
+        assertEquals(0, stone.suit(), "大理石石头牌壳应为 suit=0 黑桃（对齐原版）");
+    }
+
+    @Test
     void hologramGainsOnCardAdded() {
         RunState s = Engine.createRun("red", 0, "HOLO");
         Engine.selectBlind(s, Data.BlindType.SMALL, false);

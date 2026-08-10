@@ -1240,7 +1240,10 @@ public enum BasicJoker implements Joker {
     MARBLE("marble", "大理石小丑", "每个盲注开始时给牌组添加 1 张石头牌", 6) {
         @Override
         public void onBlindStart(RunState state, JokerInstance self) {
-            Card c = state.makeCard(0, -1);
+            // 对齐 jokers.js marble + engine.js makeCard 默认壳：rank=2/suit=0（黑桃 2 壳）+STONE。
+            // 增强在场时行为与石头无异；壳点数只在增强被移除（如吸血鬼）或纯点数匹配
+            // （如邮寄返利目标为 2）时暴露，须与原版一致。牌组构建的石头牌仍为 0/-1 壳（同原版）。
+            Card c = state.makeCard(2, 0);
             c.setEnh(Data.Enhancement.STONE);
             state.addCardToDeck(c);
             state.msg("大理石小丑：牌组加入了 1 张石头牌");

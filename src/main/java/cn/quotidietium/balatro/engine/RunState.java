@@ -255,7 +255,8 @@ public final class RunState {
 
     /** 销毁一张牌（含 onFaceDestroyed 钩子：人头牌被销毁时触发 Canio 等）。 */
     public void destroyCard(Card c) {
-        if (c.rank() >= 11 && c.rank() <= 13) {
+        // 对齐原版 isFaceCard：尊重 allFace 标志（空想性错觉 pareidolia 时所有牌视为人头牌）
+        if (isFace(c)) {
             for (JokerInstance j : new ArrayList<>(jokers)) {
                 if (!j.debuff) j.def.onFaceDestroyed(this, j);
             }

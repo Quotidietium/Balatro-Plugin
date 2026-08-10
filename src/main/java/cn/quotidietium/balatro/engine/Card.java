@@ -106,9 +106,13 @@ public final class Card {
         this.broken = broken;
     }
 
-    /** 石头牌：无点数/花色。 */
+    /**
+     * 石头牌：enh 为 STONE 即视为石头（对齐原版各处按 {@code enh==="stone"} 判定），
+     * 兼容牌组构建/高塔转化的 0/-1 壳。marble 生成的石头牌为黑桃 2 壳 + STONE 增强，
+     * 仅凭 rank/suit 会漏判（排序/渲染/持有效果都依赖本方法）。
+     */
     public boolean isStone() {
-        return rank == 0 || suit < 0;
+        return enh == Data.Enhancement.STONE || rank == 0 || suit < 0;
     }
 
     /** 人头牌 J/Q/K。 */

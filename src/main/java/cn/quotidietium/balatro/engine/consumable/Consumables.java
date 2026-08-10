@@ -71,6 +71,9 @@ public final class Consumables {
         return arr;
     }
 
+    /** 版本抽取池（wheel/aura 用，对齐原版：1/3 均匀，非商店权重）。 */
+    private static final List<String> EDITION_POOL = List.of("foil", "holo", "poly");
+
     /** 需要以手牌为目标的消耗品 key（非回合阶段无法使用）。 */
     private static final Set<String> NEED_ROUND_TARGET = Set.of(
             "magician", "empress", "hierophant",
@@ -152,7 +155,8 @@ public final class Consumables {
                     double pch = Boolean.TRUE.equals(s.flags.get("doubleProb")) ? 0.5 : 0.25;
                     if (st.chance(pch)) {
                         JokerInstance j = st.pick(noEdition);
-                        String e = weightedEdition(st);
+                        // 对齐原版：版本为 1/3 均匀抽取（此前误用商店权重 50/35/15）
+                        String e = st.pick(EDITION_POOL);
                         j.edition = parseEdition(e);
                         s.msg("命运之轮：" + j.def.displayName() + " 获得 " + editionName(e));
                     } else s.msg("命运之轮：什么都没发生");
@@ -235,7 +239,8 @@ public final class Consumables {
                 case "aura": {
                     List<Card> t = targets(s, targetIds, inRound, 1, true);
                     if (t == null) return Result.err("请选择 1 张手牌");
-                    t.get(0).setEdition(parseEdition(weightedEdition(st))); t.get(0).setFacedown(false);
+                    // 对齐原版：版本为 1/3 均匀抽取（此前误用商店权重 50/35/15）
+                    t.get(0).setEdition(parseEdition(st.pick(EDITION_POOL))); t.get(0).setFacedown(false);
                     return Result.ok();
                 }
                 case "wraith":
@@ -318,20 +323,18 @@ public final class Consumables {
             Card v = ds.pick(s.hand);
             s.destroyCard(v);
         }
+        // 对齐原版：销毁后补满手牌（drawUpTo）。缺失会使手牌停留短缺状态，
+        // 且 wheel Boss 回合跳过补牌即跳过 wheel 流消耗，造成后续流分歧。
+        cn.quotidietium.balatro.engine.Engine.refillHand(s);
     }
 
     private static void trimHand(RunState s) {
-        while (s.hand.size() > s.handSizeRound) {
+        // 对齐原版：允许手牌临时溢出至上限 +3（新生成/复制的牌得以保留），
+        // 此前按上限硬裁剪，满手时 cryptid 的复制会直接进弃牌堆（效果作废）。
+        while (s.hand.size() > s.handSizeRound + 3) {
             Card c = s.hand.remove(s.hand.size() - 1);
             s.discardPile.add(c);
         }
-    }
-
-    private static String weightedEdition(Rng.Stream st) {
-        double r = st.next() * 100;
-        if (r < 50) return "foil";
-        if (r < 85) return "holo";
-        return "poly";
     }
 
     private static Data.Edition parseEdition(String e) {
