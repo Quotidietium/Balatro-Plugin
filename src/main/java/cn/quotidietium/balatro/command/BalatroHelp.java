@@ -116,12 +116,23 @@ final class BalatroHelp {
             sender.sendMessage("§7帮助共 §e" + PAGES.size() + " §7页，用法：§e/balatro help <1~" + PAGES.size() + ">");
             return false;
         }
-        Page p = PAGES.get(page - 1);
-        sender.sendMessage("§6━━ 小丑牌 · 帮助 §e" + page + "/" + PAGES.size() + " §6· " + p.title + " ━━");
-        for (String line : p.body) {
-            sender.sendMessage("§f" + line);
+        for (String line : linesFor(page)) {
+            sender.sendMessage(line);
         }
         return true;
+    }
+
+    /**
+     * 第 {@code page} 页（1 起）会被发送的全部行（页眉 + 正文）。
+     * 用于测试断言「每页 ≤ 6 行」。页码越界返回空列表。
+     */
+    static java.util.List<String> linesFor(int page) {
+        if (page < 1 || page > PAGES.size()) return java.util.List.of();
+        Page p = PAGES.get(page - 1);
+        java.util.List<String> lines = new java.util.ArrayList<>();
+        lines.add("§6━━ 小丑牌 · 帮助 §e" + page + "/" + PAGES.size() + " §6· " + p.title + " ━━");
+        for (String line : p.body) lines.add("§f" + line);
+        return lines;
     }
 
     private BalatroHelp() {
