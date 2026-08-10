@@ -78,6 +78,13 @@ public final class RoundBoard {
 
     /** 卡牌文字缩放（默认 1.0 约 0.5 格高，偏小；放大使牌面更清晰）。 */
     private static final float CARD_TEXT_SCALE = 1.5f;
+    /**
+     * 牌面每行补白到的「显示宽度」（半角=1，符号/中文=2）。
+     * <p>TextDisplay 的可见宽度由文字内容决定，短文字（2~3 字符）天然很窄；
+     * 把每行用空格补到此宽度 → 背景色块统一变宽，使牌面呈 高:宽=1:0.62。
+     * <p><b>实机调参旋钮</b>：偏窄则增大（如 6）、偏宽则减小（如 4），无需改其他代码。
+     */
+    private static final int CARD_TEXT_COLS = 5;
     private static final float JOKER_TEXT_SCALE = 1.0f;
     private static final float FRAME_TEXT_SCALE = 1.0f;
 
@@ -370,40 +377,70 @@ public final class RoundBoard {
     }
 
     /**
-     * 牌面文本：统一 3 行的竖向块（行1=版本/点数/蜡封 · 行2=花色 · 行3=失效或增强）。
-     *
-     * <p>设计目标高:宽 = 1:0.62（见 {@link #CARD_W}/{@link #CARD_H}）。所有牌固定 3 行 →
-     * 背景色块高度一致、呈稳定竖向矩形。宽度随内容（点数位数、增强中文）略有变化，
-     * 故渲染像素比例近似 1:0.62，精确值需实机以 {@link #CARD_TEXT_SCALE} / 行结构微调。
+     * 牌面文本：统一 3 行的竖向块（行1=版本/点数/蜡封 · 行2=花色 · 行3=失效或增强），
+     * 每行用空格补到 {@link #CARD_TEXT_COLS} 显示宽度 → 背景色块统一变宽，呈 高:宽=1:0.62。
      */
     private Component cardFace(Card card, boolean selected) {
+        int cols = CARD_TEXT_COLS;
         if (card.facedown()) {
-            // 3 行：保持与其余牌同高
-            return Component.text("？", NamedTextColor.WHITE)
-                    .appendNewline().append(Component.text(" "))
-                    .appendNewline().append(Component.text(" "));
+            return padCenter(Component.text("？", NamedTextColor.WHITE), 2, cols).appendNewline()
+                    .append(padCenter(Component.text(" ", NamedTextColor.WHITE), 1, cols)).appendNewline()
+                    .append(padCenter(Component.text(" ", NamedTextColor.WHITE), 1, cols));
         }
         if (card.isStone()) {
-            return Component.text("石", NamedTextColor.GRAY)
-                    .appendNewline().append(Component.text("头", NamedTextColor.GRAY))
-                    .appendNewline().append(Component.text(" "));
+            return padCenter(Component.text("石", NamedTextColor.GRAY), 2, cols).appendNewline()
+                    .append(padCenter(Component.text("头", NamedTextColor.GRAY), 2, cols)).appendNewline()
+                    .append(padCenter(Component.text(" ", NamedTextColor.GRAY), 1, cols));
         }
         Data.Suit s = Data.Suit.byIndex(card.suit());
         TextColor col = selected ? NamedTextColor.WHITE : (s.isRed() ? C_RED : C_DARK);
-        Component face = Component.empty()
-                .append(Component.text(editionSym(card.edition()), C_EDITION))
-                .append(Component.text(Data.rankName(card.rank()), col))
-                .append(Component.text(sealSym(card.seal()), C_SEAL));
-        face = face.appendNewline().append(Component.text(s.symbol, col));
-        // 第 3 行：失效 / 增强缩写 / 占位（保证统一 3 行）
+        String edStr = editionSym(card.edition());
+        String rankStr = Data.rankName(card.rank());
+        String sealStr = sealSym(card.seal());
+        int l1w = displayWidth(edStr) + displayWidth(rankStr) + displayWidth(sealStr);
+        Component line1 = padCenter(
+                Component.text(edStr, C_EDITION).append(Component.text(rankStr, col)).append(Component.text(sealStr, C_SEAL)),
+                l1w, cols);
+        Component line2 = padCenter(Component.text(s.symbol, col), displayWidth(s.symbol), cols);
+        String l3text;
+        TextColor l3col;
         if (card.debuff()) {
-            face = face.appendNewline().append(Component.text("失效", NamedTextColor.DARK_GRAY));
+            l3text = "失效";
+            l3col = NamedTextColor.DARK_GRAY;
         } else if (card.enh() != null) {
-            face = face.appendNewline().append(Component.text(shortEnh(card.enh()), C_ENH));
+            l3text = shortEnh(card.enh());
+            l3col = C_ENH;
         } else {
-            face = face.appendNewline().append(Component.text(" "));
+            l3text = " ";
+            l3col = col;
         }
-        return face;
+        Component line3 = padCenter(Component.text(l3text, l3col), displayWidth(l3text), cols);
+        return line1.appendNewline().append(line2).appendNewline().append(line3);
+    }
+
+    /** 字符串的显示宽度：ASCII（含空格/字母/数字）=1，其余（花色·版本·蜡封符号、中文）=2。 */
+    private static int displayWidth(String s) {
+        if (s == null || s.isEmpty()) return 0;
+        int w = 0;
+        for (int i = 0; i < s.length(); i++) {
+            w += (s.charAt(i) < 0x80) ? 1 : 2;
+        }
+        return w;
+    }
+
+    /**
+     * 把一个组件（已知其内容显示宽度 {@code contentWidth}）用空格居中补到 {@code target} 显示宽度，
+     * 使 TextDisplay 背景色块统一变宽。补白用空格（参与背景宽度），不拉伸文字字形。
+     */
+    private static Component padCenter(Component content, int contentWidth, int target) {
+        int pad = Math.max(0, target - contentWidth);
+        if (pad == 0) return content;
+        int left = pad / 2;
+        int right = pad - left;
+        Component out = content;
+        if (left > 0) out = Component.text(" ".repeat(left)).append(out);
+        if (right > 0) out = out.append(Component.text(" ".repeat(right)));
+        return out;
     }
 
     private Color cardBg(Card card, boolean selected) {
