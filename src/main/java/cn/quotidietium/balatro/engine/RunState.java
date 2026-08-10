@@ -263,12 +263,21 @@ public final class RunState {
         removeCardFromDeck(c);
     }
 
-    /** 获得随机消耗品（按 kind 从对应池随机取）。 */
+    /** 获得随机消耗品（按 kind 从对应池随机取；对齐 engine.js：加入成功时提示"获得：名称"）。 */
     public void gainConsumable(String kind) {
         switch (kind) {
-            case "tarot" -> { Data.Tarot t = stream("consumable").pick(List.of(Data.Tarot.values())); addConsumableKey("tarot", t.key); }
-            case "planet" -> { Data.Planet p = stream("consumable").pick(List.of(Data.Planet.values())); addConsumableKey("planet", p.key); }
-            default -> { Data.Spectral sp = stream("consumable").pick(List.of(Data.Spectral.values())); addConsumableKey("spectral", sp.key); }
+            case "tarot" -> {
+                Data.Tarot t = stream("consumable").pick(List.of(Data.Tarot.values()));
+                if (addConsumableKey("tarot", t.key)) msg("获得：" + t.name);
+            }
+            case "planet" -> {
+                Data.Planet p = stream("consumable").pick(List.of(Data.Planet.values()));
+                if (addConsumableKey("planet", p.key)) msg("获得：" + p.name);
+            }
+            default -> {
+                Data.Spectral sp = stream("consumable").pick(List.of(Data.Spectral.values()));
+                if (addConsumableKey("spectral", sp.key)) msg("获得：" + sp.name);
+            }
         }
     }
 

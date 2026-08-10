@@ -72,8 +72,23 @@ public final class ScoreContext {
         return handType.key.equals(key);
     }
 
-    /** 获得随机消耗品（0.2.0 实现塔罗/星球/幻灵池；0.1.0 无调用方）。 */
+    /**
+     * 获得随机消耗品（对齐 engine.js ctx.gainConsumable）：
+     * 按 kind 从对应池经 {@code consumable} 流随机取；加入成功则记入本手事件。
+     * （8 号球等小丑经此发放塔罗牌。）
+     */
     public void gainConsumable(String kind) {
-        // TODO 0.2.0：按 kind 从 DATA.TAROT/PLANETS/SPECTRAL 取
+        String name = null;
+        if ("tarot".equals(kind)) {
+            Data.Tarot t = state.stream("consumable").pick(java.util.List.of(Data.Tarot.values()));
+            if (state.addConsumableKey("tarot", t.key)) name = t.name;
+        } else if ("planet".equals(kind)) {
+            Data.Planet p = state.stream("consumable").pick(java.util.List.of(Data.Planet.values()));
+            if (state.addConsumableKey("planet", p.key)) name = p.name;
+        } else {
+            Data.Spectral sp = state.stream("consumable").pick(java.util.List.of(Data.Spectral.values()));
+            if (state.addConsumableKey("spectral", sp.key)) name = sp.name;
+        }
+        if (name != null) events.add("获得：" + name);
     }
 }

@@ -901,7 +901,8 @@ public final class Engine {
             for (JokerInstance j : bossSnap) {
                 if (!j.debuff && s.jokers.contains(j)) j.def.onBossDefeated(s, j);
             }
-            // anaglyph 翻倍标签 → 0.5.0
+            // 浮雕牌组(anaglyph)：每击败一个 Boss 盲注获得一个翻倍标签（对齐 engine.js）
+            if ("anaglyph".equals(s.deckKey)) gainTag(s, "double");
             s.bossQueue.remove(0);
             if (!s.bossQueue.isEmpty()) {
                 // 双 Boss 挑战 → 0.5.0
