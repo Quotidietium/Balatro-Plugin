@@ -32,9 +32,13 @@ public final class GameSession {
     private boolean aborted;
 
     public GameSession(BalatroPlugin plugin, Player player, String deckKey, int stakeIdx, String seed) {
+        this(plugin, player, deckKey, stakeIdx, seed, null);
+    }
+
+    public GameSession(BalatroPlugin plugin, Player player, String deckKey, int stakeIdx, String seed, String challenge) {
         this.plugin = plugin;
         this.player = player;
-        this.state = Engine.createRun(deckKey, stakeIdx, seed);
+        this.state = Engine.createRun(deckKey, stakeIdx, seed, challenge);
     }
 
     public BalatroPlugin plugin() {

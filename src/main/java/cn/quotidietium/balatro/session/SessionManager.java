@@ -21,9 +21,14 @@ public final class SessionManager {
 
     /** 开始一局；若已有进行中的局则返回 null（由调用方提示）。 */
     public GameSession start(Player player, String deckKey, int stakeIdx, String seed) {
+        return start(player, deckKey, stakeIdx, seed, null);
+    }
+
+    /** 开始一局（带挑战模式）；若已有进行中的局则返回 null。 */
+    public GameSession start(Player player, String deckKey, int stakeIdx, String seed, String challenge) {
         UUID id = player.getUniqueId();
         if (sessions.containsKey(id)) return null;
-        GameSession session = new GameSession(plugin, player, deckKey, stakeIdx, seed);
+        GameSession session = new GameSession(plugin, player, deckKey, stakeIdx, seed, challenge);
         if (!session.start()) {
             // RunStart 被取消
             return null;

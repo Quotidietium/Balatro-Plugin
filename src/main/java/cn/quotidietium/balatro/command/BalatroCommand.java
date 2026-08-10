@@ -21,8 +21,9 @@ import org.jetbrains.annotations.NotNull;
 public final class BalatroCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBS = Arrays.asList(
-            "play", "quit", "status", "playcard", "disc", "endless",
-            "shop", "buy", "buybag", "buyvoucher", "reroll", "next");
+            "help", "play", "quit", "status", "playcard", "disc", "endless",
+            "shop", "buy", "buybag", "buyvoucher", "reroll", "next",
+            "cons", "use", "packs", "pick", "skipack", "sellj", "sellc", "top");
 
     private final BalatroPlugin plugin;
 
@@ -41,6 +42,7 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         switch (args[0].toLowerCase()) {
+            case "help", "?" -> cmdHelp(player, args);
             case "play" -> cmdPlay(player, args);
             case "quit" -> cmdQuit(player);
             case "status", "hand" -> cmdStatus(player);
@@ -71,14 +73,67 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§c你已在一局中，先用 /balatro quit。");
             return;
         }
-        String seed = args.length >= 2 ? args[1] : null;
-        GameSession s = plugin.sessionManager().start(player, "red", 0, seed);
+        // 参数顺序不限：自动识别 牌组名 / 赌注数字 / 挑战名，其余视作种子。
+        String deck = "red";
+        int stake = 0;
+        String challenge = null;
+        String seed = null;
+        for (int i = 1; i < args.length; i++) {
+            String a = args[i];
+            if (isStakeArg(a)) {
+                stake = Integer.parseInt(a);
+            } else if (isDeckArg(a)) {
+                deck = a;
+            } else if (isChallengeArg(a)) {
+                challenge = a;
+            } else {
+                seed = a;
+            }
+        }
+        GameSession s = plugin.sessionManager().start(player, deck, stake, seed, challenge);
         if (s == null) {
             player.sendMessage("§c开局失败（可能 RunStart 被其他插件取消）。");
             return;
         }
-        player.sendMessage("§a开始一局小丑牌！种子=" + s.state().seed + "  牌组=red  白注");
+        StringBuilder head = new StringBuilder("§a开始一局小丑牌！种子=").append(s.state().seed);
+        head.append("  牌组=").append(deck);
+        if (stake > 0) head.append("  赌注=").append(stake);
+        if (challenge != null) head.append("  挑战=").append(challenge);
+        player.sendMessage(head.toString());
         player.sendMessage(s.handDebug());
+    }
+
+    private static boolean isStakeArg(String a) {
+        if (a.length() != 1 || !Character.isDigit(a.charAt(0))) return false;
+        int n = a.charAt(0) - '0';
+        return n >= 0 && n <= 7;
+    }
+
+    private static boolean isDeckArg(String a) {
+        for (var d : cn.quotidietium.balatro.engine.Data.DECKS) {
+            if (d.key().equalsIgnoreCase(a)) return true;
+        }
+        return false;
+    }
+
+    private static boolean isChallengeArg(String a) {
+        for (var c : cn.quotidietium.balatro.engine.Data.CHALLENGES) {
+            if (c.key().equalsIgnoreCase(a)) return true;
+        }
+        return false;
+    }
+
+    private void cmdHelp(Player player, String[] args) {
+        int page = 1;
+        if (args.length >= 2) {
+            try {
+                page = Integer.parseInt(args[1]);
+            } catch (NumberFormatException e) {
+                player.sendMessage("§c页码需为数字，用法：/balatro help <页码>");
+                return;
+            }
+        }
+        BalatroHelp.sendPage(player, page);
     }
 
     private void cmdQuit(Player player) {
@@ -396,7 +451,8 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
 
     private void sendHelp(Player player) {
         player.sendMessage("§6=== 小丑牌 /balatro ===");
-        player.sendMessage("§e/balatro play [种子] §7- 开始一局（红牌组/白注）");
+        player.sendMessage("§e/balatro help [页码] §7- 完整玩法帮助（分页，每页≤6行）");
+        player.sendMessage("§e/balatro play [牌组] [赌注] [挑战] [种子] §7- 开始一局");
         player.sendMessage("§e/balatro playcard <索引...> §7- 出牌（1 起的手牌序号，1-5 张）");
         player.sendMessage("§e/balatro disc <索引...> §7- 弃牌");
         player.sendMessage("§e/balatro status §7- 查看当前局面");
@@ -414,6 +470,18 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
             return filter(args[0], SUBS);
+        }
+        if (args.length >= 2 && args[0].equalsIgnoreCase("play")) {
+            // 补全牌组名（其余参数顺序不限，牌组名是最有用的提示）
+            java.util.List<String> decks = new java.util.ArrayList<>();
+            for (var d : cn.quotidietium.balatro.engine.Data.DECKS) decks.add(d.key());
+            decks.addAll(java.util.Arrays.asList("0", "1", "2", "3", "4", "5", "6", "7")); // 赌注
+            return filter(args[args.length - 1], decks);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("help")) {
+            java.util.List<String> pages = new java.util.ArrayList<>();
+            for (int p = 1; p <= BalatroHelp.totalPages(); p++) pages.add(Integer.toString(p));
+            return filter(args[1], pages);
         }
         return List.of();
     }
