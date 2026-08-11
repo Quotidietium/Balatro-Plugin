@@ -169,6 +169,7 @@ services.economy();       // 当前 EconomyService
 services.stats();         // 当前 StatsService
 services.leaderboard();   // 当前 LeaderboardProvider
 services.reward();        // 当前 RewardService
+services.winCounter();    // 当前 WinCounter（0.3.9 新增）
 ```
 
 运行期替换默认实现（建议在 `onEnable` 中、玩家开始游戏前替换）：
@@ -178,9 +179,14 @@ balatro.services().setEconomy(new VaultEconomyAdapter());
 balatro.services().setStats(new SqliteStats());
 balatro.services().setLeaderboard(new MyLeaderboard());
 balatro.services().setReward(new MyRewardService());
+balatro.services().setWinCounter(new MyWinCounter());   // 0.3.9 新增
 ```
 
-**默认实现**：经济为 `NoOpEconomy`（若服务端装了 Vault 则自动切换为 Vault 适配）、统计为文件持久化、排行榜为基于统计的内存排序、奖励为 `NoOpReward`（不发奖）。
+**默认实现**：经济为 `NoOpEconomy`（若服务端装了 Vault 则自动切换为 Vault 适配）、统计为文件持久化、排行榜为基于统计的内存排序、奖励为 `NoOpReward`（不发奖）、通关计数器为 `FileWinCounter`（`wins.txt` 持久化）。
+
+> **重绑约定**：`setStats` / `setWinCounter` 会同步把新实现注入默认的 `MemoryLeaderboard`
+> （聚合排行依赖二者），替换后立即生效，无需额外操作。若替换为自定义 `LeaderboardProvider`
+> 则由其自行决定数据源。
 
 ---
 
