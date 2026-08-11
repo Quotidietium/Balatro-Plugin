@@ -55,6 +55,12 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("该命令只能由玩家执行。");
             return true;
         }
+        // 权限实施：plugin.yml 声明 balatro.play（默认 true）。默认配置行为不变；
+        // 服务器经权限插件撤销后在此拦截（此前该节点仅为声明，未实际实施）。
+        if (!player.hasPermission("balatro.play")) {
+            player.sendMessage("§c你没有使用小丑牌命令的权限（balatro.play）。");
+            return true;
+        }
         // 命令层统一兜底：客户端输入一律不可信，任何子命令路径都不应向 Bukkit 命令分发器
         // 抛异常（否则触发难看的错误回显/日志刷屏）。各 cmdXxx 已对参数做防御，但第三方
         // 事件监听器（fireRunStart/fireHandScore 经 GameSession 间接调用）或意外的引擎状态
@@ -408,8 +414,12 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         if (s == null) return;
         int idx = parseOne(player, args);
         if (idx < 0) return;
-        if (s.buyPack(idx)) player.sendMessage("§a购买补充包成功（补充包选择界面 0.2.0 后续）。");
-        else player.sendMessage("§c购买失败。");
+        if (s.buyPack(idx)) {
+            player.sendMessage("§a购买补充包成功！");
+            cmdPack(player); // 直接列出内容（与 cmdBuy 重列商店一致）；pick/skipack 提示在列表尾部
+        } else {
+            player.sendMessage("§c购买失败（资金不足/已售）。");
+        }
     }
 
     private void cmdBuyVoucher(Player player, String[] args) {
@@ -472,6 +482,13 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         }
         if (!s.chooseBlind(true)) {
             player.sendMessage("§c无法跳过（Boss 盲注不可跳过）。");
+            return;
+        }
+        // 跳过可能获得「立即开包」标签（standard/buffoon → 引擎进入补充包阶段）：
+        // 全息路径由 board.update 自动列出简介，命令路径在此同步列出，避免玩家不知已进入开包
+        if (s.state().phase == cn.quotidietium.balatro.engine.Phase.PACK && s.state().pack != null) {
+            player.sendMessage("§e跳过获得标签：立即开启补充包！");
+            cmdPack(player);
             return;
         }
         promptBlindSelect(player, s);
@@ -663,7 +680,15 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         if (lastTop.size() > 128) {
             lastTop.values().removeIf(t -> now - t > 60_000L);
         }
-        var aggregated = plugin.services().leaderboard().topAggregated(10);
+        java.util.List<cn.quotidietium.balatro.api.PlayerStat> aggregated;
+        try {
+            aggregated = plugin.services().leaderboard().topAggregated(10);
+        } catch (RuntimeException ex) {
+            // 第三方排行榜服务异常：不向上击穿命令，降级为友好提示
+            plugin.getLogger().warning("LeaderboardService.topAggregated 异常：" + ex);
+            player.sendMessage("§c排行榜服务暂不可用，请稍后再试。");
+            return;
+        }
         if (aggregated.isEmpty()) { player.sendMessage("§7暂无记录。"); return; }
         // 补玩家名后在 Bukkit 层做完整三级排序：bestAnte 降序 → winCount 降序 → 玩家名升序
         java.util.List<String[]> rows = new java.util.ArrayList<>(); // {name, bestAnte, winCount}
@@ -742,6 +767,10 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        // 无 balatro.play 权限者不补全（与 onCommand 的权限实施一致，不暴露命令结构）
+        if (!(sender instanceof Player) || !sender.hasPermission("balatro.play")) {
+            return List.of();
+        }
         if (args.length == 1) {
             return filter(args[0], SUBS);
         }
