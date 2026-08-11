@@ -148,6 +148,14 @@ public final class Engine {
         s.bossKey = picked.key;
         s.bossQueue.clear();
         s.bossQueue.add(picked.key);
+        if (s.mods.doubleBoss) {
+            // 双 Boss 挑战（对齐 engine.js chooseBoss）：再抽第二个不同的 Boss（5 次尽力去重）
+            Data.Boss second = st.pick(BOSSES);
+            for (int tries = 0; tries < 5 && second.key.equals(picked.key); tries++) {
+                second = st.pick(BOSSES);
+            }
+            s.bossQueue.add(second.key);
+        }
     }
 
     /** 当前 Boss 定义（仅命名/展示）。 */
@@ -914,7 +922,11 @@ public final class Engine {
             if ("anaglyph".equals(s.deckKey)) gainTag(s, "double");
             s.bossQueue.remove(0);
             if (!s.bossQueue.isEmpty()) {
-                // 双 Boss 挑战 → 0.5.0
+                // 双 Boss 挑战（对齐 engine.js）：无商店间隔，立即接第二个 Boss
+                s.phase = Phase.BLIND_SELECT;
+                s.nextBlind = "boss";
+                s.msg("第二个 Boss 出现：" + bossDef(s).name);
+                return;
             }
         }
 
