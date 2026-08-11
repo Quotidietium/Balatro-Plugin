@@ -57,6 +57,9 @@ public final class BoardListener implements Listener {
         // 归属校验：只接受本人本牌桌创建的命中盒。客户端不可信（可被篡改、可对任意
         // 实体 id 发交互包），其他玩家牌桌或来路不明的 balatro_i_* 标签实体一律拒绝。
         if (!session.board().ownsInteraction(entity)) return;
+        // 归属确认即取消：本牌桌命中盒的点击一律由插件吞并——包括被节流的点击。
+        // （此前取消在节流之后：被节流的点击不取消，事件漏给原版行为与其他插件。）
+        event.setCancelled(true);
 
         String action = null;
         for (String t : entity.getScoreboardTags()) {
@@ -68,7 +71,6 @@ public final class BoardListener implements Listener {
         if (action == null) return;
         if (!throttle(player)) return;
 
-        event.setCancelled(true);
         try {
             dispatch(player, session, session.board(), action, player.isSneaking());
         } catch (RuntimeException ex) {
