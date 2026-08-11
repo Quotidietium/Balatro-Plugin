@@ -26,6 +26,7 @@ public final class BalatroPlugin extends JavaPlugin {
 
     private Services services;
     private SessionManager sessionManager;
+    private cn.quotidietium.balatro.gui.GuiManager guiManager;
 
     @Override
     public void onEnable() {
@@ -45,11 +46,13 @@ public final class BalatroPlugin extends JavaPlugin {
             }
         }
         sessionManager = new SessionManager(this);
+        guiManager = new cn.quotidietium.balatro.gui.GuiManager(this);
 
         BalatroCommand command = new BalatroCommand(this);
         getServer().getPluginManager().registerEvents(new SessionListener(this), this);
         getServer().getPluginManager().registerEvents(new cn.quotidietium.balatro.listener.BoardListener(this), this);
         getServer().getPluginManager().registerEvents(new cn.quotidietium.balatro.listener.BoardMoveListener(this), this);
+        getServer().getPluginManager().registerEvents(guiManager, this);
         var cmd = getCommand("balatro");
         if (cmd != null) {
             cmd.setExecutor(command);
@@ -87,6 +90,10 @@ public final class BalatroPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (guiManager != null) {
+            // 先关菜单界面再收会话：避免关停后玩家背包停留在插件菜单上
+            guiManager.closeAll();
+        }
         if (sessionManager != null) {
             sessionManager.shutdownAll();
         }
@@ -99,6 +106,11 @@ public final class BalatroPlugin extends JavaPlugin {
 
     public SessionManager sessionManager() {
         return sessionManager;
+    }
+
+    /** 开局向导 GUI 管理器（/balatro gui）。 */
+    public cn.quotidietium.balatro.gui.GuiManager guiManager() {
+        return guiManager;
     }
 
     // ================= 事件桥（由 GameSession 在主线程调用） =================
