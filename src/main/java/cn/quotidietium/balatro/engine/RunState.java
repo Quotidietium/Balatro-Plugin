@@ -192,10 +192,18 @@ public final class RunState {
         return handLevels.getOrDefault(t, 1);
     }
 
-    /** 销毁一张小丑（自毁类小丑在 onRoundEnd/onPlayHand 中调用）。 */
+    /**
+     * 销毁一张小丑（自毁类小丑在 onRoundEnd/onPlayHand 中调用）。
+     *
+     * <p>对齐 REF engine.js destroyJoker：任何途径（自毁/仪式匕首/癫狂）销毁格罗米歇尔
+     * 都置 {@link #grosDead}（解锁卡文迪什生成）；销毁后重算 flags，
+     * 使被毁小丑的手牌上限/四指/信用等标志立即失效（此前缺失，标志残留至下次重算）。
+     */
     public void destroyJoker(JokerInstance j, String reason) {
         jokers.remove(j);
+        if ("grossmichel".equals(j.def.key())) grosDead = true;
         if (reason != null) msg(reason);
+        Engine.recomputeFlags(this);
     }
 
     /** 小丑售价（含版本加成，max(1)）。 */

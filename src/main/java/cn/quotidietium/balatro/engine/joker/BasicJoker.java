@@ -148,7 +148,7 @@ public enum BasicJoker implements Joker {
         }
         @Override
         public long onRoundEnd(RunState state, JokerInstance self) {
-            if (state.stream("grossmichel").chance(1.0 / 6)) { state.grosDead = true; state.destroyJoker(self, "格罗米歇尔碎掉了！"); }
+            if (state.stream("grossmichel").chance(1.0 / 6)) { state.destroyJoker(self, "格罗米歇尔碎掉了！"); }
             return 0;
         }
     },
