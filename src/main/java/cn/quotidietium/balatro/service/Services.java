@@ -45,7 +45,16 @@ public final class Services {
         // 替换后新记录不再反映到排名（静默不一致）。与 setWinCounter 同一约定。
         if (leaderboard instanceof MemoryLeaderboard ml) ml.setStats(stats);
     }
-    public void setLeaderboard(LeaderboardProvider leaderboard) { this.leaderboard = leaderboard; }
+    public void setLeaderboard(LeaderboardProvider leaderboard) {
+        this.leaderboard = leaderboard;
+        // 与 setStats/setWinCounter 同一约定：替换排行榜时把当前统计源与通关计数器
+        // 一并注入——否则新 MemoryLeaderboard 仍持构造时的旧 stats、winCount 恒为 0
+        // （topAggregated 静默不一致）。三向（stats/winCounter/leaderboard）任一替换都保持同步。
+        if (leaderboard instanceof MemoryLeaderboard ml) {
+            ml.setStats(stats);
+            if (winCounter != null) ml.setWinCounter(winCounter);
+        }
+    }
     public void setReward(RewardService reward) { this.reward = reward; }
     public void setWinCounter(WinCounter winCounter) {
         this.winCounter = winCounter;

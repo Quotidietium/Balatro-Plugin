@@ -128,6 +128,34 @@ class ServiceReplacementCompatTest {
     }
 
     @Test
+    void setLeaderboardRebindsCurrentStatsAndWinCounter() {
+        // R72 回归：替换排行榜自身（第三方换入新 MemoryLeaderboard）时，应把当前统计源与
+        // 通关计数器一并注入——否则新排行榜持旧 stats、winCount 恒 0（topAggregated 静默不一致）。
+        Services s = new Services();
+        // 先配齐 stats + winCounter（模拟 onEnable 之后的运行期状态）
+        UUID p = UUID.randomUUID();
+        List<RunSummary> recs = new ArrayList<>();
+        recs.add(new RunSummary(p, true, 8, "S", "red", 0, 1));
+        s.setStats(new StatsService() {
+            @Override public void record(RunSummary sum) { recs.add(sum); }
+            @Override public List<RunSummary> all() { return new ArrayList<>(recs); }
+        });
+        java.util.Map<UUID, Integer> wins = new java.util.HashMap<>();
+        wins.put(p, 3);
+        s.setWinCounter(new WinCounter() {
+            @Override public void increment(UUID id) { wins.merge(id, 1, Integer::sum); }
+            @Override public int count(UUID id) { return wins.getOrDefault(id, 0); }
+        });
+        // 运行期替换排行榜（第三方换入一个全新的 MemoryLeaderboard，构造时给的是别的源）
+        s.setLeaderboard(new MemoryLeaderboard(new MemoryStats()));
+        // 断言：新排行榜读到当前 stats（bestAnte=8）与当前 winCounter（winCount=3）
+        List<PlayerStat> top = s.leaderboard().topAggregated(10);
+        assertEquals(1, top.size(), "替换后的排行榜应读到当前统计源");
+        assertEquals(8, top.get(0).bestAnte(), "bestAnte 应来自当前 stats");
+        assertEquals(3, top.get(0).winCount(), "winCount 应来自当前 winCounter（不再恒 0）");
+    }
+
+    @Test
     void noopEconomyReturnsDefaults() {
         // 默认 NoOpEconomy 的行为不变
         Services s = new Services();
