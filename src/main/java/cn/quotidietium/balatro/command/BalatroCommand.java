@@ -14,9 +14,20 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * /balatro 命令（别名 blt / joker）。
- * 0.1.0 子命令：play [seed] | quit | status | playcard <1-based 索引...> | disc <索引...> | endless
- * （文字版交互，便于在全息 UI（S8/S9）落地前后端到端验证）。
+ * /balatro 命令（别名 blt / joker），仅玩家可用。
+ *
+ * <p>子命令（序号均从 1 起；全息右键为等价操作，命令为备用）：
+ * <ul>
+ *   <li>通用：{@code play [牌组] [赌注] [挑战] [种子] | status | endless | top | quit}</li>
+ *   <li>回合：{@code playcard <序号...> | disc <序号...>}</li>
+ *   <li>盲注选择：{@code go | skip}</li>
+ *   <li>商店：{@code shop | buy <序号> | buybag <序号> | buyvoucher | reroll | next}</li>
+ *   <li>消耗品：{@code cons | use <序号> [手牌序号...]}</li>
+ *   <li>补充包：{@code packs | pick <序号> | skipack}</li>
+ *   <li>出售：{@code sellj <序号> | sellc <序号>}</li>
+ * </ul>
+ * {@code cancel} 仅为全息出售确认框「[取消]」按钮的回执，不列入帮助。
+ * 分页详细玩法与单命令详情见 {@link BalatroHelp}。
  */
 public final class BalatroCommand implements CommandExecutor, TabCompleter {
 
@@ -562,21 +573,31 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    /**
+     * 直接输入 /balatro（无参数 / 未知子命令）时的简要帮助。
+     * 覆盖全部面向玩家的命令，按游戏阶段分组；详细玩法见 {@code /balatro help}。
+     * {@code cancel} 不列出：它是全息出售确认框「[取消]」按钮的回执，非玩法命令。
+     */
     private void sendHelp(Player player) {
         player.sendMessage("§6=== 小丑牌 /balatro ===");
-        player.sendMessage("§e/balatro help [页码] §7- 完整玩法帮助（分页，每页≤6行）");
-        player.sendMessage("§e/balatro play [牌组] [赌注] [挑战] [种子] §7- 开始一局");
-        player.sendMessage("§e/balatro playcard <索引...> §7- 出牌（1 起的手牌序号，1-5 张）");
-        player.sendMessage("§e/balatro disc <索引...> §7- 弃牌");
-        player.sendMessage("§e/balatro status §7- 查看当前局面");
-        player.sendMessage("§e/balatro endless §7- 通关后进入无尽模式");
-        player.sendMessage("§e/balatro shop §7- 查看商店");
-        player.sendMessage("§e/balatro buy <序号> §7- 购买商店卡牌");
-        player.sendMessage("§e/balatro buybag <序号> §7- 购买补充包");
-        player.sendMessage("§e/balatro buyvoucher §7- 购买优惠券");
-        player.sendMessage("§e/balatro reroll §7- 重掷商店");
-        player.sendMessage("§e/balatro next §7- 离开商店进入下一盲注");
-        player.sendMessage("§e/balatro quit §7- 放弃本局");
+        player.sendMessage("§7全息牌桌：§f右键操作 / §fShift+右键 看简介；下列命令为等价备用操作，序号从 1 起。");
+        player.sendMessage("§7完整玩法（牌组/赌注/挑战/计分）：§e/balatro help [页码]§7；单命令详情：§e/balatro help <命令名>");
+        player.sendMessage("§6■ 通用");
+        player.sendMessage("§e play [牌组] [赌注] [挑战] [种子]§7 开始一局    §e status§7 查看局面");
+        player.sendMessage("§e endless§7 通关后无尽模式    §e top§7 排行榜    §e quit§7 放弃本局");
+        player.sendMessage("§6■ 出牌回合");
+        player.sendMessage("§e playcard <序号...>§7 出牌    §e disc <序号...>§7 弃牌（各 1~5 张）");
+        player.sendMessage("§6■ 盲注选择（商店 next 之后）");
+        player.sendMessage("§e go§7 开始盲注    §e skip§7 跳过并获标签（Boss 不可跳过）");
+        player.sendMessage("§6■ 商店");
+        player.sendMessage("§e shop§7 查看    §e buy <序号>§7 买卡    §e buybag <序号>§7 买补充包");
+        player.sendMessage("§e buyvoucher§7 买券    §e reroll§7 重掷    §e next§7 离开商店");
+        player.sendMessage("§6■ 消耗品（塔罗 / 星球 / 幻灵）");
+        player.sendMessage("§e cons§7 查看    §e use <消耗品序号> [手牌序号...]§7 使用");
+        player.sendMessage("§6■ 补充包");
+        player.sendMessage("§e packs§7 查看    §e pick <序号>§7 选卡    §e skipack§7 跳过");
+        player.sendMessage("§6■ 出售");
+        player.sendMessage("§e sellj <序号>§7 卖小丑    §e sellc <序号>§7 卖消耗品");
     }
 
     @Override
