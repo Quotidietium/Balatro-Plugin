@@ -466,9 +466,11 @@ public final class Engine {
         return s.isFace(c);
     }
 
-    /** 翠绿铃：强制牌离开手牌后重新指定一张（防软锁）。 */
+    /** 翠绿铃：强制牌离开手牌后重新指定一张（防软锁）。对齐 REF engine.js:480-487。 */
     private static void updateBellCard(RunState s) {
-        if (!"bell".equals(effectBk(s)) || s.bellCardId == null) return;
+        // 对齐 REF：只判断 bk!=bell 就 return；bellCardId==null 时不短路（some 返回 false →
+        // 重新 pick），保证与 REF 的 stream 消耗完全一致。
+        if (!"bell".equals(effectBk(s))) return;
         boolean still = false;
         for (Card c : s.hand) if (c.id() == s.bellCardId) { still = true; break; }
         if (!still) {
