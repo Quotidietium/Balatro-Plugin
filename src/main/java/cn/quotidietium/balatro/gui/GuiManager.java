@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -35,7 +36,11 @@ import org.bukkit.inventory.ItemStack;
  * <ul>
  *   <li>只认 {@link GuiHolder}（不认标题）；所有点击/拖拽一律取消，杜绝物品被偷入/取出；</li>
  *   <li>选择状态存于 {@link GuiState}（纯逻辑），点击只改状态再整体重画，槽位映射统一走 {@link GuiLayout}；</li>
- *   <li>种子经聊天框输入（60 秒超时），异步聊天事件仅捕获文本，实际处理回主线程；</li>
+ *   <li>界面开/关统一延后 1 tick：InventoryClickEvent 处理器内不同步 open/closeInventory
+ *       （见 note/references/papo-服务端.md §3）；</li>
+ *   <li>每玩家 150ms 点击节流（对齐 BoardListener），防篡改客户端刷点击包反复重建整页；</li>
+ *   <li>种子经聊天框输入（60 秒超时）；等待表用 ConcurrentHashMap + 异步线程原子认领，
+ *       异步聊天事件仅捕获文本，实际处理回主线程；</li>
  *   <li>玩家退出 / 插件关停时清理状态并关闭界面。</li>
  * </ul>
  */
@@ -43,6 +48,9 @@ public final class GuiManager implements Listener {
 
     /** 种子聊天输入的超时（毫秒）。 */
     private static final long SEED_INPUT_TIMEOUT_MS = 60_000L;
+
+    /** 每玩家点击节流（与 BoardListener 的 150ms 约定一致），防篡改客户端高速刷点击包拖垮主线程。 */
+    private static final long CLICK_THROTTLE_MS = 150L;
 
     // ---- 确认页固定槽位（54 格；返回/开始/取消沿用 GuiLayout 的底行约定） ----
     private static final int CONFIRM_DECK_SLOT = 10;
@@ -63,7 +71,11 @@ public final class GuiManager implements Listener {
 
     private final BalatroPlugin plugin;
     private final Map<UUID, GuiState> states = new HashMap<>();
-    private final Map<UUID, Long> pendingSeeds = new HashMap<>();
+    // AsyncChatEvent 在异步线程读写本表（onChat），主线程同时 put/remove/clear：
+    // 必须用 ConcurrentHashMap，且 onChat 以原子 remove 一次性认领（防同一玩家
+    // 快速连发两条聊天时被双重吞并/双重处理）。
+    private final Map<UUID, Long> pendingSeeds = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> lastClick = new HashMap<>();
 
     public GuiManager(BalatroPlugin plugin) {
         this.plugin = plugin;
@@ -92,6 +104,34 @@ public final class GuiManager implements Listener {
         };
         holder.bind(inv);
         player.openInventory(inv);
+    }
+
+    /**
+     * 下一 tick 再打开菜单。InventoryClickEvent 处理器内不同步调用 openInventory
+     * （见 note/references/papo-服务端.md §3：同步开/关界面可致客户端幽灵物品与包序错乱）。
+     * 选择状态（GuiState）在点击当下已同步修改，界面延后 1 tick 重建不受影响。
+     */
+    private void openMenuLater(Player player, MenuType type) {
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            try {
+                openMenu(player, type);
+            } catch (RuntimeException ex) {
+                plugin.getLogger().warning("GUI 打开菜单异常（玩家 " + player.getName()
+                        + "，菜单 " + type + "）：" + ex);
+            }
+        });
+    }
+
+    /** 下一 tick 再关闭界面（同上约束；玩家已下线则跳过）。 */
+    private void closeInventoryLater(Player player) {
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (player.isOnline()) {
+                player.closeInventory();
+            }
+        });
     }
 
     private Inventory buildMain(GuiHolder holder) {
@@ -236,12 +276,17 @@ public final class GuiManager implements Listener {
             return;
         }
         // 菜单界面内的一切点击一律取消：含数字键/Shift/双击/玩家背包侧，杜绝物品移动
+        // （取消不受下方节流影响：物品保护绝不削弱）
         e.setCancelled(true);
         if (!(e.getWhoClicked() instanceof Player player)) {
             return;
         }
         // 只响应顶部菜单本体内的点击（玩家背包侧仅拦截不响应）
         if (e.getClickedInventory() == null || e.getClickedInventory() != e.getView().getTopInventory()) {
+            return;
+        }
+        // 客户端不可信，可高速刷点击包：每玩家 150ms 节流，防选择点击反复重建整页拖垮主线程
+        if (!throttle(player)) {
             return;
         }
         int slot = e.getSlot();
@@ -252,8 +297,18 @@ public final class GuiManager implements Listener {
             plugin.getLogger().warning("GUI 点击处理异常（玩家 " + player.getName()
                     + "，菜单 " + holder.type() + "，槽位 " + slot + "）：" + ex);
             player.sendMessage("§c处理点击时出错，请重新打开 /balatro gui。");
-            player.closeInventory();
+            closeInventoryLater(player);
         }
+    }
+
+    private boolean throttle(Player player) {
+        long now = System.currentTimeMillis();
+        long last = lastClick.getOrDefault(player.getUniqueId(), 0L);
+        if (now - last < CLICK_THROTTLE_MS) {
+            return false;
+        }
+        lastClick.put(player.getUniqueId(), now);
+        return true;
     }
 
     @EventHandler
@@ -269,6 +324,7 @@ public final class GuiManager implements Listener {
         UUID id = e.getPlayer().getUniqueId();
         states.remove(id);
         pendingSeeds.remove(id);
+        lastClick.remove(id);
     }
 
     /** 关停（onDisable / reload）：关闭所有本插件菜单界面并清空状态。 */
@@ -284,6 +340,7 @@ public final class GuiManager implements Listener {
         }
         states.clear();
         pendingSeeds.clear();
+        lastClick.clear();
     }
 
     // ================= 点击分派 =================
@@ -295,65 +352,65 @@ public final class GuiManager implements Listener {
                 if (slot == MAIN_NORMAL_SLOT) {
                     st.setMode(GuiState.Mode.NORMAL);
                     clickSound(player);
-                    openMenu(player, MenuType.DECK);
+                    openMenuLater(player, MenuType.DECK);
                 } else if (slot == MAIN_CHALLENGE_SLOT) {
                     st.setMode(GuiState.Mode.CHALLENGE);
                     clickSound(player);
-                    openMenu(player, MenuType.DECK);
+                    openMenuLater(player, MenuType.DECK);
                 } else if (slot == MAIN_CLOSE_SLOT) {
                     clickSound(player);
-                    player.closeInventory();
+                    closeInventoryLater(player);
                 }
             }
             case DECK -> {
                 if (slot == GuiLayout.backSlot(GuiLayout.SIZE_LIST)) {
                     clickSound(player);
-                    openMenu(player, MenuType.MAIN);
+                    openMenuLater(player, MenuType.MAIN);
                     return;
                 }
                 if (slot == GuiLayout.nextSlot(GuiLayout.SIZE_LIST)) {
                     clickSound(player);
-                    openMenu(player, MenuType.STAKE);
+                    openMenuLater(player, MenuType.STAKE);
                     return;
                 }
                 int idx = GuiLayout.indexOfSlot(GuiLayout.SIZE_LIST, slot);
                 if (idx >= 0 && st.setDeckIdx(idx)) {
                     clickSound(player);
-                    openMenu(player, MenuType.DECK); // 重画以更新选中光效
+                    openMenuLater(player, MenuType.DECK); // 重画以更新选中光效
                 }
             }
             case STAKE -> {
                 if (slot == GuiLayout.backSlot(GuiLayout.SIZE_MAIN)) {
                     clickSound(player);
-                    openMenu(player, MenuType.DECK);
+                    openMenuLater(player, MenuType.DECK);
                     return;
                 }
                 if (slot == GuiLayout.nextSlot(GuiLayout.SIZE_MAIN)) {
                     clickSound(player);
-                    openMenu(player, st.mode() == GuiState.Mode.CHALLENGE ? MenuType.CHALLENGE : MenuType.CONFIRM);
+                    openMenuLater(player, st.mode() == GuiState.Mode.CHALLENGE ? MenuType.CHALLENGE : MenuType.CONFIRM);
                     return;
                 }
                 int idx = GuiLayout.indexOfSlot(GuiLayout.SIZE_MAIN, slot);
                 if (idx >= 0 && st.setStakeIdx(idx)) {
                     clickSound(player);
-                    openMenu(player, MenuType.STAKE);
+                    openMenuLater(player, MenuType.STAKE);
                 }
             }
             case CHALLENGE -> {
                 if (slot == GuiLayout.backSlot(GuiLayout.SIZE_LIST)) {
                     clickSound(player);
-                    openMenu(player, MenuType.STAKE);
+                    openMenuLater(player, MenuType.STAKE);
                     return;
                 }
                 if (slot == GuiLayout.nextSlot(GuiLayout.SIZE_LIST)) {
                     clickSound(player);
-                    openMenu(player, MenuType.CONFIRM);
+                    openMenuLater(player, MenuType.CONFIRM);
                     return;
                 }
                 int idx = GuiLayout.indexOfSlot(GuiLayout.SIZE_LIST, slot);
                 if (idx >= 0 && st.setChallengeIdx(idx)) {
                     clickSound(player);
-                    openMenu(player, MenuType.CHALLENGE);
+                    openMenuLater(player, MenuType.CHALLENGE);
                 }
             }
             case CONFIRM -> dispatchConfirmClick(player, st, slot, click);
@@ -364,31 +421,38 @@ public final class GuiManager implements Listener {
         boolean challengeMode = st.mode() == GuiState.Mode.CHALLENGE;
         if (slot == CONFIRM_DECK_SLOT) {
             clickSound(player);
-            openMenu(player, MenuType.DECK);
+            openMenuLater(player, MenuType.DECK);
         } else if (slot == CONFIRM_STAKE_SLOT) {
             clickSound(player);
-            openMenu(player, MenuType.STAKE);
+            openMenuLater(player, MenuType.STAKE);
         } else if (slot == CONFIRM_MODE_SLOT) {
             clickSound(player);
-            openMenu(player, challengeMode ? MenuType.CHALLENGE : MenuType.MAIN);
+            openMenuLater(player, challengeMode ? MenuType.CHALLENGE : MenuType.MAIN);
         } else if (slot == CONFIRM_SEED_SLOT) {
             if (click.isRightClick()) {
                 st.clearSeed();
                 clickSound(player);
                 player.sendMessage("§7已恢复随机种子。");
-                openMenu(player, MenuType.CONFIRM);
+                openMenuLater(player, MenuType.CONFIRM);
             } else {
                 promptSeed(player);
             }
         } else if (slot == GuiLayout.backSlot(GuiLayout.SIZE_LIST)) {
             clickSound(player);
-            openMenu(player, challengeMode ? MenuType.CHALLENGE : MenuType.STAKE);
+            openMenuLater(player, challengeMode ? MenuType.CHALLENGE : MenuType.STAKE);
         } else if (slot == CONFIRM_START_SLOT) {
             clickSound(player);
-            startRun(player, st);
+            // 立即捕获不可变开局参数（此时玩家已被节流+界面将关，状态不会再变）；
+            // 开局整体延后 1 tick，保持「先关界面、后开局」的顺序
+            GuiState.StartRequest req = st.toStartRequest();
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (player.isOnline()) {
+                    startRun(player, req);
+                }
+            });
         } else if (slot == CONFIRM_CANCEL_SLOT) {
             clickSound(player);
-            player.closeInventory();
+            closeInventoryLater(player);
         }
     }
 
@@ -399,8 +463,9 @@ public final class GuiManager implements Listener {
     // ================= 种子聊天输入 =================
 
     private void promptSeed(Player player) {
+        // 先同步登记等待（保证玩家的下一条聊天必被吞），界面关闭延后 1 tick
         pendingSeeds.put(player.getUniqueId(), System.currentTimeMillis() + SEED_INPUT_TIMEOUT_MS);
-        player.closeInventory();
+        closeInventoryLater(player);
         clickSound(player);
         player.sendMessage("§e请在聊天框输入本局种子（60 秒内有效）；输入 §fcancel§e 取消。");
         player.sendMessage("§7仅允许字母/数字/下划线/连字符，长度 1~32。当前输入会被吞掉不会广播。");
@@ -409,23 +474,22 @@ public final class GuiManager implements Listener {
     @EventHandler
     public void onChat(AsyncChatEvent e) {
         UUID id = e.getPlayer().getUniqueId();
-        Long expiry = pendingSeeds.get(id);
+        // 原子 remove 一次性认领：异步线程与主线程并发安全；
+        // 同一玩家快速连发两条聊天时只有第一条能被吞并处理，杜绝双重设置/双重弹窗
+        Long expiry = pendingSeeds.remove(id);
         if (expiry == null) {
             return;
         }
         if (System.currentTimeMillis() > expiry) {
             // 已超时：按普通聊天放行
-            pendingSeeds.remove(id);
             return;
         }
         String msg = PlainTextComponentSerializer.plainText().serialize(e.message()).trim();
         if (msg.startsWith("/")) {
-            // 命令不吞（让玩家可以正常执行其他命令），但结束本次种子输入等待
-            pendingSeeds.remove(id);
+            // 命令不吞（让玩家可以正常执行其他命令）；本次种子输入等待已随 remove 结束
             return;
         }
         e.setCancelled(true);
-        pendingSeeds.remove(id);
         // 异步事件只捕获文本，实际状态修改与界面操作回主线程
         Bukkit.getScheduler().runTask(plugin, () -> handleSeedInput(id, msg));
     }
@@ -449,21 +513,24 @@ public final class GuiManager implements Listener {
         }
         // 若等待期间已通过命令开了局，则不再弹出确认页
         if (!plugin.sessionManager().isActive(player)) {
-            openMenu(player, MenuType.CONFIRM);
+            try {
+                openMenu(player, MenuType.CONFIRM);
+            } catch (RuntimeException ex) {
+                plugin.getLogger().warning("GUI 种子确认页重开异常（玩家 " + player.getName() + "）：" + ex);
+            }
         }
     }
 
     // ================= 开局 =================
 
-    private void startRun(Player player, GuiState st) {
+    /** 在点击后下一 tick 执行（参数已在点击时捕获为不可变 {@link GuiState.StartRequest}）。 */
+    private void startRun(Player player, GuiState.StartRequest req) {
+        player.closeInventory();
         if (plugin.sessionManager().isActive(player)) {
             // 双保险：命令层也挡，但 GUI 打开期间玩家可能用命令开了局
             player.sendMessage("§c你已在一局中，先用 /balatro quit。");
-            player.closeInventory();
             return;
         }
-        GuiState.StartRequest req = st.toStartRequest();
-        player.closeInventory();
         GameSession s;
         try {
             s = plugin.sessionManager().start(player, req.deckKey(), req.stakeIdx(), req.seed(), req.challengeKey());
