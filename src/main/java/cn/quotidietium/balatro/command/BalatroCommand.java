@@ -5,7 +5,10 @@ import cn.quotidietium.balatro.engine.Engine;
 import cn.quotidietium.balatro.session.GameSession;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -37,6 +40,10 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             "cons", "use", "packs", "pick", "skipack", "sellj", "sellc", "top", "cancel");
 
     private final BalatroPlugin plugin;
+
+    /** {@code /balatro top} 的每玩家节流间隔（毫秒）：聚合排行榜每次全量遍历统计记录，防宏刷。 */
+    private static final long TOP_THROTTLE_MS = 1_000L;
+    private final Map<UUID, Long> lastTop = new HashMap<>();
 
     public BalatroCommand(BalatroPlugin plugin) {
         this.plugin = plugin;
@@ -643,6 +650,19 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
     }
 
     private void cmdTop(Player player) {
+        // 聚合排行榜每次全量遍历统计记录（上限上万条）：篡改客户端可宏刷这条只读命令，
+        // 让主线程反复做聚合+排序——每玩家 1s 节流。节流表惰性清扫（>60s 即失效），
+        // 长期运行玩家流转下有界。
+        long now = System.currentTimeMillis();
+        Long last = lastTop.get(player.getUniqueId());
+        if (last != null && now - last < TOP_THROTTLE_MS) {
+            player.sendMessage("§7查询过于频繁，请稍后再试。");
+            return;
+        }
+        lastTop.put(player.getUniqueId(), now);
+        if (lastTop.size() > 128) {
+            lastTop.values().removeIf(t -> now - t > 60_000L);
+        }
         var aggregated = plugin.services().leaderboard().topAggregated(10);
         if (aggregated.isEmpty()) { player.sendMessage("§7暂无记录。"); return; }
         // 补玩家名后在 Bukkit 层做完整三级排序：bestAnte 降序 → winCount 降序 → 玩家名升序
