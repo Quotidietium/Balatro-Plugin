@@ -361,6 +361,11 @@ public final class Engine {
         }
 
         // 洗牌并抽牌
+        // 清除上一盲注 Boss 施加的 debuff/facedown（对齐真版：Boss 效果只在该盲注内有效）。
+        // REF 原版网页不清除（fullDeck 牌状态跨盲注残留），导致换 Boss 后旧 Boss 的 debuff 仍生效——
+        // 本插件修正此行为。pillar 的 debuff 在 drawOne 时基于 playedThisAnte 重新施加，清除后仍正确。
+        // 不消耗 stream，不影响种子复现。
+        for (Card c : s.fullDeck) { c.setDebuff(false); c.setFacedown(false); }
         s.drawPile = new ArrayList<>(s.fullDeck);
         s.stream("shuffle" + s.roundCount).shuffle(s.drawPile);
         s.hand.clear();
