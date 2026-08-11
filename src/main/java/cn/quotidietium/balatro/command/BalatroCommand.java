@@ -596,13 +596,29 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
     }
 
     private void cmdTop(Player player) {
-        var top = plugin.services().leaderboard().top(10);
-        if (top.isEmpty()) { player.sendMessage("§7暂无记录。"); return; }
-        player.sendMessage("§6=== 小丑牌排行榜 ===");
+        var aggregated = plugin.services().leaderboard().topAggregated(10);
+        if (aggregated.isEmpty()) { player.sendMessage("§7暂无记录。"); return; }
+        // 补玩家名后在 Bukkit 层做完整三级排序：bestAnte 降序 → winCount 降序 → 玩家名升序
+        java.util.List<String[]> rows = new java.util.ArrayList<>(); // {name, bestAnte, winCount}
+        for (var ps : aggregated) {
+            String name = plugin.getServer().getOfflinePlayer(ps.playerId()).getName();
+            if (name == null) name = ps.playerId().toString().substring(0, 8);
+            rows.add(new String[]{name, String.valueOf(ps.bestAnte()), String.valueOf(ps.winCount())});
+        }
+        rows.sort((a, b) -> {
+            int anteA = Integer.parseInt(a[1]), anteB = Integer.parseInt(b[1]);
+            if (anteA != anteB) return Integer.compare(anteB, anteA); // 降序
+            int wcA = Integer.parseInt(a[2]), wcB = Integer.parseInt(b[2]);
+            if (wcA != wcB) return Integer.compare(wcB, wcA); // 降序
+            return a[0].compareToIgnoreCase(b[0]); // 玩家名升序
+        });
+        player.sendMessage("§6=== 小丑牌排行榜（最高底注 · 通关次数）===");
         int rank = 1;
-        for (var s : top) {
-            player.sendMessage(String.format("§e#%d §f%s §7%s 底注%d %s",
-                    rank++, s.won() ? "§a通关" : "§c失败", s.deckKey(), s.anteReached(), s.seed()));
+        for (var row : rows) {
+            int ante = Integer.parseInt(row[1]);
+            int wc = Integer.parseInt(row[2]);
+            String anteStr = ante > 8 ? "§d无尽" + ante : "§f底注" + ante;
+            player.sendMessage(String.format("§e#%d §f%s §7%s §b通关%d次", rank++, row[0], anteStr, wc));
         }
     }
 

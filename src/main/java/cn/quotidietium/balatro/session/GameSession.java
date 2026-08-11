@@ -250,6 +250,11 @@ public final class GameSession {
         plugin.services().stats().record(new RunSummary(
                 player.getUniqueId(), won, anteReached, state.seed, state.deckKey, state.stakeIdx,
                 System.currentTimeMillis()));
+        // 通关 ante 8（或无尽中继续通关更高 ante）时递增独立通关计数器（供聚合排行榜）
+        if (won) {
+            cn.quotidietium.balatro.api.service.WinCounter wc = plugin.services().winCounter();
+            if (wc != null) wc.increment(player.getUniqueId());
+        }
         sendRunStats(won, anteReached);
         if (!won) {
             // 失败：销毁牌桌并移除会话，玩家可立刻 /balatro play 再来一局
