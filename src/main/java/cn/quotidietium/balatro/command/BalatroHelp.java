@@ -117,7 +117,8 @@ final class BalatroHelp {
             return false;
         }
         for (String line : linesFor(page)) {
-            sender.sendMessage(line);
+            // commandify：行内 /balatro 命令令牌变为可悬浮（详情+举例）可点击（回填）组件
+            sender.sendMessage(HoverText.commandify(line));
         }
         return true;
     }
@@ -137,8 +138,8 @@ final class BalatroHelp {
 
     // ================= 单命令详情（/balatro help <命令名>） =================
 
-    /** 一条命令的帮助：主键、别名、标题、正文行。 */
-    private record CmdHelp(String key, String[] aliases, String title, String[] body) {
+    /** 一条命令的帮助：主键、别名、标题、正文行。包内可见：{@link HoverText} 复用为悬浮详情。 */
+    record CmdHelp(String key, String[] aliases, String title, String[] body) {
     }
 
     private static final List<CmdHelp> COMMANDS = new ArrayList<>();
@@ -257,8 +258,8 @@ final class BalatroHelp {
         COMMANDS.add(new CmdHelp(key, aliases, title, body));
     }
 
-    /** 按主键或别名查找（大小写不敏感）；未找到返回 null。 */
-    private static CmdHelp findCommand(String name) {
+    /** 按主键或别名查找（大小写不敏感）；未找到返回 null。包内可见：{@link HoverText} 查询悬浮详情。 */
+    static CmdHelp findCommand(String name) {
         if (name == null) return null;
         String n = name.toLowerCase();
         for (CmdHelp c : COMMANDS) {
@@ -274,8 +275,8 @@ final class BalatroHelp {
     static boolean sendCommandHelp(org.bukkit.command.CommandSender sender, String name) {
         CmdHelp c = findCommand(name);
         if (c == null) return false;
-        sender.sendMessage("§6■ §e" + c.key + "§6 — " + c.title);
-        for (String line : c.body) sender.sendMessage("§f" + line);
+        sender.sendMessage(HoverText.commandify("§6■ §e" + c.key + "§6 — " + c.title));
+        for (String line : c.body) sender.sendMessage(HoverText.commandify("§f" + line));
         return true;
     }
 
