@@ -39,7 +39,7 @@ public final class BalatroPlugin extends JavaPlugin {
         services.setWinCounter(new cn.quotidietium.balatro.service.FileWinCounter(
                 getDataFolder().toPath().resolve("wins.txt"), getLogger()));
         if (getServer().getPluginManager().isPluginEnabled("Vault")) {
-            cn.quotidietium.balatro.service.VaultEconomy ve = new cn.quotidietium.balatro.service.VaultEconomy();
+            cn.quotidietium.balatro.service.VaultEconomy ve = new cn.quotidietium.balatro.service.VaultEconomy(getLogger());
             if (ve.available()) {
                 services.setEconomy(ve);
                 getLogger().info("已接入 Vault 经济。");

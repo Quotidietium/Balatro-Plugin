@@ -19,8 +19,15 @@ public final class VaultEconomy implements EconomyService {
     private final Method has;
     private final Method deposit;
     private final Method withdraw;
+    /** 可选日志：经济调用失败在 FINE 级别留痕（此前静默吞掉，集成故障无从排查）。 */
+    private final java.util.logging.Logger logger;
 
     public VaultEconomy() {
+        this(null);
+    }
+
+    public VaultEconomy(java.util.logging.Logger logger) {
+        this.logger = logger;
         Object e = null;
         Method gb = null, h = null, d = null, w = null;
         try {
@@ -62,6 +69,7 @@ public final class VaultEconomy implements EconomyService {
         try {
             return (long) ((Number) getBalance.invoke(econ, offline(player))).doubleValue();
         } catch (Throwable e) {
+            logFine("getBalance", e);
             return 0;
         }
     }
@@ -72,6 +80,7 @@ public final class VaultEconomy implements EconomyService {
         try {
             return (boolean) has.invoke(econ, offline(player), (double) amount);
         } catch (Throwable e) {
+            logFine("has", e);
             return false;
         }
     }
@@ -81,7 +90,8 @@ public final class VaultEconomy implements EconomyService {
         if (econ == null) return;
         try {
             deposit.invoke(econ, offline(player), (double) amount);
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            logFine("depositPlayer", e);
         }
     }
 
@@ -90,7 +100,15 @@ public final class VaultEconomy implements EconomyService {
         if (econ == null) return;
         try {
             withdraw.invoke(econ, offline(player), (double) amount);
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            logFine("withdrawPlayer", e);
+        }
+    }
+
+    /** 经济调用失败留痕（FINE：默认配置不刷屏，排查时可开级别）。 */
+    private void logFine(String op, Throwable e) {
+        if (logger != null) {
+            logger.log(java.util.logging.Level.FINE, "Vault 经济调用失败（" + op + "）：" + e);
         }
     }
 }
