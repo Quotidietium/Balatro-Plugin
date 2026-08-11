@@ -14,7 +14,7 @@ class BalatroHelpCommandTest {
     @Test
     void primaryKeyResolves() {
         for (String k : new String[]{
-                "play", "playcard", "disc", "status", "shop", "buy", "buybag",
+                "gui", "play", "playcard", "disc", "status", "shop", "buy", "buybag",
                 "buyvoucher", "reroll", "next", "go", "skip", "cons", "use",
                 "packs", "pick", "skipack", "sellj", "sellc", "endless", "top",
                 "quit", "help"}) {
@@ -32,6 +32,7 @@ class BalatroHelpCommandTest {
         assertTrue(BalatroHelp.hasCommandHelp("voucher"), "voucher → buyvoucher");
         assertTrue(BalatroHelp.hasCommandHelp("consumables"), "consumables → cons");
         assertTrue(BalatroHelp.hasCommandHelp("?"), "? → help");
+        assertTrue(BalatroHelp.hasCommandHelp("menu"), "menu → gui");
     }
 
     @Test

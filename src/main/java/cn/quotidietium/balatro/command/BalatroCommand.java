@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>子命令（序号均从 1 起；全息右键为等价操作，命令为备用）：
  * <ul>
- *   <li>通用：{@code play [牌组] [赌注] [挑战] [种子] | status | endless | top | quit}</li>
+ *   <li>通用：{@code gui | play [牌组] [赌注] [挑战] [种子] | status | endless | top | quit}</li>
  *   <li>回合：{@code playcard <序号...> | disc <序号...>}</li>
  *   <li>盲注选择：{@code go | skip}</li>
  *   <li>商店：{@code shop | buy <序号> | buybag <序号> | buyvoucher | reroll | next}</li>
@@ -32,7 +32,7 @@ import org.jetbrains.annotations.NotNull;
 public final class BalatroCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBS = Arrays.asList(
-            "help", "play", "quit", "status", "playcard", "disc", "endless",
+            "help", "gui", "play", "quit", "status", "playcard", "disc", "endless",
             "shop", "buy", "buybag", "buyvoucher", "reroll", "next", "go", "skip",
             "cons", "use", "packs", "pick", "skipack", "sellj", "sellc", "top", "cancel");
 
@@ -69,6 +69,7 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         }
         switch (args[0].toLowerCase()) {
             case "help", "?" -> cmdHelp(player, args);
+            case "gui", "menu" -> cmdGui(player);
             case "play" -> cmdPlay(player, args);
             case "quit" -> cmdQuit(player);
             case "status", "hand" -> cmdStatus(player);
@@ -94,6 +95,15 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             case "sellc" -> cmdSellConsumable(player, args);
             default -> sendHelp(player);
         }
+    }
+
+    /** 打开开局向导 GUI（图形界面选择 模式/牌组/赌注/挑战/种子）。 */
+    private void cmdGui(Player player) {
+        if (plugin.sessionManager().isActive(player)) {
+            player.sendMessage("§c你已在一局中，先用 /balatro quit。");
+            return;
+        }
+        plugin.guiManager().openGui(player);
     }
 
     private void cmdPlay(Player player, String[] args) {
@@ -628,27 +638,51 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
      * 直接输入 /balatro（无参数 / 未知子命令）时的简要帮助。
      * 覆盖全部面向玩家的命令，按游戏阶段分组；详细玩法见 {@code /balatro help}。
      * {@code cancel} 不列出：它是全息出售确认框「[取消]」按钮的回执，非玩法命令。
+     *
+     * <p>每个命令令牌均为可悬浮（显示该命令的详细说明与使用举例）+ 可点击（回填命令）的组件，
+     * 由 {@link HoverText} 从帮助注册表生成——文案只维护 {@link BalatroHelp} 一份。
      */
     private void sendHelp(Player player) {
         player.sendMessage("§6=== 小丑牌 /balatro ===");
-        player.sendMessage("§7全息牌桌：§f右键操作 / §fShift+右键 看简介；下列命令为等价备用操作，序号从 1 起。");
-        player.sendMessage("§7完整玩法（牌组/赌注/挑战/计分）：§e/balatro help [页码]§7；单命令详情：§e/balatro help <命令名>");
+        player.sendMessage(HoverText.commandify(
+                "§7新手推荐图形界面开局：§e/balatro gui§7；下列命令悬浮可看详情与举例、点击可回填。"));
+        player.sendMessage(HoverText.commandify(
+                "§7完整玩法（牌组/赌注/挑战/计分）：§e/balatro help [页码]§7；单命令详情：§e/balatro help <命令名>"));
         player.sendMessage("§6■ 通用");
-        player.sendMessage("§e play [牌组] [赌注] [挑战] [种子]§7 开始一局    §e status§7 查看局面");
-        player.sendMessage("§e endless§7 通关后无尽模式    §e top§7 排行榜    §e quit§7 放弃本局");
+        player.sendMessage(line(t("gui"), " 图形界面开局  ", t("play"), " 命令开局  ", t("status"), " 查看局面"));
+        player.sendMessage(line(t("endless"), " 无尽模式  ", t("top"), " 排行榜  ", t("quit"), " 放弃本局"));
         player.sendMessage("§6■ 出牌回合");
-        player.sendMessage("§e playcard <序号...>§7 出牌    §e disc <序号...>§7 弃牌（各 1~5 张）");
+        player.sendMessage(line(t("playcard"), " 出牌  ", t("disc"), " 弃牌（各 1~5 张）"));
         player.sendMessage("§6■ 盲注选择（商店 next 之后）");
-        player.sendMessage("§e go§7 开始盲注    §e skip§7 跳过并获标签（Boss 不可跳过）");
+        player.sendMessage(line(t("go"), " 开始盲注  ", t("skip"), " 跳过并获标签（Boss 不可跳过）"));
         player.sendMessage("§6■ 商店");
-        player.sendMessage("§e shop§7 查看    §e buy <序号>§7 买卡    §e buybag <序号>§7 买补充包");
-        player.sendMessage("§e buyvoucher§7 买券    §e reroll§7 重掷    §e next§7 离开商店");
+        player.sendMessage(line(t("shop"), " 查看  ", t("buy"), " 买卡  ", t("buybag"), " 买补充包"));
+        player.sendMessage(line(t("buyvoucher"), " 买券  ", t("reroll"), " 重掷  ", t("next"), " 离开商店"));
         player.sendMessage("§6■ 消耗品（塔罗 / 星球 / 幻灵）");
-        player.sendMessage("§e cons§7 查看    §e use <消耗品序号> [手牌序号...]§7 使用");
+        player.sendMessage(line(t("cons"), " 查看  ", t("use"), " 使用"));
         player.sendMessage("§6■ 补充包");
-        player.sendMessage("§e packs§7 查看    §e pick <序号>§7 选卡    §e skipack§7 跳过");
+        player.sendMessage(line(t("packs"), " 查看  ", t("pick"), " 选卡  ", t("skipack"), " 跳过"));
         player.sendMessage("§6■ 出售");
-        player.sendMessage("§e sellj <序号>§7 卖小丑    §e sellc <序号>§7 卖消耗品");
+        player.sendMessage(line(t("sellj"), " 卖小丑  ", t("sellc"), " 卖消耗品"));
+    }
+
+    /** 可悬浮/可点击的命令令牌（显示裸命令名，悬浮 = 详情与举例，点击 = 回填 /balatro <主键>）。 */
+    private static net.kyori.adventure.text.Component t(String key) {
+        return HoverText.token(key, key);
+    }
+
+    /** 拼接一行：组件原样加入，字符串按灰色说明文字加入。 */
+    private static net.kyori.adventure.text.Component line(Object... parts) {
+        net.kyori.adventure.text.Component out = net.kyori.adventure.text.Component.empty();
+        for (Object p : parts) {
+            if (p instanceof net.kyori.adventure.text.Component c) {
+                out = out.append(c);
+            } else {
+                out = out.append(net.kyori.adventure.text.Component.text(
+                        String.valueOf(p), net.kyori.adventure.text.format.NamedTextColor.GRAY));
+            }
+        }
+        return out;
     }
 
     @Override

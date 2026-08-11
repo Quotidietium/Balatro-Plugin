@@ -8,7 +8,7 @@ softdepend: [Vault]
 commands:
   balatro:
     description: 小丑牌主命令
-    usage: /balatro help [页码] | play [牌组] [赌注] [挑战] [种子] | playcard | disc | shop | buy | buybag | buyvoucher | reroll | next | go | skip | cons | use | packs | pick | skipack | sellj | sellc | status | endless | top | quit
+    usage: /balatro help [页码] | gui | play [牌组] [赌注] [挑战] [种子] | playcard | disc | shop | buy | buybag | buyvoucher | reroll | next | go | skip | cons | use | packs | pick | skipack | sellj | sellc | status | endless | top | quit
     aliases: [blt, joker]
 permissions:
   balatro.play:

@@ -21,8 +21,8 @@ final class BalatroHelp {
         add("开始与目标", new String[]{
                 "目标：凑扑克牌型得分达到盲注目标，击败 8 个底注(ante)即通关。",
                 "计分 = 筹码 × 倍率；小丑牌与增强牌会大幅加成。",
-                "开局：§e/balatro play [牌组] [赌注] [挑战] [种子]",
-                "参数顺序不限：牌组名/赌注数字/挑战名会自动识别，其余视作种子。",
+                "开局：§e/balatro gui§f（图形界面，推荐）或 §e/balatro play [牌组] [赌注] [挑战] [种子]",
+                "play 参数顺序不限：牌组名/赌注数字/挑战名自动识别，其余视作种子。",
                 "翻页：§e/balatro help <页码>§f；查命令：§e/balatro help <命令名>§f（如 help play）。"
         });
         add("牌组（共 15，play 传牌组名）", new String[]{
@@ -150,6 +150,12 @@ final class BalatroHelp {
                 "· 不带参数 / 数字 → 分页帮助（每页 ≤ 6 行）。",
                 "· 命令名（如 §eplay§f）→ 该命令的详细说明。",
                 "例：§e/balatro help§f · §e/balatro help 2§f · §e/balatro help play"
+        });
+        cmd("gui", new String[]{"menu"}, "图形界面开局向导", new String[]{
+                "§e/balatro gui",
+                "打开图形界面，点击物品依次选择：模式(标准/挑战) → 牌组(15) → 赌注(0~7) → (挑战) → 确认。",
+                "种子默认随机；确认页左键种子图标可在聊天框输入指定种子（60 秒内），右键恢复随机。",
+                "例：§e/balatro gui§f（等价别名 §e/balatro menu§f）"
         });
         cmd("play", new String[]{}, "开始一局", new String[]{
                 "§e/balatro play [牌组] [赌注] [挑战] [种子]",
