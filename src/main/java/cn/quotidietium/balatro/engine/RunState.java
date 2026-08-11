@@ -127,8 +127,22 @@ public final class RunState {
     }
 
     // ---- 金钱/消息 ----
+    /**
+     * 饱和加法（防 long 溢出环绕）。原版 JS 的 Number 是 double，不会环绕；
+     * 无尽模式极端数值（如奔月复利使金钱指数增长）下 long 会环绕成负数，
+     * 语义错误且破坏利息等下游计算（负钱→负利息恶性循环）。饱和到极值对齐 double 不环绕语义。
+     */
+    public static long satAdd(long a, long b) {
+        long r = a + b;
+        // 同号相加得异号结果即溢出
+        if (((a ^ r) & (b ^ r)) < 0) {
+            return a < 0 ? Long.MIN_VALUE : Long.MAX_VALUE;
+        }
+        return r;
+    }
+
     public void gainMoney(long n) {
-        money += n;
+        money = satAdd(money, n);
     }
 
     public void msg(String text) {
@@ -201,7 +215,7 @@ public final class RunState {
         if (j.eternal) { msg("永恒小丑不可出售"); return false; }
         int val = sellValue(j);
         jokers.remove(idx);
-        money += val;
+        gainMoney(val);
         msg("出售 " + j.def.displayName() + " +$" + val);
         j.def.onSell(this, j);
         for (JokerInstance o : new ArrayList<>(jokers)) if (!o.debuff) o.def.onAnySell(this, o);
@@ -219,7 +233,7 @@ public final class RunState {
         if (idx < 0 || idx >= consumables.size()) return false;
         Consumable c = consumables.remove(idx);
         int val = Math.max(1, 1 + c.sellBonus);
-        money += val;
+        gainMoney(val);
         msg("出售消耗品 +$" + val);
         return true;
     }

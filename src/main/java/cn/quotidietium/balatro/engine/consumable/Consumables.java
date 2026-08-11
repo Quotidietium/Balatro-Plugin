@@ -145,7 +145,7 @@ public final class Consumables {
                 }
                 case "hermit": {
                     long g = Math.min(20, Math.max(0, s.money));
-                    s.money += g;
+                    s.gainMoney(g);
                     return Result.ok();
                 }
                 case "wheel": {
@@ -189,7 +189,7 @@ public final class Consumables {
                 case "temperance": {
                     long sum = 0;
                     for (JokerInstance j : s.jokers) sum += s.sellValue(j);
-                    s.money += Math.min(50, sum);
+                    s.gainMoney(Math.min(50, sum));
                     return Result.ok();
                 }
                 case "star", "moon", "sun", "world": {
@@ -289,7 +289,7 @@ public final class Consumables {
                 case "immolate": {
                     if (!inRoundHand(s)) return Result.err("需要在回合中使用");
                     destroyRandomHandCards(s, st, 5);
-                    s.money += 20;
+                    s.gainMoney(20);
                     return Result.ok();
                 }
                 case "soul":

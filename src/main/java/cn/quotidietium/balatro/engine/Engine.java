@@ -638,7 +638,9 @@ public final class Engine {
         long chipsR = Math.round(ctx.chips);
         double multR = Math.round(ctx.mult * 100.0) / 100.0;
         long score = Math.round(chipsR * multR);
-        s.roundScore += score;
+        // 饱和累加：无尽模式极端 build 单手可逼近 long 上限，直接 += 会环绕成负数
+        // （负分永远达不到目标分 → 必败软锁），对齐 JS double 不环绕语义
+        s.roundScore = RunState.satAdd(s.roundScore, score);
 
         // ---------- 出牌后处理 ----------
         s.handsLeft--;
@@ -871,12 +873,12 @@ public final class Engine {
             }
         }
 
-        // 小丑回合结束钩子
+        // 小丑回合结束钩子（payout 可能极大——奔月额外利息 = money/5，复利指数增长；饱和累加防环绕）
         List<JokerInstance> snap = new ArrayList<>(s.jokers);
         for (JokerInstance j : snap) {
             if (j.debuff || !s.jokers.contains(j)) continue;
             long g = j.def.onRoundEnd(s, j);
-            if (g > 0) { gain += g; detail.add(j.def.displayName() + " +$" + g); }
+            if (g > 0) { gain = RunState.satAdd(gain, g); detail.add(j.def.displayName() + " +$" + g); }
         }
 
         // 租赁小丑：每回合 -$3（在 money += gain 之前扣）
@@ -893,11 +895,11 @@ public final class Engine {
         }
 
         s.statsDiscardsUnused += s.discardsLeft;
-        s.money += gain;
+        s.gainMoney(gain);
 
         // 投资标签：击败 Boss 后 +$25
         if (s.blindType == Data.BlindType.BOSS && s.nextShop.get("invest") != null) {
-            s.money += 25;
+            s.gainMoney(25);
             detail.add("投资标签 +$25");
             s.nextShop.remove("invest");
         }
