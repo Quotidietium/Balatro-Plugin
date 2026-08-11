@@ -535,8 +535,22 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         // 此前手写解析是唯一缺 <0 拦截的序号命令（越界仅靠引擎兜底，且文案逊于其它命令）。
         int cidx = parseOne(player, args);
         if (cidx < 0) return;
+        // 全息「确认使用」按钮在末位携带期望 kind:key（含冒号，区别于数字手牌序号）：
+        // 确认后到点击前消耗品列表可能已变化（使用/出售收缩列表），序号可能指向另一个
+        // 消耗品——校验不一致则取消，防止错位用错。手动输入不带标识则跳过校验（向后兼容）。
+        int targetEnd = args.length;
+        if (args.length >= 3) {
+            String last = args[args.length - 1];
+            if (last.indexOf(':') >= 0) {
+                if (!consKindKeyAt(s, cidx).equals(last)) {
+                    player.sendMessage("§c消耗品列表已变化，使用已取消。请重新右键该消耗品确认。");
+                    return;
+                }
+                targetEnd = args.length - 1;
+            }
+        }
         List<Integer> cardIds = new ArrayList<>();
-        for (int i = 2; i < args.length; i++) {
+        for (int i = 2; i < targetEnd; i++) {
             int hi;
             try {
                 hi = Integer.parseInt(args[i]);
@@ -550,6 +564,14 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         var r = s.useConsumable(cidx, cardIds);
         if (!r.ok) player.sendMessage("§c" + r.err);
         else { player.sendMessage("§a使用成功。"); cmdCons(player); }
+    }
+
+    /** 当前消耗品 idx 处的期望标识（kind:key）；越界返回空串（必不匹配，走「列表已变化」取消）。 */
+    private static String consKindKeyAt(GameSession s, int idx) {
+        var cons = s.state().consumables;
+        if (idx < 0 || idx >= cons.size()) return "";
+        var c = cons.get(idx);
+        return c.kind + ":" + c.key;
     }
 
     private void cmdPack(Player player) {
@@ -594,8 +616,21 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         if (s == null) { player.sendMessage("§c当前没有进行中的局。"); return; }
         int idx = parseOne(player, args);
         if (idx < 0) return;
+        // 全息「确认出售」按钮在第 3 参数携带期望 joker key：确认后到点击前小丑列表
+        // 可能已被改写（幻灵 hex/ankh、命令出售等），序号可能指向另一张小丑——
+        // 校验不一致则取消，防止错位卖错。手动输入不带标识则跳过校验（向后兼容）。
+        if (args.length >= 3 && !jokerKeyAt(s, idx).equals(args[2])) {
+            player.sendMessage("§c小丑列表已变化，出售已取消。请重新右键该小丑确认。");
+            return;
+        }
         if (s.sellJoker(idx)) player.sendMessage("§a小丑已出售！");
         else player.sendMessage("§c出售失败（永恒/无效）。");
+    }
+
+    /** 当前小丑 idx 处的期望 key；越界返回空串（必不匹配，走「列表已变化」取消）。 */
+    private static String jokerKeyAt(GameSession s, int idx) {
+        var jokers = s.state().jokers;
+        return (idx >= 0 && idx < jokers.size()) ? jokers.get(idx).def.key() : "";
     }
 
     private void cmdSellConsumable(Player player, String[] args) {

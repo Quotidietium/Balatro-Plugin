@@ -943,7 +943,9 @@ public final class RoundBoard {
         player.sendMessage(Component.text("🃏 " + j.def.displayName() + (j.debuff ? "（失效中）" : ""), NamedTextColor.YELLOW));
         player.sendMessage(Component.text(j.def.desc(), NamedTextColor.GRAY));
         player.sendMessage(Component.text("售价：$" + val, NamedTextColor.GREEN));
-        player.sendMessage(confirmButtons("/balatro sellj " + (i + 1), "出售", "$" + val));
+        // 按钮携带期望 joker key：确认后到点击前牌序可能被改写（幻灵/命令出售等），
+        // 命令层校验不一致则取消执行，防止序号错位卖错小丑
+        player.sendMessage(confirmButtons("/balatro sellj " + (i + 1) + " " + j.def.key(), "出售", "$" + val));
     }
 
     /**
@@ -962,7 +964,9 @@ public final class RoundBoard {
                 "需指定目标时用 /balatro use " + (i + 1) + " <手牌序号...>；可出售 $" + sellVal
                         + "（/balatro sellc " + (i + 1) + "）",
                 NamedTextColor.DARK_GRAY));
-        player.sendMessage(confirmButtons("/balatro use " + (i + 1), "使用", null));
+        // 按钮末位携带期望 kind:key：确认后到点击前消耗品列表可能已变化（使用/出售收缩列表），
+        // 命令层校验不一致则取消执行，防止序号错位用错消耗品
+        player.sendMessage(confirmButtons("/balatro use " + (i + 1) + " " + c.kind + ":" + c.key, "使用", null));
     }
 
     /** 生成「[确认X] [取消]」两个可点击按钮。 */
