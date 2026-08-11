@@ -91,16 +91,21 @@ public final class JokerRegistry {
                     if (line.isEmpty()) continue;
                     String[] p = line.split("\\|", -1);
                     if (p.length >= 5 && p[0].equals("JOKER")) {
-                        RARITY.put(p[1], Integer.parseInt(p[2]));
-                        COST.put(p[1], Integer.parseInt(p[3]));
+                        // 单行损坏（非数字稀有度/售价）只跳过该行，不让整张表加载失败
+                        try {
+                            RARITY.put(p[1], Integer.parseInt(p[2]));
+                            COST.put(p[1], Integer.parseInt(p[3]));
+                        } catch (NumberFormatException ignored) {
+                            continue;
+                        }
                         NAME.put(p[1], p[4]);
                         Joker j = BY_KEY.get(p[1]);
                         if (j != null) ORDERED.add(j); // 按元数据(=原版)顺序收录
                     }
                 }
             }
-        } catch (IOException e) {
-            // 元数据缺失时退化为默认值
+        } catch (IOException | RuntimeException e) {
+            // 元数据缺失/损坏时退化为默认值（稀有度 0 / 售价 0 / 名称=key），不阻断插件加载
         }
     }
 }

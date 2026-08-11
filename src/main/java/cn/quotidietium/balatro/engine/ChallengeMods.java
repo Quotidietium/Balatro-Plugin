@@ -41,31 +41,35 @@ public final class ChallengeMods {
 
     private static void applyOne(RunState s, String k, String v) {
         Mods m = s.mods;
-        switch (k) {
-            case "noInterest" -> m.noInterest = bool(v);
-            case "freeReroll" -> m.freeReroll = bool(v);
-            case "doubleInterest" -> m.doubleInterest = bool(v);
-            case "minRewardMoney" -> m.minRewardMoney = Integer.parseInt(v);
-            case "blindMult" -> m.blindMult = Double.parseDouble(v);
-            case "handSize" -> m.handSize = Integer.parseInt(v);
-            case "handsSet" -> m.handsSet = Integer.parseInt(v);
-            case "doubleBoss" -> m.doubleBoss = bool(v);
-            case "jokerTax" -> m.jokerTax = Double.parseDouble(v);
-            case "allEternal" -> m.allEternal = bool(v);
-            case "shopDiscount" -> m.shopDiscount = Double.parseDouble(v);
-            case "facesToStone" -> m.facesToStone = bool(v);
-            case "checkered" -> m.checkered = bool(v);
-            case "numbersToFaces" -> m.numbersToFaces = bool(v);
-            case "glassDouble" -> m.glassDouble = bool(v);
-            case "inflation" -> m.inflation = bool(v);
-            case "allStone" -> m.allStone = bool(v);
-            case "must5" -> m.must5 = bool(v);
-            case "rewardMult" -> m.rewardMult = Double.parseDouble(v);
-            case "smallBigRewardHalf" -> m.smallBigRewardHalf = bool(v);
-            case "noJokers" -> m.noJokers = bool(v);
-            case "jokers" -> { for (String jk : v.split(",")) if (!jk.isEmpty()) s.gainJoker(jk, null); }
-            case "money" -> s.money = Long.parseLong(v);
-            default -> { /* 未知 mod（如 hands=-99，被 handsSet 覆盖）忽略 */ }
+        try {
+            switch (k) {
+                case "noInterest" -> m.noInterest = bool(v);
+                case "freeReroll" -> m.freeReroll = bool(v);
+                case "doubleInterest" -> m.doubleInterest = bool(v);
+                case "minRewardMoney" -> m.minRewardMoney = Integer.parseInt(v);
+                case "blindMult" -> m.blindMult = Double.parseDouble(v);
+                case "handSize" -> m.handSize = Integer.parseInt(v);
+                case "handsSet" -> m.handsSet = Integer.parseInt(v);
+                case "doubleBoss" -> m.doubleBoss = bool(v);
+                case "jokerTax" -> m.jokerTax = Double.parseDouble(v);
+                case "allEternal" -> m.allEternal = bool(v);
+                case "shopDiscount" -> m.shopDiscount = Double.parseDouble(v);
+                case "facesToStone" -> m.facesToStone = bool(v);
+                case "checkered" -> m.checkered = bool(v);
+                case "numbersToFaces" -> m.numbersToFaces = bool(v);
+                case "glassDouble" -> m.glassDouble = bool(v);
+                case "inflation" -> m.inflation = bool(v);
+                case "allStone" -> m.allStone = bool(v);
+                case "must5" -> m.must5 = bool(v);
+                case "rewardMult" -> m.rewardMult = Double.parseDouble(v);
+                case "smallBigRewardHalf" -> m.smallBigRewardHalf = bool(v);
+                case "noJokers" -> m.noJokers = bool(v);
+                case "jokers" -> { for (String jk : v.split(",")) if (!jk.isEmpty()) s.gainJoker(jk, null); }
+                case "money" -> s.money = Long.parseLong(v);
+                default -> { /* 未知 mod（如 hands=-99，被 handsSet 覆盖）忽略 */ }
+            }
+        } catch (RuntimeException ignored) {
+            // 单个 mod 值非法（如非数字）只跳过该条，不让整局 createRun 崩溃
         }
     }
 
@@ -95,8 +99,8 @@ public final class ChallengeMods {
                     }
                 }
             }
-        } catch (IOException e) {
-            // 挑战 mods 缺失时退化为无挑战
+        } catch (IOException | RuntimeException e) {
+            // 挑战 mods 缺失/损坏时退化为无挑战（不阻断插件加载）
         }
     }
 }
