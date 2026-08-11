@@ -71,20 +71,17 @@ public final class HandEval {
         int[] straightWin = straightWindow(suited, straightLen, shortcut);
         boolean hasStraight = straightWin != null;
 
-        // 同花顺/皇家：顺子须完全落在同花花色内。原实现仅判 hasStraight&&hasFlush，
-        // 在「四指 + 4 同花 + 1 异花（如 A）凑出 broadway 顺」时会误判为 ROYAL——异花 A 不属于同花，
-        // 不可能是皇家。改为在同花牌集内重新判定顺子；皇家要求 10 与 A 均在同花色内。
+        // 同花顺/皇家判定：hasStraight && hasFlush（独立判定，对齐真版 Four Fingers 行为：
+        // 第 5 张异花牌不阻止同花顺——只要分别满足 4+ 连续顺子和 4+ 同花即可）。
+        // 联网核实：Four Fingers 下 9♠8♠7♥6♠3♠ 判为同花顺（7♥ 参与顺子），
+        // 全部 5 张计分（[Poker Hands](https://balatrogame.fandom.com/wiki/Poker_Hands) /
+        // [Four Fingers](https://balatrogame.fandom.com/wiki/Four_Fingers)）。
+        // 皇家 = 同花顺且顺子窗口内所有点数 ≥10（10/J/Q/K/A）。
         Data.HandType sfType = null;
-        if (hasFlush) {
-            int[] sfWin = straightWindow(flushCards, straightLen, shortcut);
-            if (sfWin != null) {
-                // 皇家 = 同花顺且窗口内所有点数 ≥10（10/J/Q/K/A；四指下 K-Q-J-10 或 A-K-Q-J 同花
-                // 也是皇家，不要求 A）。联网核实：皇家即「全 ≥10 的同花顺」
-                // ([Poker Hands](https://balatrogame.fandom.com/wiki/Poker_Hands) / [Four Fingers](https://balatrogame.fandom.com/wiki/Four_Fingers))。
-                boolean allTenPlus = true;
-                for (int rk : sfWin) if (rk < 10) { allTenPlus = false; break; }
-                sfType = allTenPlus ? Data.HandType.ROYAL : Data.HandType.SFLUSH;
-            }
+        if (hasStraight && hasFlush) {
+            boolean allTenPlus = true;
+            for (int rk : straightWin) if (rk < 10) { allTenPlus = false; break; }
+            sfType = allTenPlus ? Data.HandType.ROYAL : Data.HandType.SFLUSH;
         }
 
         int c0 = counts.isEmpty() ? 0 : counts.get(0);
@@ -136,8 +133,12 @@ public final class HandEval {
             // 同花计分牌：仅同花色的牌（四指时非同花色牌不计分）
             for (Card c : suited) if (suitMatch(c, flushSuit, smeared)) scoring.add(c);
         } else if (type == Data.HandType.SFLUSH || type == Data.HandType.ROYAL) {
-            // 同花顺/皇家计分牌：仅同花色的牌（四指时异花色第 5 张不计分）
-            scoring.addAll(flushCards);
+            // 同花顺/皇家计分牌：顺子牌 ∪ 同花牌（对齐真版 Four Fingers——异花牌参与顺子则计分）。
+            // 例：四指 5♠6♠7♥8♠9♠ → 顺子牌含 7♥，同花牌含 4♠；并集 = 全 5 张，7♥ 计分。
+            // 但四指 5♠6♠7♠8♠K♥ → K♥ 不参与顺子也不参与同花，不计分。
+            for (Card c : suited) {
+                if (inStraight(c, straightWin) || suitMatch(c, flushSuit, smeared)) scoring.add(c);
+            }
         } else {
             scoring.addAll(suited);
         }

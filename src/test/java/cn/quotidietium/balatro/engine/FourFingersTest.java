@@ -107,4 +107,32 @@ class FourFingersTest {
         assertEquals(Data.HandType.ROYAL, r.type);
         assertEquals(5, r.scoring.size());
     }
+
+    @Test
+    void fourFingersStraightFlushOffsuitInStraightScores() {
+        // 四指：5♠6♠7♥8♠9♠ → 顺子 5-6-7-8-9（5 连续）+ 同花 4♠。
+        // 同花顺成立，7♥ 参与顺子应计分（对齐真版 Four Fingers 行为）。
+        // 联网核实：9♠8♠7♥6♠3♠ 判为同花顺，异花牌参与顺子则计分
+        // (https://balatrogame.fandom.com/wiki/Poker_Hands)
+        Map<String, Object> f = new HashMap<>();
+        f.put("fourFingers", true);
+        RunState s = stateWith(f);
+        List<Card> cards = List.of(card(1, 5, 0), card(2, 6, 0), card(3, 7, 1), card(4, 8, 0), card(5, 9, 0));
+        HandEval.Result r = HandEval.evaluate(s, cards);
+        assertEquals(Data.HandType.SFLUSH, r.type, "四指下 5-6-7-8-9 顺子 + 4 黑桃同花 → 同花顺");
+        assertEquals(5, r.scoring.size(), "异花 7♥ 参与顺子，应计分（全部 5 张）");
+    }
+
+    @Test
+    void fourFingersRoyalOffsuitInStraightScores() {
+        // 四指：10♠J♠Q♥K♠A♠ → 顺子 10-J-Q-K-A（5 连续）+ 同花 4♠。
+        // 皇家成立（全 ≥10），Q♥ 参与顺子应计分。
+        Map<String, Object> f = new HashMap<>();
+        f.put("fourFingers", true);
+        RunState s = stateWith(f);
+        List<Card> cards = List.of(card(1, 10, 0), card(2, 11, 0), card(3, 12, 1), card(4, 13, 0), card(5, 14, 0));
+        HandEval.Result r = HandEval.evaluate(s, cards);
+        assertEquals(Data.HandType.ROYAL, r.type, "四指下 10-J-Q-K-A 顺子 + 4 黑桃同花 → 皇家");
+        assertEquals(5, r.scoring.size(), "异花 Q♥ 参与顺子，应计分（全部 5 张）");
+    }
 }
