@@ -72,7 +72,12 @@ public final class Packs {
                     Data.Enhancement[] enhs = Data.Enhancement.values();
                     card.setEnh(enhs[st.range(0, enhs.length - 1)]);
                 }
-                if (st.chance(0.2)) card.setEdition(weightedEdition(st));
+                // 版本均匀 1/3（对齐 REF engine.js:1433 s.pick(["foil","holo","poly"])）；
+                // 此前误用 weightedEdition（50/35/15），分布错误且破坏种子复现。
+                if (st.chance(0.2)) {
+                    Data.Edition[] eds = {Data.Edition.FOIL, Data.Edition.HOLO, Data.Edition.POLY};
+                    card.setEdition(eds[st.range(0, 2)]);
+                }
                 if (st.chance(0.2)) {
                     Data.Seal[] seals = Data.Seal.values();
                     card.setSeal(seals[st.range(0, seals.length - 1)]);
@@ -134,10 +139,4 @@ public final class Packs {
         return true;
     }
 
-    private static Data.Edition weightedEdition(Rng.Stream st) {
-        double r = st.next() * 100;
-        if (r < 50) return Data.Edition.FOIL;
-        if (r < 85) return Data.Edition.HOLO;
-        return Data.Edition.POLY;
-    }
 }

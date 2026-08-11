@@ -186,8 +186,12 @@ public final class Shop {
     }
 
     private static int weightedPick(Rng.Stream st, List<int[]> weights) {
-        // 复用 Rng.weighted：把 int[] 包装
-        return st.weighted(weights, w -> w[1])[0];
+        // 复用 Rng.weighted：把 int[] 包装。
+        // 防御：weights 空 / 全权重 ≤0 时 Rng.weighted 返回 null（当前 genShopCards 保证
+        // tarot(8)+planet(8) 总在，不可达；但作为「不信任输入」的最后一道防线）。
+        int[] picked = st.weighted(weights, w -> w[1]);
+        if (picked == null) return 1; // 退化到塔罗（非空、价格正常的稳妥默认）
+        return picked[0];
     }
 
     private static CardItem genShopItem(RunState s, int kindCode, int slotIdx) {
