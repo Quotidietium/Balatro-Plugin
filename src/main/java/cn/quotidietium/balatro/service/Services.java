@@ -39,7 +39,12 @@ public final class Services {
     public WinCounter winCounter() { return winCounter; }
 
     public void setEconomy(EconomyService economy) { this.economy = economy; }
-    public void setStats(StatsService stats) { this.stats = stats; }
+    public void setStats(StatsService stats) {
+        this.stats = stats;
+        // 若排行榜是 MemoryLeaderboard，同步重绑统计源——否则排行榜仍读旧实现，
+        // 替换后新记录不再反映到排名（静默不一致）。与 setWinCounter 同一约定。
+        if (leaderboard instanceof MemoryLeaderboard ml) ml.setStats(stats);
+    }
     public void setLeaderboard(LeaderboardProvider leaderboard) { this.leaderboard = leaderboard; }
     public void setReward(RewardService reward) { this.reward = reward; }
     public void setWinCounter(WinCounter winCounter) {

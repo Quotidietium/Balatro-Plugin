@@ -24,7 +24,7 @@ import java.util.UUID;
  */
 public final class MemoryLeaderboard implements LeaderboardProvider {
 
-    private final StatsService stats;
+    private StatsService stats;
     private WinCounter winCounter;
 
     public MemoryLeaderboard(StatsService stats) {
@@ -34,6 +34,14 @@ public final class MemoryLeaderboard implements LeaderboardProvider {
     /** 注入通关计数器（用于聚合排行榜的 winCount 字段）。 */
     public void setWinCounter(WinCounter winCounter) {
         this.winCounter = winCounter;
+    }
+
+    /**
+     * 重绑统计源。{@code Services.setStats} 替换统计实现时会同步调用本方法——
+     * 否则排行榜仍读旧的统计源，新记录不再反映到排名（静默不一致）。
+     */
+    public void setStats(StatsService stats) {
+        this.stats = stats;
     }
 
     // 单局排行排序：won 降序（通关优先）→ anteReached 降序 → epochMilli 升序（早完成优先）。

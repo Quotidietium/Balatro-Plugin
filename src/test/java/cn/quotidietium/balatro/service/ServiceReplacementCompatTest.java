@@ -110,6 +110,24 @@ class ServiceReplacementCompatTest {
     }
 
     @Test
+    void setStatsRebindsMemoryLeaderboardSource() {
+        // 只替换 stats（不再手动重建排行榜）：MemoryLeaderboard 应由 Services.setStats
+        // 自动重绑到新统计源——否则新记录不再反映到排名（静默不一致）。
+        Services s = new Services();
+        List<RunSummary> customRecords = new ArrayList<>();
+        s.setStats(new StatsService() {
+            @Override public void record(RunSummary sum) { customRecords.add(sum); }
+            @Override public List<RunSummary> all() { return new ArrayList<>(customRecords); }
+        });
+        UUID p = UUID.randomUUID();
+        s.stats().record(new RunSummary(p, true, 8, "S", "red", 0, 1));
+        assertEquals(1, s.leaderboard().top(10).size(),
+                "替换 stats 后排行榜应读到新统计源（无需手动重建 MemoryLeaderboard）");
+        assertEquals(1, s.leaderboard().topAggregated(10).size(),
+                "聚合排行榜同样应读到新统计源");
+    }
+
+    @Test
     void noopEconomyReturnsDefaults() {
         // 默认 NoOpEconomy 的行为不变
         Services s = new Services();
