@@ -104,9 +104,16 @@ public final class GameSession {
         if (r.ok && r.won) {
             plugin.fireBlindResult(player.getUniqueId(), anteBefore, bt.key, target, state.roundScore, true);
             plugin.services().reward().onBlindCleared(player.getUniqueId(), anteBefore, bt.key);
-            if (bt == Data.BlindType.BOSS) {
+            // 底注真正清空（引擎已进入商店）才发 AnteClear：双 Boss 挑战击败第一个 Boss 后
+            // 立即接第二个 Boss（phase=BLIND_SELECT），底注尚未清空，不该发过关奖励
+            if (bt == Data.BlindType.BOSS && state.phase == Phase.SHOP) {
                 plugin.fireAnteClear(player.getUniqueId(), anteBefore);
                 plugin.services().reward().onAnteCleared(player.getUniqueId(), anteBefore);
+            }
+            if (bt == Data.BlindType.BOSS && state.phase == Phase.BLIND_SELECT) {
+                // 双 Boss 挑战转场提示（命令与全息出牌路径都会经过这里）
+                player.sendMessage("§e第二个 Boss 出现：§f" + Engine.bossDef(state).name
+                        + " §7— 用 /balatro go 或右键「▶ 开始盲注」继续");
             }
             if (state.won) {
                 finishRun(true, state.ante);
