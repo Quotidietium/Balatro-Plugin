@@ -488,8 +488,10 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         GameSession s = plugin.sessionManager().get(player);
         if (s == null) { player.sendMessage("§c当前没有进行中的局。"); return; }
         if (args.length < 2) { player.sendMessage("§c用法：/balatro use <消耗品序号> [手牌序号...]"); return; }
-        int cidx;
-        try { cidx = Integer.parseInt(args[1]) - 1; } catch (NumberFormatException e) { player.sendMessage("§c无效序号"); return; }
+        // 统一经 parseOne 解析消耗品序号（与 buy/pick/sell 一致）：1-based→0-based + 越界/非数字拦截。
+        // 此前手写解析是唯一缺 <0 拦截的序号命令（越界仅靠引擎兜底，且文案逊于其它命令）。
+        int cidx = parseOne(player, args);
+        if (cidx < 0) return;
         List<Integer> cardIds = new ArrayList<>();
         for (int i = 2; i < args.length; i++) {
             int hi;
