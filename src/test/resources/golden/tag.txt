@@ -6,7 +6,7 @@ TAG foil money=4 jokers=0 nextshop=edition=foil levels=
 TAG holo money=4 jokers=0 nextshop=edition=holo levels=
 TAG poly money=4 jokers=0 nextshop=edition=poly levels=
 TAG invest money=4 jokers=0 nextshop=invest=true levels=
-TAG voucher money=4 jokers=0 nextshop=extraVoucher=true levels=
+TAG voucher money=4 jokers=0 nextshop=extraVoucher=1 levels=
 TAG boss money=4 jokers=0 nextshop= levels=
 TAG standard money=4 jokers=0 nextshop= levels=
 TAG charm money=4 jokers=0 nextshop=freeTarot=true levels=

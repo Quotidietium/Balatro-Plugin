@@ -78,7 +78,7 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             case "shop" -> cmdShop(player);
             case "buy" -> cmdBuy(player, args);
             case "buybag", "pack" -> cmdBuyPack(player, args);
-            case "buyvoucher", "voucher" -> cmdBuyVoucher(player);
+            case "buyvoucher", "voucher" -> cmdBuyVoucher(player, args);
             case "reroll" -> cmdReroll(player);
             case "next" -> cmdNext(player);
             case "go" -> cmdGo(player);
@@ -357,11 +357,13 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§b[包" + (j + 1) + "] §f" + p.name + " §a$" + p.price + (p.sold ? " §7(已售)" : ""));
             j++;
         }
-        if (shop.voucher != null) {
-            player.sendMessage("§d[券] §f" + shop.voucher.name + " §a$" + shop.voucher.price
-                    + (shop.voucher.sold ? " §7(已售)" : ""));
+        int vk = 0;
+        for (var vch : shop.vouchers) {
+            player.sendMessage("§d[券" + (vk + 1) + "] §f" + vch.name + " §a$" + vch.price
+                    + (vch.sold ? " §7(已售)" : ""));
+            vk++;
         }
-        player.sendMessage("§7/balatro buy <序号> | buybag <序号> | buyvoucher | reroll | next");
+        player.sendMessage("§7/balatro buy <序号> | buybag <序号> | buyvoucher <券序号> | reroll | next");
     }
 
     private String shopCardLabel(cn.quotidietium.balatro.engine.shop.Shop.CardItem c) {
@@ -391,11 +393,26 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         else player.sendMessage("§c购买失败。");
     }
 
-    private void cmdBuyVoucher(Player player) {
+    private void cmdBuyVoucher(Player player, String[] args) {
         GameSession s = requireShop(player);
         if (s == null) return;
-        if (s.buyVoucher()) player.sendMessage("§a购买优惠券成功！");
-        else player.sendMessage("§c购买失败。");
+        // 多券时需指定序号；单券时允许省略（默认第 1 张），保持向后兼容
+        int idx;
+        if (args.length >= 2) {
+            idx = parseOne(player, args);
+            if (idx < 0) return;
+        } else {
+            if (s.state().shop.vouchers.size() == 1) idx = 0;
+            else if (s.state().shop.vouchers.isEmpty()) {
+                player.sendMessage("§c当前商店没有优惠券。");
+                return;
+            } else {
+                player.sendMessage("§c当前商店有多张优惠券，请用 §e/balatro buyvoucher <券序号>§c 指定。");
+                return;
+            }
+        }
+        if (s.buyVoucher(idx)) player.sendMessage("§a购买优惠券成功！");
+        else player.sendMessage("§c购买失败（资金不足/已售/越界）。");
     }
 
     private void cmdReroll(Player player) {

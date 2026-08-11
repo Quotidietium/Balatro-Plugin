@@ -186,10 +186,10 @@ public final class GameSession {
         return ok;
     }
 
-    /** 购买优惠券。 */
-    public boolean buyVoucher() {
+    /** 购买第 idx 张优惠券（0-based）。 */
+    public boolean buyVoucher(int idx) {
         if (state.phase != Phase.SHOP) return false;
-        boolean ok = cn.quotidietium.balatro.engine.shop.Shop.buyVoucher(state);
+        boolean ok = cn.quotidietium.balatro.engine.shop.Shop.buyVoucher(state, idx);
         if (board != null) board.update(state);
         return ok;
     }
