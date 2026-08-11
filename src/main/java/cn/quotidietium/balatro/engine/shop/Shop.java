@@ -83,7 +83,9 @@ public final class Shop {
     public static boolean canAfford(RunState s, long price) {
         long credit = s.flags != null && s.flags.get("credit") instanceof Number
                 ? ((Number) s.flags.get("credit")).longValue() : 0;
-        return s.money + credit >= price;
+        // 饱和加法：无尽模式金钱可饱和至 Long.MAX_VALUE，直接 + credit 会环绕成负数
+        // （后果是「买不起」的误判——方向安全但语义错误），对齐 money 全域的饱和约定。
+        return RunState.satAdd(s.money, credit) >= price;
     }
 
     private static boolean hasVoucher(RunState s, String key) {
