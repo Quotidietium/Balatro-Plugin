@@ -289,9 +289,13 @@ public final class RunState {
         return true;
     }
 
-    /** 消除当前 Boss 效果（0.1.0 Boss 效果未生效，置标志）。 */
+    /** 消除当前 Boss 效果（对齐 REF engine.js:1987-1993：置标志 + 清除所有 Boss debuff 标记 + hand 已有 debuff）。 */
     public void disableBoss() {
         bossDisabled = true;
+        bossSuitDebuff = null;
+        bossFaceDebuff = false;
+        bossLeaf = false;
+        for (Card c : hand) c.setDebuff(false);
     }
 
     /** 获得跳过标签（应用效果）。 */
