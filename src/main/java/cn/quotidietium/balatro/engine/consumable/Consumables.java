@@ -52,6 +52,10 @@ public final class Consumables {
             for (JokerInstance j : new ArrayList<>(s.jokers)) if (!j.debuff) j.def.onUsePlanet(s, j);
         }
         Engine.sortHand(s); // 消耗品可能改写/增删手牌，整理以保持展示顺序（apply 内 stream.pick 已于此之前完成）
+        // hex/ankh 等会直接改写小丑列表：重算 flags，避免被毁小丑的标志残留
+        // （如商店内 hex 销毁信用卡后 credit 仍生效 → 无小丑也能欠债消费的漏洞）。
+        // computeFlags 不消耗随机流，不影响种子复现。
+        Engine.recomputeFlags(s);
         return Result.ok();
     }
 
