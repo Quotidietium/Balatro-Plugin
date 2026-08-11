@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 牌组构建，移植自 {@code engine.js} 的 {@code buildFullDeck}（标准牌组分支）。
+ * 标准 52 张牌组构建辅助（测试用）。id 从 {@code idStart} 起递增，顺序对齐原版：
+ * 黑桃 2..A → 红桃 2..A → 梅花 2..A → 方块 2..A。
  *
- * <p>0.1.0 仅标准 52 张牌组（花色 0..3 × 点数 2..14），id 从 {@code idStart} 起递增，
- * 顺序对齐原版：黑桃 2..A → 红桃 2..A → 梅花 2..A → 方块 2..A。
- * 牌组变体（erratic/checkered/abandoned/allStone 等）随 0.5.0 牌组特性补齐。
+ * <p>生产用牌组构建（含全部 15 牌组变体 erratic/checkered/abandoned/allStone/painted 等）
+ * 在 {@link Engine#buildFullDeck}，本类仅供 {@code CardTest} 等单测构造标准牌组使用。
  */
 public final class Decks {
     private Decks() {

@@ -43,7 +43,7 @@ final class BalatroHelp {
                 "§eomelette§f煎蛋卷(5蛋/无收入) §ecity15§f十五分钟城市(满员/免费重掷)",
                 "§erich§f富者愈富(利息翻倍) §eknife§f刀尖行走(目标分×1.5)",
                 "§exray§fX光视界(牌朝上/-手牌) §emadworld§f疯狂世界(每底注2Boss)",
-                "§eluxury§f奢侈品税(每小丑+10%分) §enonperish§f永不过期(全永恒/6折)",
+                "§eluxury§f奢侈品税(每小丑目标分+10%) §enonperish§f永不过期(全永恒/6折)",
                 "§emedusa§f美杜莎(人头变石头) §edouble§f孤注一掷(1出牌/目标减半)"
         });
         add("挑战模式（共 20 · 下）", new String[]{
