@@ -19,3 +19,14 @@ build/
 # 产物 / 本地运行
 *.log
 /run/
+
+# Papo 测试服务端（本地部署，不入库）
+/eula.txt
+/libraries/
+/plugins/
+/server.properties
+/versions/
+/world/
+/world_nether/
+/world_the_end/
+/crash-reports/
