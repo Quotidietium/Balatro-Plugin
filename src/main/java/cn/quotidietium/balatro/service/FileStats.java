@@ -110,16 +110,19 @@ public final class FileStats implements StatsService {
         if (oversized) compact();
     }
 
-    /** 用当前内存记录重写文件（启动时检测到超限后调用一次）。 */
+    /** 用当前内存记录重写文件（启动时检测到超限后调用一次）。原子写：先写临时文件再 move，
+     *  防止 TRUNCATE 重写中途崩溃留下半文件导致历史记录丢失。 */
     private void compact() {
         try {
-            try (BufferedWriter w = Files.newBufferedWriter(file, StandardCharsets.UTF_8,
+            Path tmp = file.resolveSibling(file.getFileName() + ".tmp");
+            try (BufferedWriter w = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
                 for (RunSummary s : records) {
                     w.write(encode(s));
                     w.newLine();
                 }
             }
+            FileWinCounter.moveAtomic(tmp, file);
             if (logger != null) logger.info("统计文件已压缩至最近 " + records.size() + " 条：" + file);
         } catch (IOException e) {
             if (logger != null) logger.log(Level.WARNING, "统计文件压缩失败（不影响运行）：" + file, e);

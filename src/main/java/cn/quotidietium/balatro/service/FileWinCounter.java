@@ -42,16 +42,30 @@ public final class FileWinCounter implements WinCounter {
                 if (file.getParent() != null) Files.createDirectories(file.getParent());
                 dirEnsured = true;
             }
-            // 整文件重写（计数器条目数 = 玩家数，远小于统计记录数，重写开销可忽略）
-            try (BufferedWriter w = Files.newBufferedWriter(file, StandardCharsets.UTF_8,
+            // 整文件重写（计数器条目数 = 玩家数，远小于统计记录数，重写开销可忽略）。
+            // 原子写：先写临时文件再 move——直接 TRUNCATE 重写若在写入中途崩溃，
+            // 会留下半文件导致全部计数丢失。
+            Path tmp = file.resolveSibling(file.getFileName() + ".tmp");
+            try (BufferedWriter w = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
                 for (var e : counts.entrySet()) {
                     w.write(e.getKey().toString() + "=" + e.getValue());
                     w.newLine();
                 }
             }
+            moveAtomic(tmp, file);
         } catch (IOException e) {
             if (logger != null) logger.log(Level.WARNING, "通关计数写入失败：" + file, e);
+        }
+    }
+
+    /** 原子替换（文件系统不支持 ATOMIC_MOVE 时降级为普通覆盖移动）。 */
+    static void moveAtomic(Path tmp, Path target) throws IOException {
+        try {
+            Files.move(tmp, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                    java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+        } catch (java.nio.file.AtomicMoveNotSupportedException e) {
+            Files.move(tmp, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
