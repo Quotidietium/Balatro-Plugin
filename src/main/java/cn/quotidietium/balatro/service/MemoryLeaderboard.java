@@ -72,12 +72,10 @@ public final class MemoryLeaderboard implements LeaderboardProvider {
             int cur = bestAnte.getOrDefault(s.playerId(), 0);
             if (s.anteReached() > cur) bestAnte.put(s.playerId(), s.anteReached());
         }
-        Map<UUID, Integer> wins = winCounter instanceof FileWinCounter fwc
-                ? fwc.allCounts() : new HashMap<>();
         List<PlayerStat> list = new ArrayList<>();
         for (var e : bestAnte.entrySet()) {
             UUID id = e.getKey();
-            int wc = winCounter != null ? winCounter.count(id) : wins.getOrDefault(id, 0);
+            int wc = winCounter != null ? winCounter.count(id) : 0;
             list.add(new PlayerStat(id, null, e.getValue(), wc));
         }
         // 服务层排序：bestAnte 降序 → winCount 降序（玩家名排序留给显示层）。
