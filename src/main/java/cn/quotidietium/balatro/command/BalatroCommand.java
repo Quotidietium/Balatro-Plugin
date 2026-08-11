@@ -531,12 +531,20 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§c缺少序号参数。");
             return -1;
         }
+        // 用 long 解析再转 int：避免 Integer.MIN_VALUE 等极值在「-1」时溢出回绕为正数
+        // （虽下游引擎层仍有越界兜底，但命令层应自行正确拦截，不依赖下游）。
+        final long v;
         try {
-            return Integer.parseInt(args[1]) - 1; // 1-based → 0-based
+            v = Long.parseLong(args[1]);
         } catch (NumberFormatException e) {
             player.sendMessage("§c无效序号：" + args[1]);
             return -1;
         }
+        if (v < 1 || v > Integer.MAX_VALUE) {
+            player.sendMessage("§c无效序号：" + args[1]);
+            return -1;
+        }
+        return (int) v - 1; // 1-based → 0-based
     }
 
     private void cmdCons(Player player) {
