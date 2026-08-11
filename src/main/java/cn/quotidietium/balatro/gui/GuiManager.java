@@ -93,6 +93,9 @@ public final class GuiManager implements Listener {
     }
 
     private void openMenu(Player player, MenuType type) {
+        // 玩家已回到 GUI 流程（不在种子聊天输入上下文）：取消其待处理的种子等待，
+        // 否则他接下来的一条普通聊天会被吞作种子、并被强制弹到 CONFIRM 页打断当前浏览。
+        pendingSeeds.remove(player.getUniqueId());
         GuiState st = stateOf(player);
         GuiHolder holder = new GuiHolder(type);
         Inventory inv = switch (type) {
