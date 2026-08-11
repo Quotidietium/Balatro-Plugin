@@ -137,6 +137,8 @@ public final class RoundBoard {
 
     private final Set<Integer> selected = new HashSet<>();
     private Phase activePhase = null;
+    /** 自愈重入保护：relocate→spawn→update 链路内不再二次触发整体重建。 */
+    private boolean selfHealing = false;
 
     /** 可点击元素用不可见 Interaction 命中盒承载（MC 原生交互，右键确定触发 PlayerInteractEntityEvent）。 */
     private final List<Interaction> interactions = new ArrayList<>();
@@ -203,9 +205,17 @@ public final class RoundBoard {
 
     /** 状态变更后刷新（原地改写，不 clear+respawn）。 */
     public void update(RunState state) {
-        // 自愈：核心实体已失效（如所在区块被卸载移除非持久实体）→ 在玩家眼前整体重建。
-        if (statusBar != null && !statusBar.isValid()) {
-            relocate(session.player().getEyeLocation());
+        // 自愈：任一持久实体已失效即整体重建。牌桌宽约 8 格可横跨区块边界——周边区块
+        // 卸载会杀死部分非持久实体（中心 statusBar 仍存活），留下「半死牌桌」：
+        // 死位无牌面、命中盒失效且 update 原地改写为 no-op。仅查 statusBar 覆盖不了
+        // 这种部分死亡，故扫描全部持久实体（约 50 个，点击节流 150ms 下代价可忽略）。
+        if (!selfHealing && statusBar != null && hasInvalidEntity()) {
+            selfHealing = true;
+            try {
+                relocate(session.player().getEyeLocation());
+            } finally {
+                selfHealing = false;
+            }
             return; // relocate 内 spawn→update 已完成本次刷新
         }
         // 剪除已不在手牌中的选中 id（消耗品销毁/改写手牌、出牌弃牌等都会改变手牌构成），
@@ -304,6 +314,17 @@ public final class RoundBoard {
 
     private void hideAll() {
         for (TextDisplay d : all) hide(d);
+    }
+
+    /** 是否存在已失效的持久实体（区块卸载杀死的非持久 Display/Interaction）。 */
+    private boolean hasInvalidEntity() {
+        for (TextDisplay d : all) {
+            if (!d.isValid()) return true;
+        }
+        for (Interaction inter : interactions) {
+            if (!inter.isValid()) return true;
+        }
+        return false;
     }
 
     // ================= 回合视图 =================
