@@ -27,12 +27,15 @@ public final class VaultEconomy implements EconomyService {
             Class<?> econCls = Class.forName("net.milkbowl.vault.economy.Economy");
             Object rsp = Bukkit.getServer().getServicesManager().getRegistration(econCls);
             if (rsp != null) {
-                e = rsp.getClass().getMethod("getProvider").invoke(rsp);
-                if (e != null) {
+                Object provider = rsp.getClass().getMethod("getProvider").invoke(rsp);
+                if (provider != null) {
+                    // 先解析全部方法；任一缺失（非标准 Economy 实现）则整体视为不可用，
+                    // 避免 econ 非空但方法为 null 时 available() 误报 true、调用处静默空操作。
                     gb = econCls.getMethod("getBalance", OfflinePlayer.class);
                     h = econCls.getMethod("has", OfflinePlayer.class, double.class);
                     d = econCls.getMethod("depositPlayer", OfflinePlayer.class, double.class);
                     w = econCls.getMethod("withdrawPlayer", OfflinePlayer.class, double.class);
+                    e = provider; // 四个方法全部解析成功才认定可用
                 }
             }
         } catch (Throwable ignored) {
