@@ -103,12 +103,14 @@ public final class GameSession {
 
         if (r.ok && r.won) {
             plugin.fireBlindResult(player.getUniqueId(), anteBefore, bt.key, target, state.roundScore, true);
-            plugin.services().reward().onBlindCleared(player.getUniqueId(), anteBefore, bt.key);
+            safeService("RewardService.onBlindCleared",
+                    () -> plugin.services().reward().onBlindCleared(player.getUniqueId(), anteBefore, bt.key));
             // 底注真正清空（引擎已进入商店）才发 AnteClear：双 Boss 挑战击败第一个 Boss 后
             // 立即接第二个 Boss（phase=BLIND_SELECT），底注尚未清空，不该发过关奖励
             if (bt == Data.BlindType.BOSS && state.phase == Phase.SHOP) {
                 plugin.fireAnteClear(player.getUniqueId(), anteBefore);
-                plugin.services().reward().onAnteCleared(player.getUniqueId(), anteBefore);
+                safeService("RewardService.onAnteCleared",
+                        () -> plugin.services().reward().onAnteCleared(player.getUniqueId(), anteBefore));
             }
             if (bt == Data.BlindType.BOSS && state.phase == Phase.BLIND_SELECT) {
                 // 双 Boss 挑战转场提示（命令与全息出牌路径都会经过这里）
@@ -259,14 +261,19 @@ public final class GameSession {
 
     private void finishRun(boolean won, int anteReached) {
         plugin.fireRunEnd(player.getUniqueId(), won, anteReached, state.seed, state.deckKey, state.stakeIdx);
-        plugin.services().reward().onRunEnd(player.getUniqueId(), won, anteReached);
-        plugin.services().stats().record(new RunSummary(
+        // 可替换服务逐一隔离：任一第三方实现（Reward/Stats/WinCounter）抛异常
+        // 不应跳过后续服务（如 reward 异常吃掉统计落盘），各自记日志后继续。
+        safeService("RewardService.onRunEnd",
+                () -> plugin.services().reward().onRunEnd(player.getUniqueId(), won, anteReached));
+        safeService("StatsService.record", () -> plugin.services().stats().record(new RunSummary(
                 player.getUniqueId(), won, anteReached, state.seed, state.deckKey, state.stakeIdx,
-                System.currentTimeMillis()));
+                System.currentTimeMillis())));
         // 通关 ante 8（或无尽中继续通关更高 ante）时递增独立通关计数器（供聚合排行榜）
         if (won) {
-            cn.quotidietium.balatro.api.service.WinCounter wc = plugin.services().winCounter();
-            if (wc != null) wc.increment(player.getUniqueId());
+            safeService("WinCounter.increment", () -> {
+                cn.quotidietium.balatro.api.service.WinCounter wc = plugin.services().winCounter();
+                if (wc != null) wc.increment(player.getUniqueId());
+            });
         }
         sendRunStats(won, anteReached);
         if (!won) {
@@ -275,6 +282,15 @@ public final class GameSession {
             plugin.sessionManager().endIfCurrent(player, this);
         }
         // 通关(won)：保留会话与牌桌，玩家可选 /endless 继续或 /quit 结束
+    }
+
+    /** 调用可替换服务并兜底：第三方实现抛异常仅记日志，不向游戏流程传播。 */
+    private void safeService(String what, Runnable r) {
+        try {
+            r.run();
+        } catch (RuntimeException ex) {
+            plugin.getLogger().warning(what + " 异常（玩家 " + player.getName() + "）：" + ex);
+        }
     }
 
     /** 向玩家发送本局统计（任何结束情况都发）。 */

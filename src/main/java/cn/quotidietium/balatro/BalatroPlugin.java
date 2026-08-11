@@ -114,31 +114,54 @@ public final class BalatroPlugin extends JavaPlugin {
     }
 
     // ================= 事件桥（由 GameSession 在主线程调用） =================
+    // 统一隔离：callEvent 同步执行全部监听器，第三方监听器抛 RuntimeException 会沿
+    // 调用栈击穿游戏流程（如 fireRunEnd 异常会跳过后续统计落盘）。事件桥是全部事件
+    // 的唯一出口，在此兜底：记日志、绝不向游戏流程传播。
 
-    /** RunStart 事件（可取消）。 */
+    /** RunStart 事件（可取消）。监听器异常按「未取消」处理并记日志。 */
     public RunStartDecision fireRunStart(UUID player, String seed, String deckKey, int stakeIdx) {
         BalatroRunStartEvent ev = new BalatroRunStartEvent(player, seed, deckKey, stakeIdx);
-        getServer().getPluginManager().callEvent(ev);
+        try {
+            getServer().getPluginManager().callEvent(ev);
+        } catch (RuntimeException ex) {
+            getLogger().warning("BalatroRunStartEvent 监听器异常（按未取消继续）：" + ex);
+        }
         return new RunStartDecision(ev.isCancelled());
     }
 
     public void fireHandScore(UUID player, String handType, long score, long roundScore, long target, int handsLeft) {
-        getServer().getPluginManager().callEvent(
-                new BalatroHandScoreEvent(player, handType, score, roundScore, target, handsLeft));
+        try {
+            getServer().getPluginManager().callEvent(
+                    new BalatroHandScoreEvent(player, handType, score, roundScore, target, handsLeft));
+        } catch (RuntimeException ex) {
+            getLogger().warning("BalatroHandScoreEvent 监听器异常：" + ex);
+        }
     }
 
     public void fireBlindResult(UUID player, int ante, String blindType, long target, long score, boolean cleared) {
-        getServer().getPluginManager().callEvent(
-                new BalatroBlindResultEvent(player, ante, blindType, target, score, cleared));
+        try {
+            getServer().getPluginManager().callEvent(
+                    new BalatroBlindResultEvent(player, ante, blindType, target, score, cleared));
+        } catch (RuntimeException ex) {
+            getLogger().warning("BalatroBlindResultEvent 监听器异常：" + ex);
+        }
     }
 
     public void fireAnteClear(UUID player, int ante) {
-        getServer().getPluginManager().callEvent(new BalatroAnteClearEvent(player, ante));
+        try {
+            getServer().getPluginManager().callEvent(new BalatroAnteClearEvent(player, ante));
+        } catch (RuntimeException ex) {
+            getLogger().warning("BalatroAnteClearEvent 监听器异常：" + ex);
+        }
     }
 
     public void fireRunEnd(UUID player, boolean won, int anteReached, String seed, String deckKey, int stakeIdx) {
-        getServer().getPluginManager().callEvent(
-                new BalatroRunEndEvent(player, won, anteReached, seed, deckKey, stakeIdx));
+        try {
+            getServer().getPluginManager().callEvent(
+                    new BalatroRunEndEvent(player, won, anteReached, seed, deckKey, stakeIdx));
+        } catch (RuntimeException ex) {
+            getLogger().warning("BalatroRunEndEvent 监听器异常：" + ex);
+        }
     }
 
     /** RunStart 的取消决策。 */
