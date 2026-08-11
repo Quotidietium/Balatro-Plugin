@@ -60,10 +60,32 @@ public final class HandEval {
         }
         boolean hasFlush = flushSuit >= 0;
 
+        // 同花色牌集（同花顺/皇家判定与计分用）
+        List<Card> flushCards = new ArrayList<>();
+        if (hasFlush) {
+            for (Card c : suited) if (suitMatch(c, flushSuit, smeared)) flushCards.add(c);
+        }
+
         // 顺子判定（四指：4 连续即可，即使打了 5 张）
         int straightLen = fourFingers ? 4 : 5;
         int[] straightWin = straightWindow(suited, straightLen, shortcut);
         boolean hasStraight = straightWin != null;
+
+        // 同花顺/皇家：顺子须完全落在同花花色内。原实现仅判 hasStraight&&hasFlush，
+        // 在「四指 + 4 同花 + 1 异花（如 A）凑出 broadway 顺」时会误判为 ROYAL——异花 A 不属于同花，
+        // 不可能是皇家。改为在同花牌集内重新判定顺子；皇家要求 10 与 A 均在同花色内。
+        Data.HandType sfType = null;
+        if (hasFlush) {
+            int[] sfWin = straightWindow(flushCards, straightLen, shortcut);
+            if (sfWin != null) {
+                // 皇家 = 同花顺且窗口内所有点数 ≥10（10/J/Q/K/A；四指下 K-Q-J-10 或 A-K-Q-J 同花
+                // 也是皇家，不要求 A）。联网核实：皇家即「全 ≥10 的同花顺」
+                // ([Poker Hands](https://balatrogame.fandom.com/wiki/Poker_Hands) / [Four Fingers](https://balatrogame.fandom.com/wiki/Four_Fingers))。
+                boolean allTenPlus = true;
+                for (int rk : sfWin) if (rk < 10) { allTenPlus = false; break; }
+                sfType = allTenPlus ? Data.HandType.ROYAL : Data.HandType.SFLUSH;
+            }
+        }
 
         int c0 = counts.isEmpty() ? 0 : counts.get(0);
         int c1 = counts.size() < 2 ? 0 : counts.get(1);
@@ -78,9 +100,8 @@ public final class HandEval {
         if (isFive && hasFlush) type = Data.HandType.FFIVE;
         else if (isFull && hasFlush) type = Data.HandType.FHOUSE;
         else if (isFive) type = Data.HandType.FIVE;
-        else if (hasStraight && hasFlush) {
-            List<Integer> rs = suited.stream().map(Card::rank).sorted().toList();
-            type = (rs.contains(10) && rs.contains(14)) ? Data.HandType.ROYAL : Data.HandType.SFLUSH;
+        else if (sfType != null) {
+            type = sfType; // 同花顺/皇家（顺子已确认完全落在同花花色内）
         } else if (isFour) type = Data.HandType.FOUR;
         else if (isFull) type = Data.HandType.FULL;
         else if (hasFlush) type = Data.HandType.FLUSH;
@@ -114,6 +135,9 @@ public final class HandEval {
         } else if (type == Data.HandType.FLUSH) {
             // 同花计分牌：仅同花色的牌（四指时非同花色牌不计分）
             for (Card c : suited) if (suitMatch(c, flushSuit, smeared)) scoring.add(c);
+        } else if (type == Data.HandType.SFLUSH || type == Data.HandType.ROYAL) {
+            // 同花顺/皇家计分牌：仅同花色的牌（四指时异花色第 5 张不计分）
+            scoring.addAll(flushCards);
         } else {
             scoring.addAll(suited);
         }
