@@ -56,7 +56,33 @@ public final class BalatroPlugin extends JavaPlugin {
             cmd.setTabCompleter(command);
         }
 
+        sweepStaleBoards();
+
         getLogger().info("Balatro v" + getPluginMeta().getVersion() + " enabled.");
+    }
+
+    /**
+     * 启动时清扫所有世界中带 {@code balatro_board} 标签的残留实体（/reload、上次运行
+     * 异常泄漏等场景）。实体本身非持久（重启即消失），此处是防御性兜底，对齐 doudizhu 范式。
+     */
+    private void sweepStaleBoards() {
+        int removed = 0;
+        try {
+            for (org.bukkit.World world : getServer().getWorlds()) {
+                for (org.bukkit.entity.Entity e : world.getEntities()) {
+                    if (e.getScoreboardTags().contains("balatro_board")) {
+                        e.remove();
+                        removed++;
+                    }
+                }
+            }
+        } catch (RuntimeException ex) {
+            getLogger().warning("残留牌桌实体清扫失败：" + ex);
+            return;
+        }
+        if (removed > 0) {
+            getLogger().info("已清扫 " + removed + " 个残留牌桌实体。");
+        }
     }
 
     @Override

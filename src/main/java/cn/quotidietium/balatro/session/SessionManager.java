@@ -34,7 +34,15 @@ public final class SessionManager {
             return null;
         }
         GameSession session = new GameSession(plugin, player, deckKey, stakeIdx, seed, challenge);
-        if (!session.start()) {
+        boolean started;
+        try {
+            started = session.start();
+        } catch (RuntimeException ex) {
+            // 开局流程异常（如牌桌实体生成失败）：会话不入表，记日志后按开局失败处理
+            plugin.getLogger().warning("开局失败（玩家 " + player.getName() + "）：" + ex);
+            return null;
+        }
+        if (!started) {
             // RunStart 被取消
             return null;
         }
@@ -54,7 +62,12 @@ public final class SessionManager {
     public void end(Player player) {
         GameSession s = sessions.remove(player.getUniqueId());
         if (s != null) {
-            s.despawnBoard();
+            try {
+                s.despawnBoard();
+            } catch (RuntimeException ex) {
+                // 会话已移除；实体回收失败仅记日志（与 shutdownAll 同一兜底策略）
+                plugin.getLogger().warning("牌桌回收失败（玩家 " + player.getName() + "）：" + ex);
+            }
         }
     }
 

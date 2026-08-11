@@ -71,7 +71,13 @@ public final class GameSession {
         autoAdvance();
         if (state.phase == Phase.ROUND) {
             board = new RoundBoard(this);
-            board.spawn(state);
+            try {
+                board.spawn(state);
+            } catch (RuntimeException ex) {
+                // 生成中途失败（世界/区块异常等）：回收已生成的部分实体，避免无会话追踪的泄漏
+                despawnBoard();
+                throw ex;
+            }
         }
         return true;
     }
