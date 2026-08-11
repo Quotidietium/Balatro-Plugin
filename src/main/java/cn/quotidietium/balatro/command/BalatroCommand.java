@@ -48,9 +48,24 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("该命令只能由玩家执行。");
             return true;
         }
+        // 命令层统一兜底：客户端输入一律不可信，任何子命令路径都不应向 Bukkit 命令分发器
+        // 抛异常（否则触发难看的错误回显/日志刷屏）。各 cmdXxx 已对参数做防御，但第三方
+        // 事件监听器（fireRunStart/fireHandScore 经 GameSession 间接调用）或意外的引擎状态
+        // 仍可能抛 RuntimeException——在此最后一道兜住，记日志并向玩家给出友好提示。
+        try {
+            dispatch(player, args);
+        } catch (RuntimeException ex) {
+            plugin.getLogger().warning("命令处理异常（玩家 " + player.getName()
+                    + "，参数 " + java.util.Arrays.toString(args) + "）：" + ex);
+            player.sendMessage("§c处理命令时出错，请重试或联系管理员。");
+        }
+        return true;
+    }
+
+    private void dispatch(Player player, String[] args) {
         if (args.length == 0) {
             sendHelp(player);
-            return true;
+            return;
         }
         switch (args[0].toLowerCase()) {
             case "help", "?" -> cmdHelp(player, args);
@@ -79,7 +94,6 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             case "sellc" -> cmdSellConsumable(player, args);
             default -> sendHelp(player);
         }
-        return true;
     }
 
     private void cmdPlay(Player player, String[] args) {
