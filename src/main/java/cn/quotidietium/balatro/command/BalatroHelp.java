@@ -77,7 +77,7 @@ final class BalatroHelp {
         add("出售 · 排行榜 · 帮助", new String[]{
                 "§e/balatro sellj <序号>§f   出售小丑（永恒不可售）",
                 "§e/balatro sellc <序号>§f   出售消耗品",
-                "§e/balatro top§f   查看小丑牌排行榜（通关 > 底注 > 时间）",
+                "§e/balatro top§f   查看小丑牌排行榜（按玩家聚合：最高底注 · 通关次数）",
                 "§e/balatro help <页码>§f   查看指定页帮助",
                 "§e/balatro§f（无参数）   显示简要帮助"
         });
@@ -252,7 +252,7 @@ final class BalatroHelp {
         });
         cmd("top", new String[]{}, "查看排行榜", new String[]{
                 "§e/balatro top",
-                "查看小丑牌排行榜（排序：通关 > 到达底注 > 时间）。"
+                "查看小丑牌排行榜（按玩家聚合：最高到达底注降序 · 累计通关次数降序）。"
         });
         cmd("quit", new String[]{}, "放弃本局", new String[]{
                 "§e/balatro quit",
