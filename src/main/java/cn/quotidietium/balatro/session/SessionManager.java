@@ -46,7 +46,16 @@ public final class SessionManager {
             // RunStart 被取消
             return null;
         }
-        sessions.put(id, session);
+        // putIfAbsent 防重入：fireRunStart 的事件监听器可能已为本玩家开过新局
+        // （递归 start），直接 put 会覆盖并丢失新局的追踪（其牌桌实体泄漏）。
+        if (sessions.putIfAbsent(id, session) != null) {
+            plugin.getLogger().warning("开局重入冲突（玩家 " + player.getName() + "），丢弃后开的局");
+            try {
+                session.despawnBoard();
+            } catch (RuntimeException ignored) {
+            }
+            return null;
+        }
         return session;
     }
 
@@ -69,6 +78,17 @@ public final class SessionManager {
                 plugin.getLogger().warning("牌桌回收失败（玩家 " + player.getName() + "）：" + ex);
             }
         }
+    }
+
+    /**
+     * 仅当 {@code expected} 仍是本玩家当前会话时才结束它。
+     *
+     * <p>防重入误杀：BalatroRunEndEvent 等事件监听器可能在事件回调中先 end 再 start
+     * （自动重开插件）。此时 Map 里已是新会话，调用方持有的旧会话不得再误杀新局。
+     */
+    public void endIfCurrent(Player player, GameSession expected) {
+        if (sessions.get(player.getUniqueId()) != expected) return;
+        end(player);
     }
 
     /** 关闭全部（onDisable / reload）：逐一销毁牌桌实体，避免世界内残留全息。 */

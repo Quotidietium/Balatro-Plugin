@@ -263,8 +263,9 @@ public final class GameSession {
         }
         sendRunStats(won, anteReached);
         if (!won) {
-            // 失败：销毁牌桌并移除会话，玩家可立刻 /balatro play 再来一局
-            plugin.sessionManager().end(player);
+            // 失败：销毁牌桌并移除会话，玩家可立刻 /balatro play 再来一局。
+            // endIfCurrent：RunEnd 事件监听器可能已重开新局——不得误杀新会话。
+            plugin.sessionManager().endIfCurrent(player, this);
         }
         // 通关(won)：保留会话与牌桌，玩家可选 /endless 继续或 /quit 结束
     }
