@@ -86,7 +86,16 @@ public final class Packs {
             }
             case BUFFOON -> {
                 Shop.CardItem item = Shop.makeJokerItem(s, null, null);
-                c.kind = "joker"; c.joker = item.joker; c.name = item.name; c.desc = item.desc;
+                // 小丑池耗尽时 makeJokerItem 回退为塔罗（joker 字段为 null）：
+                // 必须沿用回退商品的 kind/key，否则 kind=joker + joker=null 的毒数据
+                // 会在 pick 时把 null 塞进 jokers 列表，后续 computeFlags 遍历 NPE。
+                // （拥有某稀有度全部小丑理论可达：负片版本小丑不占槽位。）
+                if (item.joker != null) {
+                    c.kind = "joker"; c.joker = item.joker;
+                } else {
+                    c.kind = item.kind; c.key = item.key;
+                }
+                c.name = item.name; c.desc = item.desc;
             }
             case SPECTRAL -> {
                 Data.Spectral sp = st.pick(List.of(Data.Spectral.values()));
@@ -104,6 +113,7 @@ public final class Packs {
         if (item.taken) return false;
         switch (item.kind) {
             case "joker" -> {
+                if (item.joker == null) return false; // 防御：毒数据绝不入 jokers 列表
                 if (s.jokerSpace() <= 0) return false;
                 s.jokers.add(item.joker);
                 s.msg("获得小丑：" + item.name);
