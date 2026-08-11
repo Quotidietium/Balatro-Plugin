@@ -33,7 +33,11 @@ softdepend: [Balatro]    # 软依赖：可选接入
 | `BalatroAnteClearEvent` | 通过一个底注（击败其 Boss） | ❌ | `playerId, ante` |
 | `BalatroRunEndEvent` | 一局结束（通关 ante 8 或失败） | ❌ | `playerId, won, anteReached, seed, deckKey, stakeIdx` |
 
-字段说明：`ante` 为底注序号（1..8）；`blindType` 为 `small`/`big`/`boss`；`handType` 为牌型 key（`high`/`pair`/`twopair`/`three`/`straight`/`flush`/`fullhouse`/`fourkind`/`straightflush`/`fivekind`/…）；`stakeIdx` 为赌注档位（0..7）。
+字段说明：`ante` 为底注序号（1..8，无尽模式为 9+）；`blindType` 为 `small`/`big`/`boss`；`handType` 为牌型 key（`high`/`pair`/`twopair`/`three`/`straight`/`flush`/`full`/`four`/`sflush`/`royal`/`five`/`fhouse`/`ffive`，共 13 种）；`stakeIdx` 为赌注档位（0..7）。
+
+> **无尽模式的 RunEnd 语义**：玩家通关 ante 8 时触发一次（`won=true`）；若随后进入
+> 无尽模式并在更高底注失败，会**再触发一次**（`won=false`，`anteReached` 为最终底注）。
+> 计次/发奖类集成通常只响应 `won==true` 的那次（`BalatroRunEndEvent.isWon()`）。
 
 ### 示例：监听通关并记录
 
