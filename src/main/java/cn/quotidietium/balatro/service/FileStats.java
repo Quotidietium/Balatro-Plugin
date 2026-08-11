@@ -34,6 +34,10 @@ public final class FileStats implements StatsService {
     private final Path file;
     private final Logger logger;
     private final List<RunSummary> records = new ArrayList<>();
+    /** 父目录仅在首次写入时确保一次，避免每次 record 都 stat 父目录。 */
+    private boolean dirEnsured;
+    /** 自上次压缩重写以来的追加次数；达 MAX_RECORDS 则触发一次 compact，限制长期运行下文件膨胀。 */
+    private int appendsSinceCompact;
 
     public FileStats(Path file) {
         this(file, null);
@@ -53,11 +57,21 @@ public final class FileStats implements StatsService {
             records.remove(0);
         }
         try {
-            if (file.getParent() != null) Files.createDirectories(file.getParent());
+            // 目录仅需确保一次（原先每次 record 都 stat 父目录，高频写入下是无谓开销）
+            if (!dirEnsured) {
+                if (file.getParent() != null) Files.createDirectories(file.getParent());
+                dirEnsured = true;
+            }
             try (BufferedWriter w = Files.newBufferedWriter(file, StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
                 w.write(encode(s));
                 w.newLine();
+            }
+            // 文件端长期运行只增不减：每累计 MAX_RECORDS 次追加触发一次压缩重写，把文件
+            // 收敛回当前内存（≤MAX），避免数周不重启时文件无限膨胀、下次启动读取爆内存。
+            if (++appendsSinceCompact >= MAX_RECORDS) {
+                appendsSinceCompact = 0;
+                compact();
             }
         } catch (IOException e) {
             // 持久化失败不影响局内，但记日志便于排查磁盘/权限问题
@@ -72,21 +86,28 @@ public final class FileStats implements StatsService {
 
     private void load() {
         if (!Files.isRegularFile(file)) return;
-        try {
-            List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
-            // 只保留最近 MAX_RECORDS 条（文件可能随长期运行超出上限）
-            int from = Math.max(0, lines.size() - MAX_RECORDS);
-            for (int i = from; i < lines.size(); i++) {
-                RunSummary s = decode(lines.get(i));
-                if (s != null) records.add(s);
+        boolean oversized = false;
+        // 流式读取，内存中只保留最近 MAX_RECORDS 条：原先 readAllLines 会把整个文件
+        // （长期运行可能远超 MAX）一次性读入内存，造成启动内存尖峰与变慢。
+        try (java.io.BufferedReader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+            java.util.ArrayDeque<RunSummary> tail = new java.util.ArrayDeque<>();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                RunSummary s = decode(line);
+                if (s == null) continue;
+                tail.addLast(s);
+                if (tail.size() > MAX_RECORDS) {
+                    tail.removeFirst();
+                    oversized = true;
+                }
             }
-            // 超限则压缩重写，避免文件与启动耗时无限增长
-            if (from > 0) {
-                compact();
-            }
+            records.addAll(tail);
         } catch (IOException e) {
             if (logger != null) logger.log(Level.WARNING, "统计读取失败（从空记录开始）：" + file, e);
+            return;
         }
+        // 超限则压缩重写，避免文件与下次启动耗时无限增长
+        if (oversized) compact();
     }
 
     /** 用当前内存记录重写文件（启动时检测到超限后调用一次）。 */
