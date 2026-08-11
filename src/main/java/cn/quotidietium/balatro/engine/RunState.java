@@ -284,7 +284,10 @@ public final class RunState {
 
     /** 把指定消耗品加入消耗品区（槽位满则失败）。 */
     public boolean addConsumableKey(String kind, String key) {
-        if (consumables.size() >= consumableSlots) return false;
+        // 对齐 REF engine.js:202-205：negative 版本消耗品 each +1 槽
+        int neg = 0;
+        for (Consumable c : consumables) if (c.edition == Data.Edition.NEGATIVE) neg++;
+        if (consumables.size() >= consumableSlots + neg) return false;
         consumables.add(new Consumable(kind, key));
         return true;
     }
@@ -308,9 +311,11 @@ public final class RunState {
         return HandEval.evaluate(this, cards);
     }
 
-    /** 剩余小丑槽。 */
+    /** 剩余小丑槽（对齐 REF engine.js:1402-1405：negative 版本小丑 each +1 槽）。 */
     public int jokerSpace() {
-        return jokerSlots - jokers.size();
+        int neg = 0;
+        for (JokerInstance j : jokers) if (j.edition == Data.Edition.NEGATIVE) neg++;
+        return jokerSlots + neg - jokers.size();
     }
 
     /** 获得一张指定小丑（0.2.0 商店/效果共用）。对齐 engine.js gainJoker：加入后重算 flags。 */
