@@ -135,8 +135,10 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
     /**
      * 开局时在聊天框给出本局完整信息，便于新手快速了解：
      * 种子/牌组/赌注/挑战名 + 各自效果 + 开局特殊持有（券/消耗品）+ 第一个 Boss + 操作提示。
+     *
+     * <p>public static：GUI 开局向导（gui 包）与命令层共用同一套展示，避免两处文案漂移。
      */
-    private void sendRunInfo(Player player, GameSession s, String deck, int stake, String challenge) {
+    public static void sendRunInfo(Player player, GameSession s, String deck, int stake, String challenge) {
         cn.quotidietium.balatro.engine.RunState st = s.state();
         cn.quotidietium.balatro.engine.Data.Deck dk = cn.quotidietium.balatro.engine.Data.deckByKey(deck);
         cn.quotidietium.balatro.engine.Data.Stake sk = cn.quotidietium.balatro.engine.Data.STAKES.get(stake);
