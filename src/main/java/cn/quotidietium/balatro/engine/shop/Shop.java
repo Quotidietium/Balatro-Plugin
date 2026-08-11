@@ -57,7 +57,8 @@ public final class Shop {
     public static final class ShopData {
         public List<CardItem> cards = new ArrayList<>();
         public List<PackItem> packs = new ArrayList<>();
-        public VoucherItem voucher;
+        /** 商店陈列的优惠券列表（可含多张：voucher 标签每叠加一次追加一张额外券）。 */
+        public List<VoucherItem> vouchers = new ArrayList<>();
         public int rerollCount;
         public int freeRerolls;
     }
@@ -117,20 +118,31 @@ public final class Shop {
             packs.add(pi);
         }
 
-        // 优惠券
-        VoucherItem voucher = null;
+        // 优惠券：基础一张 + voucher 标签每叠加一次追加一张额外券（对齐真版
+        // "Adds a Voucher to the next Shop. Can be stacked" — balatrowiki.org/w/Voucher_Tag）。
+        // REF 原版网页未实现 extraVoucher 消费（只置位），此处按真版补齐。
+        List<VoucherItem> vouchers = new ArrayList<>();
         List<Data.Voucher> avail = new ArrayList<>();
         for (Data.Voucher v : Data.VOUCHERS) {
             if (s.vouchers.contains(v.key)) continue;
             if (v.requires != null && !s.vouchers.contains(v.requires)) continue;
             avail.add(v);
         }
-        if (!avail.isEmpty()) {
+        // extraVoucher 计数（标签每次叠加 +1；0 表示无额外券）
+        int extraVouchers = 0;
+        Object ev = s.nextShop.get("extraVoucher");
+        if (ev instanceof Number) extraVouchers = ((Number) ev).intValue();
+        int totalVouchers = 1 + extraVouchers; // 基础 1 张 + 额外
+        // 每张券从剩余 avail 中随机取一张并移除（不重复），avail 不足则少几张
+        for (int vi = 0; vi < totalVouchers && !avail.isEmpty(); vi++) {
             Data.Voucher v = st.pick(avail);
-            voucher = new VoucherItem();
-            voucher.voucher = v; voucher.name = v.name; voucher.desc = v.desc;
-            voucher.price = shopPrice(s, 10);
+            avail.remove(v); // 同一商店内券不重复
+            VoucherItem item = new VoucherItem();
+            item.voucher = v; item.name = v.name; item.desc = v.desc;
+            item.price = shopPrice(s, 10);
+            vouchers.add(item);
         }
+        s.nextShop.remove("extraVoucher");
 
         if (s.nextShop.get("coupon") != null) {
             for (CardItem c : cards) c.price = 0;
@@ -142,7 +154,7 @@ public final class Shop {
         ShopData shop = new ShopData();
         shop.cards = cards;
         shop.packs = packs;
-        shop.voucher = voucher;
+        shop.vouchers = vouchers;
         shop.rerollCount = 0;
         int freeRerolls = (s.flags != null && s.flags.get("freeRerolls") instanceof Number
                 ? ((Number) s.flags.get("freeRerolls")).intValue() : 0);
@@ -342,13 +354,15 @@ public final class Shop {
         return true;
     }
 
-    public static boolean buyVoucher(RunState s) {
+    /** 购买第 idx 张优惠券（0-based）。 */
+    public static boolean buyVoucher(RunState s, int idx) {
         ShopData shop = s.shop;
-        if (shop == null || shop.voucher == null || shop.voucher.sold) return false;
-        if (!canAfford(s, shop.voucher.price)) return false;
-        s.money -= shop.voucher.price;
-        shop.voucher.sold = true;
-        Data.Voucher v = shop.voucher.voucher;
+        if (shop == null || idx < 0 || idx >= shop.vouchers.size()) return false;
+        VoucherItem it = shop.vouchers.get(idx);
+        if (it.sold || !canAfford(s, it.price)) return false;
+        s.money -= it.price;
+        it.sold = true;
+        Data.Voucher v = it.voucher;
         s.vouchers.add(v.key);
         s.msg("获得优惠券：" + v.name);
         if (v.key.equals("hieroglyph") || v.key.equals("petroglyph")) {

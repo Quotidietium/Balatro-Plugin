@@ -106,10 +106,6 @@ public final class BoardListener implements Listener {
                 click(player, 0.8f);
             }
             case "skipack" -> { session.skipPack(); click(player, 0.8f); }
-            case "voucher" -> {
-                if (!session.buyVoucher()) fail(player, "购买失败（资金不足/已售）");
-                click(player, 1.0f);
-            }
             default -> {
                 if (act.startsWith("card:")) {
                     Integer id = parseIntSafe(act.substring("card:".length()));
@@ -140,6 +136,12 @@ public final class BoardListener implements Listener {
                     if (i != null) {
                         board.sendSellConfirm(player, i);
                         click(player, 0.8f);
+                    }
+                } else if (act.startsWith("voucher:")) {
+                    Integer i = parseIntSafe(act.substring("voucher:".length()));
+                    if (i != null) {
+                        if (!session.buyVoucher(i)) fail(player, "购买失败（资金不足/已售）");
+                        click(player, 1.0f);
                     }
                 } else if (act.startsWith("cons:")) {
                     Integer i = parseIntSafe(act.substring("cons:".length()));

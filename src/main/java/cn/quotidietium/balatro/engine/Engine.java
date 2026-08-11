@@ -183,7 +183,7 @@ public final class Engine {
             case "holo" -> s.nextShop.put("edition", "holo");
             case "poly" -> s.nextShop.put("edition", "poly");
             case "invest" -> s.nextShop.put("invest", true);
-            case "voucher" -> s.nextShop.put("extraVoucher", true);
+            case "voucher" -> s.nextShop.merge("extraVoucher", 1, (a, b) -> (a instanceof Number ? ((Number) a).intValue() : 0) + 1);
             case "boss" -> rerollBoss(s, true);
             case "standard" -> cn.quotidietium.balatro.engine.shop.Packs.open(s, firstPackOfType(Data.PackType.STANDARD));
             case "buffoon" -> cn.quotidietium.balatro.engine.shop.Packs.open(s, firstPackOfType(Data.PackType.BUFFOON));

@@ -78,7 +78,7 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             case "shop" -> cmdShop(player);
             case "buy" -> cmdBuy(player, args);
             case "buybag", "pack" -> cmdBuyPack(player, args);
-            case "buyvoucher", "voucher" -> cmdBuyVoucher(player);
+            case "buyvoucher", "voucher" -> cmdBuyVoucher(player, args);
             case "reroll" -> cmdReroll(player);
             case "next" -> cmdNext(player);
             case "go" -> cmdGo(player);
@@ -357,11 +357,13 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§b[包" + (j + 1) + "] §f" + p.name + " §a$" + p.price + (p.sold ? " §7(已售)" : ""));
             j++;
         }
-        if (shop.voucher != null) {
-            player.sendMessage("§d[券] §f" + shop.voucher.name + " §a$" + shop.voucher.price
-                    + (shop.voucher.sold ? " §7(已售)" : ""));
+        int vk = 0;
+        for (var vch : shop.vouchers) {
+            player.sendMessage("§d[券" + (vk + 1) + "] §f" + vch.name + " §a$" + vch.price
+                    + (vch.sold ? " §7(已售)" : ""));
+            vk++;
         }
-        player.sendMessage("§7/balatro buy <序号> | buybag <序号> | buyvoucher | reroll | next");
+        player.sendMessage("§7/balatro buy <序号> | buybag <序号> | buyvoucher <券序号> | reroll | next");
     }
 
     private String shopCardLabel(cn.quotidietium.balatro.engine.shop.Shop.CardItem c) {
@@ -391,11 +393,26 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         else player.sendMessage("§c购买失败。");
     }
 
-    private void cmdBuyVoucher(Player player) {
+    private void cmdBuyVoucher(Player player, String[] args) {
         GameSession s = requireShop(player);
         if (s == null) return;
-        if (s.buyVoucher()) player.sendMessage("§a购买优惠券成功！");
-        else player.sendMessage("§c购买失败。");
+        // 多券时需指定序号；单券时允许省略（默认第 1 张），保持向后兼容
+        int idx;
+        if (args.length >= 2) {
+            idx = parseOne(player, args);
+            if (idx < 0) return;
+        } else {
+            if (s.state().shop.vouchers.size() == 1) idx = 0;
+            else if (s.state().shop.vouchers.isEmpty()) {
+                player.sendMessage("§c当前商店没有优惠券。");
+                return;
+            } else {
+                player.sendMessage("§c当前商店有多张优惠券，请用 §e/balatro buyvoucher <券序号>§c 指定。");
+                return;
+            }
+        }
+        if (s.buyVoucher(idx)) player.sendMessage("§a购买优惠券成功！");
+        else player.sendMessage("§c购买失败（资金不足/已售/越界）。");
     }
 
     private void cmdReroll(Player player) {
@@ -579,13 +596,29 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
     }
 
     private void cmdTop(Player player) {
-        var top = plugin.services().leaderboard().top(10);
-        if (top.isEmpty()) { player.sendMessage("§7暂无记录。"); return; }
-        player.sendMessage("§6=== 小丑牌排行榜 ===");
+        var aggregated = plugin.services().leaderboard().topAggregated(10);
+        if (aggregated.isEmpty()) { player.sendMessage("§7暂无记录。"); return; }
+        // 补玩家名后在 Bukkit 层做完整三级排序：bestAnte 降序 → winCount 降序 → 玩家名升序
+        java.util.List<String[]> rows = new java.util.ArrayList<>(); // {name, bestAnte, winCount}
+        for (var ps : aggregated) {
+            String name = plugin.getServer().getOfflinePlayer(ps.playerId()).getName();
+            if (name == null) name = ps.playerId().toString().substring(0, 8);
+            rows.add(new String[]{name, String.valueOf(ps.bestAnte()), String.valueOf(ps.winCount())});
+        }
+        rows.sort((a, b) -> {
+            int anteA = Integer.parseInt(a[1]), anteB = Integer.parseInt(b[1]);
+            if (anteA != anteB) return Integer.compare(anteB, anteA); // 降序
+            int wcA = Integer.parseInt(a[2]), wcB = Integer.parseInt(b[2]);
+            if (wcA != wcB) return Integer.compare(wcB, wcA); // 降序
+            return a[0].compareToIgnoreCase(b[0]); // 玩家名升序
+        });
+        player.sendMessage("§6=== 小丑牌排行榜（最高底注 · 通关次数）===");
         int rank = 1;
-        for (var s : top) {
-            player.sendMessage(String.format("§e#%d §f%s §7%s 底注%d %s",
-                    rank++, s.won() ? "§a通关" : "§c失败", s.deckKey(), s.anteReached(), s.seed()));
+        for (var row : rows) {
+            int ante = Integer.parseInt(row[1]);
+            int wc = Integer.parseInt(row[2]);
+            String anteStr = ante > 8 ? "§d无尽" + ante : "§f底注" + ante;
+            player.sendMessage(String.format("§e#%d §f%s §7%s §b通关%d次", rank++, row[0], anteStr, wc));
         }
     }
 

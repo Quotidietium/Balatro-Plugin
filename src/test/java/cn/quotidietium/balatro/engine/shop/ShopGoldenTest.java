@@ -57,10 +57,12 @@ class ShopGoldenTest {
                     case "VOUCHER" -> {
                         String expKey = p[1];
                         if (expKey.equals("-")) {
-                            assertEquals(null, shop.voucher, seed + " voucher none");
+                            assertEquals(0, shop.vouchers.size(), seed + " voucher none");
                         } else {
-                            assertEquals(expKey, shop.voucher.voucher.key, seed + " voucher key");
-                            assertEquals(Long.parseLong(p[2]), shop.voucher.price, seed + " voucher price");
+                            // 黄金用例无 voucher 标签，故 vouchers 恰好 1 张（基础券）
+                            assertEquals(1, shop.vouchers.size(), seed + " voucher count");
+                            assertEquals(expKey, shop.vouchers.get(0).voucher.key, seed + " voucher key");
+                            assertEquals(Long.parseLong(p[2]), shop.vouchers.get(0).price, seed + " voucher price");
                         }
                     }
                     case "FREEREROLL" -> assertEquals(Integer.parseInt(p[1]), shop.freeRerolls, seed + " freeRerolls");

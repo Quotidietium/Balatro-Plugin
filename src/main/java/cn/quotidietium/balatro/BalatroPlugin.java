@@ -34,6 +34,9 @@ public final class BalatroPlugin extends JavaPlugin {
         services.setStats(new cn.quotidietium.balatro.service.FileStats(
                 getDataFolder().toPath().resolve("stats.txt"), getLogger()));
         services.setLeaderboard(new cn.quotidietium.balatro.service.MemoryLeaderboard(services.stats()));
+        // 通关计数器（独立持久化，供聚合排行榜的 winCount）
+        services.setWinCounter(new cn.quotidietium.balatro.service.FileWinCounter(
+                getDataFolder().toPath().resolve("wins.txt"), getLogger()));
         if (getServer().getPluginManager().isPluginEnabled("Vault")) {
             cn.quotidietium.balatro.service.VaultEconomy ve = new cn.quotidietium.balatro.service.VaultEconomy();
             if (ve.available()) {

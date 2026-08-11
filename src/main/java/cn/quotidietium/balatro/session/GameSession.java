@@ -186,10 +186,10 @@ public final class GameSession {
         return ok;
     }
 
-    /** 购买优惠券。 */
-    public boolean buyVoucher() {
+    /** 购买第 idx 张优惠券（0-based）。 */
+    public boolean buyVoucher(int idx) {
         if (state.phase != Phase.SHOP) return false;
-        boolean ok = cn.quotidietium.balatro.engine.shop.Shop.buyVoucher(state);
+        boolean ok = cn.quotidietium.balatro.engine.shop.Shop.buyVoucher(state, idx);
         if (board != null) board.update(state);
         return ok;
     }
@@ -250,6 +250,11 @@ public final class GameSession {
         plugin.services().stats().record(new RunSummary(
                 player.getUniqueId(), won, anteReached, state.seed, state.deckKey, state.stakeIdx,
                 System.currentTimeMillis()));
+        // 通关 ante 8（或无尽中继续通关更高 ante）时递增独立通关计数器（供聚合排行榜）
+        if (won) {
+            cn.quotidietium.balatro.api.service.WinCounter wc = plugin.services().winCounter();
+            if (wc != null) wc.increment(player.getUniqueId());
+        }
         sendRunStats(won, anteReached);
         if (!won) {
             // 失败：销毁牌桌并移除会话，玩家可立刻 /balatro play 再来一局

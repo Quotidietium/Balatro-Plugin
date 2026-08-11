@@ -127,13 +127,13 @@ public final class RoundBoard {
     private TextDisplay discBtn;
     private TextDisplay rerollBtn;
     private TextDisplay nextBtn;
-    private TextDisplay voucherEnt;
     private TextDisplay skipackBtn;
     private final List<TextDisplay> handSlots = new ArrayList<>();
     private final List<TextDisplay> jokerSlots = new ArrayList<>();
     private final List<TextDisplay> consSlots = new ArrayList<>();
     private final List<TextDisplay> shopSlots = new ArrayList<>();
     private final List<TextDisplay> packSlots = new ArrayList<>();
+    private final List<TextDisplay> voucherSlots = new ArrayList<>();
 
     private final Set<Integer> selected = new HashSet<>();
     private Phase activePhase = null;
@@ -185,7 +185,6 @@ public final class RoundBoard {
         discBtn = mkFrame("balatro_act_discard", BG_BUTTON_DISC);
         rerollBtn = mkFrame("balatro_reroll", BG_BUTTON);
         nextBtn = mkFrame("balatro_next", BG_BUTTON_PLAY);
-        voucherEnt = mkFrame("balatro_voucher", BG_NORMAL);
         skipackBtn = mkFrame("balatro_skipack", BG_BUTTON_DISC);
         update(state);
         sendControls();
@@ -387,7 +386,7 @@ public final class RoundBoard {
         // 回合阶段不用的按钮隐藏
         hide(rerollBtn);
         hide(nextBtn);
-        hide(voucherEnt);
+        for (TextDisplay d : voucherSlots) hide(d);
         hide(skipackBtn);
         clearShopPackSlots();
     }
@@ -525,7 +524,7 @@ public final class RoundBoard {
 
         hide(rerollBtn);
         hide(nextBtn);
-        hide(voucherEnt);
+        for (TextDisplay d : voucherSlots) hide(d);
         hide(skipackBtn);
         clearRoundSlots();
         clearShopPackSlots();
@@ -546,7 +545,7 @@ public final class RoundBoard {
         if (shop == null) {
             hide(rerollBtn);
             hide(nextBtn);
-            hide(voucherEnt);
+            for (TextDisplay d : voucherSlots) hide(d);
             return;
         }
         int n = shop.cards.size();
@@ -577,16 +576,20 @@ public final class RoundBoard {
         }
         for (int i = pn; i < packSlots.size(); i++) hide(packSlots.get(i));
 
-        if (shop.voucher != null) {
-            voucherEnt.text(Component.text("🎫" + shop.voucher.name + " $" + shop.voucher.price
-                    + (shop.voucher.sold ? "(已售)" : ""), NamedTextColor.LIGHT_PURPLE));
-            voucherEnt.setBackgroundColor(shop.voucher.sold ? BG_SOLD : BG_NORMAL);
-            ensureTag(voucherEnt, "balatro_voucher");
-            voucherEnt.teleport(at(0, -0.8));
-            if (!shop.voucher.sold) placeInteraction(0, -0.8, PACK_HW, PACK_HH, "voucher");
-        } else {
-            hide(voucherEnt);
+        // 优惠券（可能多张：voucher 标签追加）
+        int vn = shop.vouchers.size();
+        for (int i = 0; i < vn; i++) {
+            var vch = shop.vouchers.get(i);
+            double x = vn == 1 ? 0 : (i - (vn - 1) / 2.0) * 1.3;
+            TextDisplay d = slot(voucherSlots, i, BG_NORMAL);
+            d.text(Component.text("🎫" + vch.name + " $" + vch.price
+                    + (vch.sold ? "(已售)" : ""), NamedTextColor.LIGHT_PURPLE));
+            d.setBackgroundColor(vch.sold ? BG_SOLD : BG_NORMAL);
+            setIndexedTag(d, "balatro_shopvoucher_", i);
+            d.teleport(at(x, -0.8));
+            if (!vch.sold) placeInteraction(x, -0.8, PACK_HW, PACK_HH, "voucher:" + i);
         }
+        for (int i = vn; i < voucherSlots.size(); i++) hide(voucherSlots.get(i));
         rerollBtn.text(Component.text("🔄 重掷", NamedTextColor.YELLOW));
         ensureTag(rerollBtn, "balatro_reroll");
         rerollBtn.teleport(at(-1.5, -1.7));
@@ -639,7 +642,7 @@ public final class RoundBoard {
         hide(discBtn);
         hide(rerollBtn);
         hide(nextBtn);
-        hide(voucherEnt);
+        for (TextDisplay d : voucherSlots) hide(d);
     }
 
     // ================= 聊天框简介 =================
@@ -662,8 +665,9 @@ public final class RoundBoard {
         for (var pk : shop.packs) {
             p.sendMessage(infoLine("📦 ", "补充包", pk.name, pk.price, pk.sold, pk.desc));
         }
-        if (shop.voucher != null) {
-            p.sendMessage(infoLine("🎫 ", "优惠券", shop.voucher.name, shop.voucher.price, shop.voucher.sold, shop.voucher.desc));
+        for (int vi = 0; vi < shop.vouchers.size(); vi++) {
+            var vch = shop.vouchers.get(vi);
+            p.sendMessage(infoLine("🎫[" + (vi + 1) + "] ", "优惠券", vch.name, vch.price, vch.sold, vch.desc));
         }
         p.sendMessage(Component.text("直接右键=购买/使用 · Shift+右键=查看该卡简介 · 重掷/下一回合", NamedTextColor.GRAY));
     }
@@ -732,9 +736,12 @@ public final class RoundBoard {
                     var pk = state.shop.packs.get(i);
                     return infoLine("📦 ", "补充包", pk.name, pk.price, pk.sold, pk.desc);
                 }
-            } else if (action.equals("voucher") && state.shop != null && state.shop.voucher != null) {
-                var v = state.shop.voucher;
-                return infoLine("🎫 ", "优惠券", v.name, v.price, v.sold, v.desc);
+            } else if (action.startsWith("voucher:") && state.shop != null) {
+                int i = Integer.parseInt(action.substring("voucher:".length()));
+                if (i >= 0 && i < state.shop.vouchers.size()) {
+                    var v = state.shop.vouchers.get(i);
+                    return infoLine("🎫[" + (i + 1) + "] ", "优惠券", v.name, v.price, v.sold, v.desc);
+                }
             } else if (action.startsWith("pick:") && state.pack != null) {
                 int i = Integer.parseInt(action.substring("pick:".length()));
                 if (i >= 0 && i < state.pack.cards.size()) {
@@ -996,6 +1003,7 @@ public final class RoundBoard {
         consSlots.clear();
         shopSlots.clear();
         packSlots.clear();
+        voucherSlots.clear();
         selected.clear();
         activePhase = null;
         interactionIdx = 0;

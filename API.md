@@ -94,12 +94,26 @@ public interface StatsService {
 
 ### `LeaderboardProvider` — 排行榜
 
-排序口径：优先通关（`won`），其次到达底注（`anteReached`），最后时间。
+两种口径：
+- `top(n)`：单局记录，优先通关（`won`），其次到达底注（`anteReached`），最后时间。
+- `topAggregated(n)`（0.3.9 新增）：按玩家聚合，每玩家一行。排序：最高底注降序 → 通关次数降序 → 玩家名升序。
 
 ```java
 public interface LeaderboardProvider {
     List<RunSummary> top(int n);
     RunSummary bestOf(UUID player);
+    default List<PlayerStat> topAggregated(int n) { return List.of(); } // 0.3.9 新增
+}
+```
+
+### `WinCounter` — 通关计数器（0.3.9 新增）
+
+统计每个玩家累计通关 ante 8 的次数，供聚合排行榜使用。默认 `FileWinCounter`（`wins.txt` 持久化）。
+
+```java
+public interface WinCounter {
+    void increment(UUID player);
+    int count(UUID player);
 }
 ```
 
@@ -122,6 +136,15 @@ public record RunSummary(
     UUID playerId, boolean won, int anteReached,
     String seed, String deckKey, int stakeIdx, long epochMilli
 ) {}
+```
+
+### `PlayerStat`（record，0.3.9 新增）
+
+按玩家聚合的排行榜条目。
+
+```java
+public record PlayerStat(UUID playerId, String playerName, int bestAnte, int winCount) {}
+```
 ```
 
 ---
