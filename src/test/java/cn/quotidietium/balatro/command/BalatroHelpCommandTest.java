@@ -17,7 +17,7 @@ class BalatroHelpCommandTest {
                 "gui", "play", "playcard", "disc", "status", "shop", "buy", "buybag",
                 "buyvoucher", "reroll", "next", "go", "skip", "cons", "use",
                 "packs", "pick", "skipack", "sellj", "sellc", "endless", "top",
-                "quit", "help"}) {
+                "quit", "help", "version"}) {
             assertTrue(BalatroHelp.hasCommandHelp(k), "应有命令帮助：" + k);
         }
     }
@@ -33,6 +33,7 @@ class BalatroHelpCommandTest {
         assertTrue(BalatroHelp.hasCommandHelp("consumables"), "consumables → cons");
         assertTrue(BalatroHelp.hasCommandHelp("?"), "? → help");
         assertTrue(BalatroHelp.hasCommandHelp("menu"), "menu → gui");
+        assertTrue(BalatroHelp.hasCommandHelp("ver"), "ver → version");
     }
 
     @Test

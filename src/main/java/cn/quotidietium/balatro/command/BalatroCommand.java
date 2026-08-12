@@ -37,7 +37,8 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
     private static final List<String> SUBS = Arrays.asList(
             "help", "gui", "play", "quit", "status", "playcard", "disc", "endless",
             "shop", "buy", "buybag", "buyvoucher", "reroll", "next", "go", "skip",
-            "cons", "use", "packs", "pick", "skipack", "sellj", "sellc", "top", "cancel");
+            "cons", "use", "packs", "pick", "skipack", "sellj", "sellc", "top",
+            "version", "cancel");
 
     private final BalatroPlugin plugin;
 
@@ -104,6 +105,7 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             case "skipack" -> cmdSkipPack(player);
             case "cancel" -> player.sendMessage("§7已取消操作。");
             case "top" -> cmdTop(player);
+            case "version", "ver" -> cmdVersion(player);
             case "sellj" -> cmdSellJoker(player, args);
             case "sellc" -> cmdSellConsumable(player, args);
             default -> sendHelp(player);
@@ -672,6 +674,13 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         if (idx < 0) return;
         if (s.sellConsumable(idx)) player.sendMessage("§a消耗品已出售！");
         else player.sendMessage("§c出售失败（无效）。");
+    }
+
+    /** 显示版本与版权信息（版本号来自 plugin.yml，构建时注入 Gradle 版本）。 */
+    private void cmdVersion(Player player) {
+        for (String line : VersionInfo.lines(plugin.getPluginMeta().getVersion())) {
+            player.sendMessage(line);
+        }
     }
 
     private void cmdTop(Player player) {
