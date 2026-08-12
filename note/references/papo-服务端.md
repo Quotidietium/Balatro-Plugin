@@ -48,9 +48,9 @@
 - **文本**：Kyori Adventure `Component`（Paper 原生，非旧式 `§` 颜色码）。
 - **每玩家状态**：`Map<UUID, RunState>` 挂在 `JavaPlugin` 上，`PlayerQuitEvent`/`InventoryCloseEvent` 清理。
 
-## 4. Display 实体 API（若沿用 doudizhu 全息渲染）
+## 4. Display 实体 API（全息渲染用）
 
-doudizhu 已验证可行的 1.19.4+ Display 实体 API（1.21.11 同样支持）：
+1.19.4+ Display 实体 API（1.21.11 同样支持）：
 - `world.spawnEntity(anchor, EntityType.TEXT_DISPLAY)` / `ItemDisplay`；
 - `setTransformationMatrix(Matrix4f)`（`org.joml.Matrix4f`）做世界定位；
 - `setBillboard` / `setBrightness` / `setViewRange` / `setAlignment` / `setBackgroundColor`；
