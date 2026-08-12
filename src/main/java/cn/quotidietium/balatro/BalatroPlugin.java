@@ -66,7 +66,7 @@ public final class BalatroPlugin extends JavaPlugin {
 
     /**
      * 启动时清扫所有世界中带 {@code balatro_board} 标签的残留实体（/reload、上次运行
-     * 异常泄漏等场景）。实体本身非持久（重启即消失），此处是防御性兜底，对齐 doudizhu 范式。
+     * 异常泄漏等场景）。实体本身非持久（重启即消失），此处是防御性兜底。
      */
     private void sweepStaleBoards() {
         int removed = 0;

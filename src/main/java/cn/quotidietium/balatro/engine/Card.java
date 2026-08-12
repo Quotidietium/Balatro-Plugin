@@ -7,7 +7,7 @@ import java.util.Objects;
  *
  * <p>字段全部可变（rank/suit 会被塔罗/幻灵改写；enh/edition/seal 会被附加；
  * chipBonus 为徒步者等永久加成；debuff 由 Boss/挑战置位；facedown 由 Boss 置位）。
- * 相等性以唯一 {@link #id} 为准——即便两张牌 rank+suit 相同也能区分（对齐 doudizhu Card.id 思路）。
+ * 相等性以唯一 {@link #id} 为准——即便两张牌 rank+suit 相同也能区分。
  *
  * <p>rank：2..14（11=J 12=Q 13=K 14=A），石头牌为 0；
  * suit：0..3（黑桃/红桃/梅花/方块），石头牌为 -1。

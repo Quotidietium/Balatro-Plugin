@@ -11,7 +11,7 @@ import org.bukkit.entity.TextDisplay;
 import org.bukkit.plugin.Plugin;
 
 /**
- * 全息实体生成辅助（TextDisplay），沿用 doudizhu 的 Display 技术栈：
+ * 全息实体生成辅助（TextDisplay），Display 技术栈：
  * 非持久、CENTER 朝向、满亮度、scoreboard tag 追踪、可选私有可见（仅指定玩家可见）。
  */
 public final class Holo {
