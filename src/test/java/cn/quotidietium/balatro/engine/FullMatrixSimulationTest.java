@@ -112,12 +112,35 @@ class FullMatrixSimulationTest {
 
     @Test
     void endlessModeAfterWin() {
-        // 通关 ante 8 后进入无尽模式，验证 continueEndless 不崩溃
-        RunState s = simulateRun("red", 0, "ENDLESS1");
-        if (s.won) {
-            assertTrue(Engine.continueEndless(s), "应能进入无尽模式");
-            assertTrue(s.endless, "应标记为无尽");
-            assertTrue(s.ante >= 9, "无尽 ante 应 >= 9");
+        // 通关 ante 8 后进入无尽模式，验证 continueEndless 的状态转换。
+        // 诚实打法（playBest 无小丑不买牌）无法稳定通关 ante 8——历史上本测试用 if(s.won)
+        // 守卫导致从未真正执行（空转）。改为确定性驱动：预置 roundScore 后一次合法出牌
+        // 触发完整胜利结算（与 EndlessLongRunInvariantTest 同一方法论），保证前置条件必真。
+        RunState s = Engine.createRun("red", 0, "ENDLESS1");
+        int guard = 0;
+        while (!s.endlessPending && guard++ < 40) {
+            if (s.phase == Phase.BLIND_SELECT) Engine.selectBlind(s, Data.BlindType.byKey(s.nextBlind), false);
+            if (s.phase != Phase.ROUND) break;
+            s.roundScore = s.blindTarget; // 第一次合法出牌即胜（胜负判定：roundScore >= blindTarget）
+            boolean played = false;
+            int sz = s.hand.size();
+            // 5 张滑窗：覆盖 psychic（必须 5 张）与 bell（强制牌必被某个滑窗包含）
+            for (int st = 0; st + 5 <= sz && !played; st++) {
+                List<Integer> ids = new ArrayList<>();
+                for (int i = st; i < st + 5; i++) ids.add(s.hand.get(i).id());
+                played = Engine.playHand(s, ids).ok;
+            }
+            for (int n = 1; n <= Math.min(5, sz) && !played; n++) {
+                List<Integer> ids = new ArrayList<>();
+                for (int i = 0; i < n; i++) ids.add(s.hand.get(i).id());
+                played = Engine.playHand(s, ids).ok;
+            }
+            assertTrue(played || s.phase != Phase.ROUND, "应能出一手合法牌（或回合已结束）");
+            if (s.phase == Phase.SHOP) Engine.nextRound(s);
         }
+        assertTrue(s.endlessPending, "确定性驱动必须通关 ante 8（前置条件，不得空转）");
+        assertTrue(Engine.continueEndless(s), "应能进入无尽模式");
+        assertTrue(s.endless, "应标记为无尽");
+        assertTrue(s.ante >= 9, "无尽 ante 应 >= 9");
     }
 }

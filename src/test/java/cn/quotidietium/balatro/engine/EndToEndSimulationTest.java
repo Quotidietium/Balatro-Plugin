@@ -187,8 +187,8 @@ class EndToEndSimulationTest {
     void noNegativeMoneyExceptCreditCard() {
         // 验证金钱不出现异常负数（除信用卡的 -$20 credit 外）
         RunState s = simulateRun("red", 0, "MONEY01", null);
-        // 正常牌组无 credit，money 不应为负
-        if (!s.won && !s.lost) return; // 未结束则跳过
+        // 种子确定 → 结果确定：必须到达终局，否则下面的 money 断言空转（静默跳过会掩盖引擎卡死回归）
+        assertTrue(s.won || s.lost, "确定性种子 MONEY01 必须到达终局（不得静默跳过）");
         // 通关/失败时 money 应 >= -20（信用卡最多 -$20，但本局无信用卡）
         assertTrue(s.money >= 0, "正常牌组 money 不应为负: " + s.money);
     }

@@ -64,12 +64,11 @@ class PlayHandInfoFlowTest {
     void hasFaceDetectsFaceCards() {
         RunState s = Engine.createRun("red", 0, "PHIF3", null);
         Engine.selectBlind(s, Data.BlindType.SMALL, false);
-        // 检查手牌中是否有 J/Q/K
-        boolean hasFaceInHand = false;
-        for (Card c : s.hand) {
-            if (c.rank() >= 11 && c.rank() <= 13) { hasFaceInHand = true; break; }
-        }
+        // 只打第一张：hasFace 应等于「第一张是否为人头牌(J/Q/K)」（红牌组无 pareidolia 类效果）
+        Card first = s.hand.get(0);
+        boolean firstIsFace = first.rank() >= 11 && first.rank() <= 13;
         final boolean[] infoHasFace = {false};
+        final boolean[] hookCalled = {false};
         Joker customJoker = new Joker() {
             @Override public String key() { return "phiftest3"; }
             @Override public String displayName() { return "PHIF3"; }
@@ -77,29 +76,31 @@ class PlayHandInfoFlowTest {
             @Override public int cost() { return 1; }
             @Override public void onPlayHand(RunState st, PlayHandInfo info) {
                 infoHasFace[0] = info.hasFace;
+                hookCalled[0] = true;
             }
         };
         s.jokers.add(new JokerInstance(customJoker));
-        List<Integer> ids = List.of(s.hand.get(0).id()); // 只打第一张
-        Engine.playHand(s, ids);
-        // hasFace 应反映第一张是否为人头牌
-        boolean firstIsFace = s.discardPile.stream()
-                .anyMatch(c -> c.id() == ids.get(0) && c.rank() >= 11 && c.rank() <= 13);
-        // 注意：牌已在 discardPile 中（打出了）
-        // hasFace 取决于打出的第一张是否 J/Q/K（通过 isFace 检查）
+        Engine.playHand(s, List.of(first.id()));
+        assertTrue(hookCalled[0], "onPlayHand 钩子应被调用");
+        assertEquals(firstIsFace, infoHasFace[0],
+                "hasFace 应反映打出牌中是否含人头牌（第一张 rank=" + first.rank() + "）");
     }
 
     @Test
     void hasRankDetectsAce() {
-        RunState s = Engine.createRun("red", 0, "PHIF4", null);
-        Engine.selectBlind(s, Data.BlindType.SMALL, false);
-        // 检查手牌中是否有 A(14)
-        boolean hasAceInHand = false;
+        // 扫描少量确定性种子找首手含 A 的局：单种子首手含 A 概率约 1/2，10 个种子几乎必中。
+        // 注意本测试的被测对象是 hasRank 而非发牌——扫描使前置条件对引擎洗牌行为变更健壮；
+        // 若 10 个种子首手全无 A，则说明发牌/牌组逻辑本身出了回归（此时应当失败报警）。
+        RunState s = null;
         int aceIdx = -1;
-        for (int i = 0; i < s.hand.size(); i++) {
-            if (s.hand.get(i).rank() == 14) { hasAceInHand = true; aceIdx = i; break; }
+        for (int t = 0; t < 10 && aceIdx < 0; t++) {
+            s = Engine.createRun("red", 0, "PHIF4-" + t, null);
+            Engine.selectBlind(s, Data.BlindType.SMALL, false);
+            for (int i = 0; i < s.hand.size(); i++) {
+                if (s.hand.get(i).rank() == 14) { aceIdx = i; break; }
+            }
         }
-        if (!hasAceInHand) return; // 种子无 A 则跳过
+        assertTrue(aceIdx >= 0, "10 个确定性种子首手均无 A——发牌/牌组逻辑疑似回归");
 
         final boolean[] infoHasRank = {false};
         Joker customJoker = new Joker() {
