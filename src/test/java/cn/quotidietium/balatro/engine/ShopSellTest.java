@@ -35,10 +35,26 @@ class ShopSellTest {
         assertTrue(s.addConsumableKey("tarot", "magician"), "应成功获得消耗品");
         assertEquals(1, s.consumables.size());
         long moneyBefore = s.money;
-        int expectedVal = Math.max(1, 1 + s.consumables.get(0).sellBonus);
+        int expectedVal = RunState.sellValue(s.consumables.get(0));
         assertTrue(s.sellConsumable(0), "出售应成功");
         assertEquals(0, s.consumables.size(), "消耗品应已移除");
         assertEquals(moneyBefore + expectedVal, s.money, "金钱应增加售价");
+    }
+
+    /** sellValue(Consumable) 统一口径：渲染/对话框/引擎共用同一公式。 */
+    @Test
+    void consumableSellValueHelperConsistent() {
+        RunState s = Engine.createRun("red", 0, "SHOPSELLV1", null);
+        assertTrue(s.addConsumableKey("tarot", "magician"));
+        Consumable c = s.consumables.get(0);
+        // 基础 sellBonus=0 → max(1, 1+0) = 1
+        assertEquals(1, RunState.sellValue(c), "sellBonus=0 时售价应 $1");
+        // 模拟礼品卡加成：sellBonus=3 → max(1, 1+3) = 4
+        c.sellBonus = 3;
+        assertEquals(4, RunState.sellValue(c), "sellBonus=3 时售价应 $4");
+        // 负值不会发生（sellBonus 只增不减），但 max(1,...) 兜底
+        c.sellBonus = -5;
+        assertEquals(1, RunState.sellValue(c), "负 sellBonus 兜底为 $1");
     }
 
     /** 越界索引安全返回 false，不抛异常。 */
