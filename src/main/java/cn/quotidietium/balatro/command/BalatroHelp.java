@@ -167,7 +167,8 @@ final class BalatroHelp {
         cmd("play", new String[]{}, "开始一局", new String[]{
                 "§e/balatro play [牌组] [赌注] [挑战] [种子]",
                 "参数顺序不限，自动识别：牌组名(15)/赌注数字(0~7)/挑战名(20)，其余视作种子。",
-                "例：§e/balatro play blue 1§f · §e/balatro play red 0 omelette",
+                "§7单数字 0~7 识别为赌注；种子含数字时需混入字母（如 seed3）或用 GUI 输入。",
+                "例：§e/balatro play blue 1§f · §e/balatro play red 0 omelette§f · §e/balatro play myseed",
                 "留空 = 随机种子 · 红牌组 · 白注。牌组/赌注/挑战详见 §e/balatro help 2~5"
         });
         cmd("playcard", new String[]{"pc"}, "出牌", new String[]{
