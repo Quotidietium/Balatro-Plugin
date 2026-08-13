@@ -197,7 +197,7 @@ public final class RoundBoard {
         Player p = session.player();
         p.sendMessage(Component.text("━━ 小丑牌 · 操作说明 ━━", NamedTextColor.GOLD));
         p.sendMessage(Component.text("直接右键 = 使用/操作", NamedTextColor.WHITE)
-                .append(Component.text("（选中手牌 · 购买商品 · 选择补充包卡 · 使用消耗品 · 出售小丑 · 出牌/弃牌/重掷/下一回合）", NamedTextColor.GRAY)));
+                .append(Component.text("（选中手牌 · 购买商品 · 选择补充包卡 · 使用/出售消耗品 · 出售小丑 · 出牌/弃牌/重掷/下一回合）", NamedTextColor.GRAY)));
         p.sendMessage(Component.text("Shift + 右键 = 查看该卡简介", NamedTextColor.AQUA)
                 .append(Component.text("（简介发到聊天框）", NamedTextColor.GRAY)));
         p.sendMessage(Component.text("进入商店/补充包时会自动列出全部简介，便于判断。", NamedTextColor.DARK_GRAY));
@@ -334,13 +334,17 @@ public final class RoundBoard {
         String blind = state.blindType == null ? "-" : state.blindType.key;
         String boss = state.blindType == Data.BlindType.BOSS && !state.bossQueue.isEmpty()
                 ? "（" + Data.Boss.byKey(state.bossQueue.get(0)).name + "）" : "";
-        statusBar.text(Component.text()
+        var sb = Component.text()
                 .append(Component.text("底注 " + state.ante + "  " + blindName(blind) + boss, NamedTextColor.GOLD)).appendNewline()
                 .append(Component.text("分数 " + state.roundScore + " / " + state.blindTarget, NamedTextColor.WHITE)).appendNewline()
                 .append(Component.text("出牌 " + state.handsLeft + "  弃牌 " + state.discardsLeft + "  $" + state.money
-                        + "  选中 " + selected.size(), NamedTextColor.YELLOW)).appendNewline()
-                .append(Component.text("右键=使用/选中  Shift+右键=查看简介", NamedTextColor.DARK_GRAY))
-                .build());
+                        + "  选中 " + selected.size(), NamedTextColor.YELLOW));
+        // Boss 回合：在状态栏追加 Boss 效果描述，让玩家随时看到当前 Boss 的干扰效果
+        if (state.blindType == Data.BlindType.BOSS && !state.bossQueue.isEmpty()) {
+            sb.appendNewline().append(Component.text("Boss：" + Data.Boss.byKey(state.bossQueue.get(0)).desc, NamedTextColor.LIGHT_PURPLE));
+        }
+        sb.appendNewline().append(Component.text("右键=使用/选中  Shift+右键=查看简介", NamedTextColor.DARK_GRAY));
+        statusBar.text(sb.build());
         statusBar.teleport(at(0, STATUS_Y));
 
         // 实时牌型评估
@@ -523,11 +527,15 @@ public final class RoundBoard {
         long target = Engine.blindTarget(state, bt);
         String boss = bt == Data.BlindType.BOSS && !state.bossQueue.isEmpty()
                 ? "（" + Data.Boss.byKey(state.bossQueue.get(0)).name + "）" : "";
-        statusBar.text(Component.text()
+        var sb = Component.text()
                 .append(Component.text("底注 " + state.ante + "  " + blindName(bt.key) + boss, NamedTextColor.GOLD)).appendNewline()
                 .append(Component.text("目标 " + target + " 分", NamedTextColor.WHITE)).appendNewline()
-                .append(Component.text("$" + state.money + "  右键▶开始 · 右键✗跳过(获标签)", NamedTextColor.YELLOW))
-                .build());
+                .append(Component.text("$" + state.money + "  右键▶开始 · 右键✗跳过(获标签)", NamedTextColor.YELLOW));
+        // 盲注选择阶段遇 Boss：显示 Boss 效果描述，便于玩家决定开始还是跳过
+        if (bt == Data.BlindType.BOSS && !state.bossQueue.isEmpty()) {
+            sb.appendNewline().append(Component.text("Boss：" + Data.Boss.byKey(state.bossQueue.get(0)).desc, NamedTextColor.LIGHT_PURPLE));
+        }
+        statusBar.text(sb.build());
         statusBar.teleport(at(0, STATUS_Y));
         hide(evalBar);
 
@@ -557,18 +565,41 @@ public final class RoundBoard {
         var shop = state.shop;
         statusBar.text(Component.text()
                 .append(Component.text("商店  $" + state.money, NamedTextColor.GOLD)).appendNewline()
-                .append(Component.text("右键卡片购买  ·  重掷  ·  下一回合", NamedTextColor.GRAY))
+                .append(Component.text("右键卡片购买  ·  右键持有小丑/消耗品出售  ·  重掷  ·  下一回合", NamedTextColor.GRAY))
                 .build());
         statusBar.teleport(at(0, STATUS_Y));
         hide(evalBar);
 
-        clearRoundSlots();
+        // 商店阶段：隐藏手牌（不出牌），但显示持有的小丑/消耗品（可点击出售，对齐原版）。
+        for (TextDisplay d : handSlots) hide(d);
         if (shop == null) {
+            clearRoundSlots();
             hide(rerollBtn);
             hide(nextBtn);
             for (TextDisplay d : voucherSlots) hide(d);
             return;
         }
+
+        // —— 持有小丑行（y=2.0，借用 evalBar 位置）：右键 = 出售确认 ——
+        int jn = state.jokers.size();
+        for (int i = 0; i < jn; i++) {
+            JokerInstance ji = state.jokers.get(i);
+            double x = (i - (jn - 1) / 2.0) * JOKER_SPACING;
+            TextDisplay d = slot(jokerSlots, i, BG_NORMAL);
+            TextColor jc = ji.debuff ? NamedTextColor.DARK_GRAY : TextColor.color(255, 220, 120);
+            int sv = state.sellValue(ji);
+            // 永恒小丑不标售价（不可售）；其余标注售价（绿色，用 Component 拼接非 § 码）
+            var jokerText = Component.text("🃏" + ji.def.displayName(), jc);
+            if (!ji.eternal) {
+                jokerText = jokerText.append(Component.text(" $" + sv, NamedTextColor.GREEN));
+            }
+            d.text(jokerText);
+            d.setBackgroundColor(ji.debuff ? BG_DEBUFF : BG_NORMAL);
+            d.teleport(at(x, 2.0));
+            placeInteraction(x, 2.0, JOKER_HW, JOKER_HH, "joker:" + i); // 右键出售 / Shift+右键查看简介
+        }
+        for (int i = jn; i < jokerSlots.size(); i++) hide(jokerSlots.get(i));
+
         int n = shop.cards.size();
         for (int i = 0; i < n; i++) {
             var c = shop.cards.get(i);
@@ -596,6 +627,21 @@ public final class RoundBoard {
             if (!p.sold) placeInteraction(x, 0.2, PACK_HW, PACK_HH, "shoppack:" + i);
         }
         for (int i = pn; i < packSlots.size(); i++) hide(packSlots.get(i));
+
+        // —— 持有消耗品行（y=-0.45，在补充包与优惠券之间）：右键 = 出售确认 ——
+        int cn = state.consumables.size();
+        for (int i = 0; i < cn; i++) {
+            Consumable c = state.consumables.get(i);
+            double x = (i - (cn - 1) / 2.0) * CONS_SPACING;
+            int sv = Math.max(1, 1 + c.sellBonus);
+            TextDisplay d = slot(consSlots, i, BG_NORMAL);
+            d.text(Component.text(consLabel(c), TextColor.color(180, 220, 255))
+                    .append(Component.text(" $" + sv, NamedTextColor.GREEN)));
+            d.setBackgroundColor(BG_NORMAL);
+            d.teleport(at(x, -0.45));
+            placeInteraction(x, -0.45, CONS_HW, CONS_HH, "cons:" + i); // 右键出售 / Shift+右键查看简介
+        }
+        for (int i = cn; i < consSlots.size(); i++) hide(consSlots.get(i));
 
         // 优惠券（可能多张：voucher 标签追加）
         int vn = shop.vouchers.size();
@@ -690,7 +736,7 @@ public final class RoundBoard {
             var vch = shop.vouchers.get(vi);
             p.sendMessage(infoLine("🎫[" + (vi + 1) + "] ", "优惠券", vch.name, vch.price, vch.sold, vch.desc));
         }
-        p.sendMessage(Component.text("直接右键=购买/使用 · Shift+右键=查看该卡简介 · 重掷/下一回合", NamedTextColor.GRAY));
+        p.sendMessage(Component.text("直接右键=购买 · 右键持有小丑/消耗品=出售 · Shift+右键=查看简介 · 重掷/下一回合", NamedTextColor.GRAY));
     }
 
     /** 进入补充包：把所有卡简介发到玩家聊天框。 */
@@ -988,6 +1034,27 @@ public final class RoundBoard {
         // 按钮末位携带期望 kind:key：确认后到点击前消耗品列表可能已变化（使用/出售收缩列表），
         // 命令层校验不一致则取消执行，防止序号错位用错消耗品
         player.sendMessage(confirmButtons("/balatro use " + (i + 1) + " " + c.kind + ":" + c.key, "使用", null));
+    }
+
+    /**
+     * 右键消耗品（商店阶段）：在聊天框弹出「确认出售」提示（名称 · 说明 · 售价），
+     * 附可点击的「[确认出售]」(→ /balatro sellc) 与「[取消]」(→ /balatro cancel) 按钮。
+     *
+     * <p>与 {@link #sendSellConfirm}（小丑版）结构对称，消除原先消耗品仅在「确认使用」
+     * 对话框中以灰色文字提及出售、且无可点击按钮的不对称。
+     */
+    public void sendSellConsumableConfirm(Player player, int i) {
+        RunState st = session.state();
+        if (i < 0 || i >= st.consumables.size()) return;
+        Consumable c = st.consumables.get(i);
+        int val = Math.max(1, 1 + c.sellBonus);
+        player.sendMessage(Component.text("━━ 确认出售 ━━", NamedTextColor.GOLD));
+        player.sendMessage(Component.text("[" + kindLabel(c.kind) + "] " + c.name(), NamedTextColor.AQUA));
+        player.sendMessage(Component.text(c.desc(), NamedTextColor.GRAY));
+        player.sendMessage(Component.text("售价：$" + val, NamedTextColor.GREEN));
+        // 按钮携带期望 kind:key：确认后到点击前消耗品列表可能已变化（使用/出售收缩列表），
+        // 命令层校验不一致则取消执行，防止序号错位卖错消耗品
+        player.sendMessage(confirmButtons("/balatro sellc " + (i + 1) + " " + c.kind + ":" + c.key, "出售", "$" + val));
     }
 
     /** 生成「[确认X] [取消]」两个可点击按钮。 */
