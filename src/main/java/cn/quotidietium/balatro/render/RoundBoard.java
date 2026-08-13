@@ -79,6 +79,8 @@ public final class RoundBoard {
     private static final double JOKER_HH = 0.28;
     private static final double CONS_HW = 0.36;
     private static final double CONS_HH = 0.28;
+    private static final double VOUCHER_HW = 0.55;
+    private static final double VOUCHER_HH = 0.24;
 
     /** 卡牌文字缩放（默认 1.0 约 0.5 格高，偏小；放大使牌面更清晰）。 */
     private static final float CARD_TEXT_SCALE = 1.5f;
@@ -666,28 +668,30 @@ public final class RoundBoard {
         }
         for (int i = cn; i < consSlots.size(); i++) hide(consSlots.get(i));
 
-        // 优惠券（可能多张：voucher 标签追加）
+        // 优惠券（可能多张：voucher 标签追加）。y=-1.15 与上方消耗品行(y=-0.45)保持
+        // ≥0.18 格间距，防命中盒重叠（此前 y=-0.8 与消耗品重叠 0.28 格——R82 修复）。
+        // 专属 VOUCHER_HW/HH（此前误用 PACK_HW=0.8 致多券水平重叠——R82 修复）。
         int vn = shop.vouchers.size();
         for (int i = 0; i < vn; i++) {
             var vch = shop.vouchers.get(i);
-            double x = vn == 1 ? 0 : (i - (vn - 1) / 2.0) * 1.3;
+            double x = vn == 1 ? 0 : (i - (vn - 1) / 2.0) * (VOUCHER_HW * 2 + 0.1);
             TextDisplay d = slot(voucherSlots, i, BG_NORMAL);
             d.text(Component.text("🎫" + vch.name + " $" + vch.price
                     + (vch.sold ? "(已售)" : ""), NamedTextColor.LIGHT_PURPLE));
             d.setBackgroundColor(vch.sold ? BG_SOLD : BG_NORMAL);
             setIndexedTag(d, "balatro_shopvoucher_", i);
-            d.teleport(at(x, -0.8));
-            if (!vch.sold) placeInteraction(x, -0.8, PACK_HW, PACK_HH, "voucher:" + i);
+            d.teleport(at(x, -1.15));
+            if (!vch.sold) placeInteraction(x, -1.15, VOUCHER_HW, VOUCHER_HH, "voucher:" + i);
         }
         for (int i = vn; i < voucherSlots.size(); i++) hide(voucherSlots.get(i));
         rerollBtn.text(Component.text("🔄 重掷", NamedTextColor.YELLOW));
         ensureTag(rerollBtn, "balatro_reroll");
-        rerollBtn.teleport(at(-1.5, -1.7));
-        placeInteraction(-1.5, -1.7, BTN_HW, BTN_HH, "reroll");
+        rerollBtn.teleport(at(-1.5, -1.85));
+        placeInteraction(-1.5, -1.85, BTN_HW, BTN_HH, "reroll");
         nextBtn.text(Component.text("▶ 下一回合", NamedTextColor.GREEN));
         ensureTag(nextBtn, "balatro_next");
-        nextBtn.teleport(at(1.5, -1.7));
-        placeInteraction(1.5, -1.7, BTN_HW, BTN_HH, "next");
+        nextBtn.teleport(at(1.5, -1.85));
+        placeInteraction(1.5, -1.85, BTN_HW, BTN_HH, "next");
         hide(playBtn);
         hide(discBtn);
         hide(skipackBtn);
