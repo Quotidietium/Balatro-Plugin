@@ -30,3 +30,4 @@ build/
 /world_nether/
 /world_the_end/
 /crash-reports/
+.zcode
