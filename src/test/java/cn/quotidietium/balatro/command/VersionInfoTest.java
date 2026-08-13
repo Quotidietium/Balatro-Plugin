@@ -15,8 +15,8 @@ class VersionInfoTest {
 
     @Test
     void linesContainAllRequiredAttribution() {
-        String all = String.join("\n", VersionInfo.lines("0.4.20"));
-        assertTrue(all.contains("0.4.20"), "应包含版本号");
+        String all = String.join("\n", VersionInfo.lines("0.4.21"));
+        assertTrue(all.contains("0.4.21"), "应包含版本号");
         assertTrue(all.contains("ZTF3"), "应包含插件作者 ZTF3");
         assertTrue(all.contains("Dalict"), "应包含协作者 Dalict");
         assertTrue(all.contains("Apache-2.0"), "应包含开源协议 Apache-2.0");
