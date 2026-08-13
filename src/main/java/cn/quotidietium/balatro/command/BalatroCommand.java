@@ -503,10 +503,15 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         long target = cn.quotidietium.balatro.engine.Engine.blindTarget(s.state(), bt);
         String boss = "";
         if (bt == cn.quotidietium.balatro.engine.Data.BlindType.BOSS && !s.state().bossQueue.isEmpty()) {
-            boss = "（" + cn.quotidietium.balatro.engine.Data.Boss.byKey(s.state().bossQueue.get(0)).name + "）";
+            var bd = cn.quotidietium.balatro.engine.Data.Boss.byKey(s.state().bossQueue.get(0));
+            boss = "（" + bd.name + "）";
+            player.sendMessage("§6下一盲注：§f底注 " + s.state().ante + " · " + blindName(bt.key) + boss
+                    + " · 目标 " + target + " 分");
+            player.sendMessage("§6Boss 效果：§f" + bd.desc);
+        } else {
+            player.sendMessage("§6下一盲注：§f底注 " + s.state().ante + " · " + blindName(bt.key)
+                    + " · 目标 " + target + " 分");
         }
-        player.sendMessage("§6下一盲注：§f底注 " + s.state().ante + " · " + blindName(bt.key) + boss
-                + " · 目标 " + target + " 分");
         player.sendMessage("§e/balatro go §7开始盲注    §e/balatro skip §7跳过并获标签" + (bt == cn.quotidietium.balatro.engine.Data.BlindType.BOSS ? "（Boss 不可跳过）" : ""));
     }
 
@@ -672,6 +677,13 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         if (s == null) { player.sendMessage("§c当前没有进行中的局。"); return; }
         int idx = parseOne(player, args);
         if (idx < 0) return;
+        // 全息「确认出售」按钮在第 3 参数携带期望 kind:key：确认后到点击前消耗品列表
+        // 可能已变化（使用/出售收缩列表），序号可能指向另一个消耗品——
+        // 校验不一致则取消，防止错位卖错。手动输入不带标识则跳过校验（向后兼容）。
+        if (args.length >= 3 && !consKindKeyAt(s, idx).equals(args[2])) {
+            player.sendMessage("§c消耗品列表已变化，出售已取消。请重新右键该消耗品确认。");
+            return;
+        }
         if (s.sellConsumable(idx)) player.sendMessage("§a消耗品已出售！");
         else player.sendMessage("§c出售失败（无效）。");
     }
@@ -752,7 +764,7 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(line(t("playcard"), " 出牌  ", t("disc"), " 弃牌（各 1~5 张）"));
         player.sendMessage("§6■ 盲注选择（商店 next 之后）");
         player.sendMessage(line(t("go"), " 开始盲注  ", t("skip"), " 跳过并获标签（Boss 不可跳过）"));
-        player.sendMessage("§6■ 商店");
+        player.sendMessage("§6■ 商店（可右键持有牌出售）");
         player.sendMessage(line(t("shop"), " 查看  ", t("buy"), " 买卡  ", t("buybag"), " 买补充包"));
         player.sendMessage(line(t("buyvoucher"), " 买券  ", t("reroll"), " 重掷  ", t("next"), " 离开商店"));
         player.sendMessage("§6■ 消耗品（塔罗 / 星球 / 幻灵）");
