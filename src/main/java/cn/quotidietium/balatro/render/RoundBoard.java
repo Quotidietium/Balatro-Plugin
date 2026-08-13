@@ -605,7 +605,9 @@ public final class RoundBoard {
             return;
         }
 
-        // —— 持有小丑行（y=2.0，借用 evalBar 位置）：右键 = 出售确认 ——
+        // —— 持有小丑行（y=2.1，借用 evalBar 上方位置）：右键 = 出售确认 ——
+        // 商店 6 行布局 Y 坐标经 R83 调整，确保相邻行命中盒间距 ≥0.12 格（消除 0.02 格薄间距）：
+        // 小丑(2.1)→商品(1.2)→补充包(0.1)→消耗品(-0.65)→优惠券(-1.35)→按钮(-2.05)
         int jn = state.jokers.size();
         for (int i = 0; i < jn; i++) {
             JokerInstance ji = state.jokers.get(i);
@@ -620,8 +622,8 @@ public final class RoundBoard {
             }
             d.text(jokerText);
             d.setBackgroundColor(ji.debuff ? BG_DEBUFF : BG_NORMAL);
-            d.teleport(at(x, 2.0));
-            placeInteraction(x, 2.0, JOKER_HW, JOKER_HH, "joker:" + i); // 右键出售 / Shift+右键查看简介
+            d.teleport(at(x, 2.1));
+            placeInteraction(x, 2.1, JOKER_HW, JOKER_HH, "joker:" + i); // 右键出售 / Shift+右键查看简介
         }
         for (int i = jn; i < jokerSlots.size(); i++) hide(jokerSlots.get(i));
 
@@ -635,8 +637,8 @@ public final class RoundBoard {
             d.text(Component.text((c.sold ? "[售] " : "") + shopCardLabel(c) + " $" + c.price, col));
             d.setBackgroundColor(c.sold ? BG_SOLD : BG_NORMAL);
             setIndexedTag(d, "balatro_shopcard_", i);
-            d.teleport(at(x, 1.3));
-            if (!c.sold) placeInteraction(x, 1.3, SHOPCARD_HW, SHOPCARD_HH, "shop:" + i);
+            d.teleport(at(x, 1.2));
+            if (!c.sold) placeInteraction(x, 1.2, SHOPCARD_HW, SHOPCARD_HH, "shop:" + i);
         }
         for (int i = n; i < shopSlots.size(); i++) hide(shopSlots.get(i));
 
@@ -648,12 +650,12 @@ public final class RoundBoard {
             d.text(Component.text((p.sold ? "[售] " : "") + "📦" + p.name + " $" + p.price, NamedTextColor.AQUA));
             d.setBackgroundColor(p.sold ? BG_SOLD : BG_NORMAL);
             setIndexedTag(d, "balatro_shoppack_", i);
-            d.teleport(at(x, 0.2));
-            if (!p.sold) placeInteraction(x, 0.2, PACK_HW, PACK_HH, "shoppack:" + i);
+            d.teleport(at(x, 0.1));
+            if (!p.sold) placeInteraction(x, 0.1, PACK_HW, PACK_HH, "shoppack:" + i);
         }
         for (int i = pn; i < packSlots.size(); i++) hide(packSlots.get(i));
 
-        // —— 持有消耗品行（y=-0.45，在补充包与优惠券之间）：右键 = 出售确认 ——
+        // —— 持有消耗品行（y=-0.65）：右键 = 出售确认 ——
         int cn = state.consumables.size();
         for (int i = 0; i < cn; i++) {
             Consumable c = state.consumables.get(i);
@@ -663,13 +665,12 @@ public final class RoundBoard {
             d.text(Component.text(consLabel(c), TextColor.color(180, 220, 255))
                     .append(Component.text(" $" + sv, NamedTextColor.GREEN)));
             d.setBackgroundColor(BG_NORMAL);
-            d.teleport(at(x, -0.45));
-            placeInteraction(x, -0.45, CONS_HW, CONS_HH, "cons:" + i); // 右键出售 / Shift+右键查看简介
+            d.teleport(at(x, -0.65));
+            placeInteraction(x, -0.65, CONS_HW, CONS_HH, "cons:" + i); // 右键出售 / Shift+右键查看简介
         }
         for (int i = cn; i < consSlots.size(); i++) hide(consSlots.get(i));
 
-        // 优惠券（可能多张：voucher 标签追加）。y=-1.15 与上方消耗品行(y=-0.45)保持
-        // ≥0.18 格间距，防命中盒重叠（此前 y=-0.8 与消耗品重叠 0.28 格——R82 修复）。
+        // 优惠券（可能多张：voucher 标签追加）。y=-1.35 与上方消耗品(y=-0.65)保持 0.18 格间距。
         // 专属 VOUCHER_HW/HH（此前误用 PACK_HW=0.8 致多券水平重叠——R82 修复）。
         int vn = shop.vouchers.size();
         for (int i = 0; i < vn; i++) {
@@ -680,18 +681,18 @@ public final class RoundBoard {
                     + (vch.sold ? "(已售)" : ""), NamedTextColor.LIGHT_PURPLE));
             d.setBackgroundColor(vch.sold ? BG_SOLD : BG_NORMAL);
             setIndexedTag(d, "balatro_shopvoucher_", i);
-            d.teleport(at(x, -1.15));
-            if (!vch.sold) placeInteraction(x, -1.15, VOUCHER_HW, VOUCHER_HH, "voucher:" + i);
+            d.teleport(at(x, -1.35));
+            if (!vch.sold) placeInteraction(x, -1.35, VOUCHER_HW, VOUCHER_HH, "voucher:" + i);
         }
         for (int i = vn; i < voucherSlots.size(); i++) hide(voucherSlots.get(i));
         rerollBtn.text(Component.text("🔄 重掷", NamedTextColor.YELLOW));
         ensureTag(rerollBtn, "balatro_reroll");
-        rerollBtn.teleport(at(-1.5, -1.85));
-        placeInteraction(-1.5, -1.85, BTN_HW, BTN_HH, "reroll");
+        rerollBtn.teleport(at(-1.5, -2.05));
+        placeInteraction(-1.5, -2.05, BTN_HW, BTN_HH, "reroll");
         nextBtn.text(Component.text("▶ 下一回合", NamedTextColor.GREEN));
         ensureTag(nextBtn, "balatro_next");
-        nextBtn.teleport(at(1.5, -1.85));
-        placeInteraction(1.5, -1.85, BTN_HW, BTN_HH, "next");
+        nextBtn.teleport(at(1.5, -2.05));
+        placeInteraction(1.5, -2.05, BTN_HW, BTN_HH, "next");
         hide(playBtn);
         hide(discBtn);
         hide(skipackBtn);
