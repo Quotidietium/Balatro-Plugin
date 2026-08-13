@@ -19,17 +19,19 @@ import org.jetbrains.annotations.NotNull;
 /**
  * /balatro 命令（别名 blt / joker），仅玩家可用。
  *
- * <p>子命令（序号均从 1 起；全息右键为等价操作，命令为备用）：
+ * <p>子命令（序号均从 1 起）：
  * <ul>
- *   <li>通用：{@code gui | play [牌组] [赌注] [挑战] [种子] | status | endless | top | quit}</li>
- *   <li>回合：{@code playcard <序号...> | disc <序号...>}</li>
- *   <li>盲注选择：{@code go | skip}</li>
- *   <li>商店：{@code shop | buy <序号> | buybag <序号> | buyvoucher | reroll | next}</li>
- *   <li>消耗品：{@code cons | use <序号> [手牌序号...]}</li>
- *   <li>补充包：{@code packs | pick <序号> | skipack}</li>
- *   <li>出售：{@code sellj <序号> | sellc <序号>}</li>
+ *   <li>通用（仅命令）：{@code gui | play [牌组] [赌注] [挑战] [种子] | status | endless | top | quit | version}</li>
+ *   <li>回合（全息等价）：{@code playcard <序号...> | disc <序号...>}</li>
+ *   <li>盲注选择（全息等价）：{@code go | skip}</li>
+ *   <li>商店（全息等价）：{@code shop | buy <序号> | buybag <序号> | buyvoucher | reroll | next}</li>
+ *   <li>消耗品（全息等价）：{@code cons | use <序号> [手牌序号...]}</li>
+ *   <li>补充包（全息等价）：{@code packs | pick <序号> | skipack}</li>
+ *   <li>出售（全息等价）：{@code sellj <序号> | sellc <序号>}</li>
  * </ul>
- * {@code cancel} 仅为全息出售确认框「[取消]」按钮的回执，不列入帮助。
+ * 标注「全息等价」的命令均可通过全息牌桌右键完成相同操作（命令为备用）；
+ * 标注「仅命令」的为管理/信息类命令，无全息对应。
+ * {@code cancel} 仅为全息确认框「[取消]」按钮的回执，不列入帮助。
  * 分页详细玩法与单命令详情见 {@link BalatroHelp}。
  */
 public final class BalatroCommand implements CommandExecutor, TabCompleter {
