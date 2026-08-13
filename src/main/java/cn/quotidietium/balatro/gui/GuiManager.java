@@ -7,8 +7,10 @@ import cn.quotidietium.balatro.engine.Rng;
 import cn.quotidietium.balatro.session.GameSession;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.kyori.adventure.text.Component;
@@ -76,6 +78,13 @@ public final class GuiManager implements Listener {
     // 快速连发两条聊天时被双重吞并/双重处理）。
     private final Map<UUID, Long> pendingSeeds = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastClick = new HashMap<>();
+    /**
+     * 标记当前 tick 内的「程序化关闭」（openMenu/closeInventoryLater 触发的 closeInventory）。
+     * InventoryCloseEvent 处理器据此区分：程序化关闭不清 pendingSeeds（promptSeed 流程
+     * 先设 pendingSeeds 再关界面）；玩家主动按 ESC 关闭才清 pendingSeeds，防止其下一条
+     * 普通聊天被吞作种子。
+     */
+    private final Set<UUID> internalClose = new HashSet<>();
 
     public GuiManager(BalatroPlugin plugin) {
         this.plugin = plugin;
@@ -106,7 +115,14 @@ public final class GuiManager implements Listener {
             case CONFIRM -> buildConfirm(holder, st);
         };
         holder.bind(inv);
-        player.openInventory(inv);
+        // openInventory 会触发旧界面的 InventoryCloseEvent；标记为程序化关闭，
+        // 使 onClose 不误清 pendingSeeds（本方法开头已主动清，此标记防重复处理）。
+        internalClose.add(player.getUniqueId());
+        try {
+            player.openInventory(inv);
+        } finally {
+            internalClose.remove(player.getUniqueId());
+        }
     }
 
     /**
@@ -132,7 +148,14 @@ public final class GuiManager implements Listener {
     private void closeInventoryLater(Player player) {
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (player.isOnline()) {
-                player.closeInventory();
+                // 标记程序化关闭：promptSeed 流程先设 pendingSeeds 再关界面，
+                // 此标记使 InventoryCloseEvent 不清 pendingSeeds（保留种子输入等待）。
+                internalClose.add(player.getUniqueId());
+                try {
+                    player.closeInventory();
+                } finally {
+                    internalClose.remove(player.getUniqueId());
+                }
             }
         });
     }
@@ -330,6 +353,26 @@ public final class GuiManager implements Listener {
         lastClick.remove(id);
     }
 
+    /**
+     * 玩家主动关闭界面（按 ESC / 被其他插件强制关闭）时清理待处理种子等待。
+     *
+     * <p>场景：玩家在确认页点种子图标 → 进入 60 秒聊天输入模式 → 按 ESC 放弃。
+     * 若不清 pendingSeeds，其下一条普通聊天会被吞作种子并强制弹回确认页。
+     * 程序化关闭（openMenu/closeInventoryLater）由 internalClose 标记排除。
+     */
+    @EventHandler
+    public void onClose(org.bukkit.event.inventory.InventoryCloseEvent e) {
+        if (!(e.getInventory().getHolder() instanceof GuiHolder)) return;
+        if (!(e.getPlayer() instanceof Player player)) return;
+        UUID id = player.getUniqueId();
+        if (internalClose.remove(id)) {
+            // 程序化关闭（openMenu/closeInventoryLater）：不清 pendingSeeds
+            return;
+        }
+        // 玩家主动关闭：清待处理种子，避免下一条聊天被吞
+        pendingSeeds.remove(id);
+    }
+
     /** 关停（onDisable / reload）：关闭所有本插件菜单界面并清空状态。 */
     public void closeAll() {
         for (Player p : plugin.getServer().getOnlinePlayers()) {
@@ -484,7 +527,9 @@ public final class GuiManager implements Listener {
             return;
         }
         if (System.currentTimeMillis() > expiry) {
-            // 已超时：按普通聊天放行
+            // 已超时：按普通聊天放行，但告知玩家种子输入已过期（避免困惑为何上条消息没反应）
+            Player p = e.getPlayer();
+            p.sendMessage("§7种子输入已超时（60 秒），本次聊天正常发送。");
             return;
         }
         String msg = PlainTextComponentSerializer.plainText().serialize(e.message()).trim();
