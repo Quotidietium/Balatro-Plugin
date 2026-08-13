@@ -65,14 +65,14 @@ final class BalatroHelp {
                 "§e/balatro buy <序号>§f 购买卡牌  §7|§e buybag <序号>§f 购买补充包",
                 "§e/balatro buyvoucher§f   购买优惠券",
                 "§e/balatro reroll§f   重掷商店商品",
-                "§e/balatro next§f 离开商店 → §ego§f 开始盲注 / §eskip§f 跳过(获标签)"
+                "§e/balatro next§f 离开商店 → §ego§f/skip  §7出售持有牌见 §e/balatro help 8"
         });
         add("商店出售持有牌", new String[]{
                 "商店阶段可在全息牌桌上看到并出售持有的小丑/消耗品（对齐原版）。",
                 "§e右键持有小丑§f → 确认出售（永恒不可售）；§e右键消耗品§f → 确认出售。",
                 "§e/balatro sellj <序号>§f 命令出售小丑  §7|§e sellc <序号>§f 命令出售消耗品",
                 "售价 = 购买价的一半（最少 $1），蛋/礼品卡可额外增加售价。",
-                "回合金阶段右键消耗品仍为「使用」，商店阶段右键才为「出售」。"
+                "回合阶段右键消耗品仍为「使用」，商店阶段右键才为「出售」。"
         });
         add("消耗品与补充包", new String[]{
                 "§e/balatro cons§f   查看持有的消耗品（塔罗/星球/幻灵）",
