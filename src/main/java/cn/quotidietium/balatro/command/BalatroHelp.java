@@ -67,6 +67,13 @@ final class BalatroHelp {
                 "§e/balatro reroll§f   重掷商店商品",
                 "§e/balatro next§f 离开商店 → §ego§f 开始盲注 / §eskip§f 跳过(获标签)"
         });
+        add("商店出售持有牌", new String[]{
+                "商店阶段可在全息牌桌上看到并出售持有的小丑/消耗品（对齐原版）。",
+                "§e右键持有小丑§f → 确认出售（永恒不可售）；§e右键消耗品§f → 确认出售。",
+                "§e/balatro sellj <序号>§f 命令出售小丑  §7|§e sellc <序号>§f 命令出售消耗品",
+                "售价 = 购买价的一半（最少 $1），蛋/礼品卡可额外增加售价。",
+                "回合金阶段右键消耗品仍为「使用」，商店阶段右键才为「出售」。"
+        });
         add("消耗品与补充包", new String[]{
                 "§e/balatro cons§f   查看持有的消耗品（塔罗/星球/幻灵）",
                 "§e/balatro use <序号> [手牌序号...]§f   使用消耗品（需目标时传手牌序号）",
@@ -240,11 +247,12 @@ final class BalatroHelp {
         cmd("sellj", new String[]{}, "出售小丑", new String[]{
                 "§e/balatro sellj <序号>",
                 "出售第 N 张小丑（永恒小丑不可出售）。",
-                "全息：右键小丑牌。"
+                "全息：回合或商店阶段右键小丑牌 → 确认出售。"
         });
         cmd("sellc", new String[]{}, "出售消耗品", new String[]{
                 "§e/balatro sellc <序号>",
-                "出售第 N 个消耗品。"
+                "出售第 N 个消耗品。",
+                "全息：商店阶段右键消耗品 → 确认出售。"
         });
         cmd("endless", new String[]{}, "进入无尽模式", new String[]{
                 "§e/balatro endless",
