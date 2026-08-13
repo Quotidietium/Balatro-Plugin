@@ -699,8 +699,7 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
 
     private void cmdTop(Player player) {
         // 聚合排行榜每次全量遍历统计记录（上限上万条）：篡改客户端可宏刷这条只读命令，
-        // 让主线程反复做聚合+排序——每玩家 1s 节流。节流表惰性清扫（>60s 即失效），
-        // 长期运行玩家流转下有界。
+        // 让主线程反复做聚合+排序——每玩家 1s 节流。
         long now = System.currentTimeMillis();
         Long last = lastTop.get(player.getUniqueId());
         if (last != null && now - last < TOP_THROTTLE_MS) {
@@ -708,9 +707,11 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             return;
         }
         lastTop.put(player.getUniqueId(), now);
-        if (lastTop.size() > 128) {
-            lastTop.values().removeIf(t -> now - t > 60_000L);
-        }
+        // 无条件惰性清扫：每次调用都清理 >60s 的过期条目。
+        // 此前仅在 size>128 时清扫——大量不同 UUID（离线模式/UUID 伪造）在 60s 内各调用一次
+        // 会导致 Map 无限增长（慢速内存泄漏）。改为无条件清扫使 Map 大小自然受限于
+        // 「过去 60s 内调用过 /top 的不同玩家数」，无需依赖 PlayerQuitEvent。
+        lastTop.values().removeIf(t -> now - t > 60_000L);
         java.util.List<cn.quotidietium.balatro.api.PlayerStat> aggregated;
         try {
             aggregated = plugin.services().leaderboard().topAggregated(10);
