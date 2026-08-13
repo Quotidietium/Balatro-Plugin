@@ -293,11 +293,18 @@ public final class GameSession {
         // 通关(won)：保留会话与牌桌，玩家可选 /endless 继续或 /quit 结束
     }
 
-    /** 调用可替换服务并兜底：第三方实现抛异常仅记日志，不向游戏流程传播。 */
+    /**
+     * 调用可替换服务并兜底：第三方实现抛异常仅记日志，不向游戏流程传播。
+     *
+     * <p>捕获 {@link Exception}（含 {@link RuntimeException}）：第三方 RewardService/StatsService/
+     * WinCounter 的任何受检/非受检异常都不应中断后续服务调用（如 reward 异常吃掉统计落盘）。
+     * {@link Error}（如 {@link StackOverflowError}/{@link OutOfMemoryError}/{@link NoClassDefFoundError}）
+     * 不捕获——这类表示 JVM/类加载级故障，应当向上传播让框架感知，而非静默吞掉。
+     */
     private void safeService(String what, Runnable r) {
         try {
             r.run();
-        } catch (RuntimeException ex) {
+        } catch (Exception ex) {
             plugin.getLogger().warning(what + " 异常（玩家 " + player.getName() + "）：" + ex);
         }
     }
