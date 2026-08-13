@@ -85,10 +85,14 @@ public final class SessionManager {
      *
      * <p>防重入误杀：BalatroRunEndEvent 等事件监听器可能在事件回调中先 end 再 start
      * （自动重开插件）。此时 Map 里已是新会话，调用方持有的旧会话不得再误杀新局。
+     *
+     * @return {@code true} 若本会话仍是当前会话并已结束；{@code false} 若已被替换（调用方
+     *         需自行回收旧会话的牌桌实体，否则泄漏）。
      */
-    public void endIfCurrent(Player player, GameSession expected) {
-        if (sessions.get(player.getUniqueId()) != expected) return;
+    public boolean endIfCurrent(Player player, GameSession expected) {
+        if (sessions.get(player.getUniqueId()) != expected) return false;
         end(player);
+        return true;
     }
 
     /** 关闭全部（onDisable / reload）：逐一销毁牌桌实体，避免世界内残留全息。 */

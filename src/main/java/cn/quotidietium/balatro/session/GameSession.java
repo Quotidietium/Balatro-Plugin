@@ -278,8 +278,17 @@ public final class GameSession {
         sendRunStats(won, anteReached);
         if (!won) {
             // 失败：销毁牌桌并移除会话，玩家可立刻 /balatro play 再来一局。
-            // endIfCurrent：RunEnd 事件监听器可能已重开新局——不得误杀新会话。
-            plugin.sessionManager().endIfCurrent(player, this);
+            // RunEnd 事件监听器可能已在回调中 end 旧局 + start 新局——此时 Map 里已是新会话。
+            // endIfCurrent 防误杀新局：仅当本会话仍是当前会话时才 end。
+            // 但若已被替换，旧会话的牌桌实体仍需回收（否则泄漏到世界直到重启）。
+            if (!plugin.sessionManager().endIfCurrent(player, this)) {
+                // 已被替换：仅回收本（旧）会话的牌桌实体，不触碰新会话
+                try {
+                    despawnBoard();
+                } catch (RuntimeException ex) {
+                    plugin.getLogger().warning("旧局牌桌回收失败（玩家 " + player.getName() + "）：" + ex);
+                }
+            }
         }
         // 通关(won)：保留会话与牌桌，玩家可选 /endless 继续或 /quit 结束
     }
