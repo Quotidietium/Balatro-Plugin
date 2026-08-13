@@ -633,7 +633,7 @@ public final class RoundBoard {
         for (int i = 0; i < cn; i++) {
             Consumable c = state.consumables.get(i);
             double x = (i - (cn - 1) / 2.0) * CONS_SPACING;
-            int sv = Math.max(1, 1 + c.sellBonus);
+            int sv = RunState.sellValue(c);
             TextDisplay d = slot(consSlots, i, BG_NORMAL);
             d.text(Component.text(consLabel(c), TextColor.color(180, 220, 255))
                     .append(Component.text(" $" + sv, NamedTextColor.GREEN)));
@@ -1023,13 +1023,13 @@ public final class RoundBoard {
         RunState st = session.state();
         if (i < 0 || i >= st.consumables.size()) return;
         Consumable c = st.consumables.get(i);
-        int sellVal = Math.max(1, 1 + c.sellBonus);
+        int sellVal = RunState.sellValue(c);
         player.sendMessage(Component.text("━━ 确认使用 ━━", NamedTextColor.GOLD));
         player.sendMessage(Component.text("[" + kindLabel(c.kind) + "] " + c.name(), NamedTextColor.AQUA));
         player.sendMessage(Component.text(c.desc(), NamedTextColor.GRAY));
         player.sendMessage(Component.text(
-                "需指定目标时用 /balatro use " + (i + 1) + " <手牌序号...>；可出售 $" + sellVal
-                        + "（/balatro sellc " + (i + 1) + "）",
+                "需指定目标时用 /balatro use " + (i + 1) + " <手牌序号...>；商店阶段右键消耗品=出售（$" + sellVal
+                        + "，或 /balatro sellc " + (i + 1) + "）",
                 NamedTextColor.DARK_GRAY));
         // 按钮末位携带期望 kind:key：确认后到点击前消耗品列表可能已变化（使用/出售收缩列表），
         // 命令层校验不一致则取消执行，防止序号错位用错消耗品
@@ -1047,7 +1047,7 @@ public final class RoundBoard {
         RunState st = session.state();
         if (i < 0 || i >= st.consumables.size()) return;
         Consumable c = st.consumables.get(i);
-        int val = Math.max(1, 1 + c.sellBonus);
+        int val = RunState.sellValue(c);
         player.sendMessage(Component.text("━━ 确认出售 ━━", NamedTextColor.GOLD));
         player.sendMessage(Component.text("[" + kindLabel(c.kind) + "] " + c.name(), NamedTextColor.AQUA));
         player.sendMessage(Component.text(c.desc(), NamedTextColor.GRAY));
