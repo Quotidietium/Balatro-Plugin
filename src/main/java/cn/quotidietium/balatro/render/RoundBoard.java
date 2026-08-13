@@ -203,7 +203,18 @@ public final class RoundBoard {
         p.sendMessage(Component.text("进入商店/补充包时会自动列出全部简介，便于判断。", NamedTextColor.DARK_GRAY));
     }
 
-    /** 状态变更后刷新（原地改写，不 clear+respawn）。 */
+    /**
+     * 状态变更后刷新（原地改写，不 clear+respawn）。
+     *
+     * <p><b>异常安全</b>：reflow 可能因 Bukkit 世界操作（teleport/spawnEntity/remove）抛
+     * {@link RuntimeException}（如区块卸载、世界异常）。本方法保证：
+     * <ul>
+     *   <li>{@link #hideExtraInteractions} 在 finally 中始终执行——即使 reflow 抛异常，
+     *       未被本帧重新分配的 Interaction 也被零尺寸+去标签，避免陈旧 balatro_i_* 命中盒残留。</li>
+     *   <li>阶段切换原子性：若 reflow 抛异常，{@code activePhase} 回退到切换前的值（prev），
+     *       使下一帧 update 重新走 hideAll+reflow 路径完整重建，而非在半成品状态上叠加。</li>
+     * </ul>
+     */
     public void update(RunState state) {
         // 自愈：任一持久实体已失效即整体重建。牌桌宽约 8 格可横跨区块边界——周边区块
         // 卸载会杀死部分非持久实体（中心 statusBar 仍存活），留下「半死牌桌」：
@@ -225,19 +236,31 @@ public final class RoundBoard {
         }
         interactionIdx = 0;
         Phase prev = activePhase;
-        if (prev != state.phase) {
+        boolean phaseChanged = prev != state.phase;
+        if (phaseChanged) {
             hideAll();
             activePhase = state.phase;
         }
-        switch (state.phase) {
-            case SHOP -> reflowShop(state);
-            case PACK -> reflowPack(state);
-            case BLIND_SELECT -> reflowBlindSelect(state);
-            default -> reflowRound(state);
+        boolean reflowOk = false;
+        try {
+            switch (state.phase) {
+                case SHOP -> reflowShop(state);
+                case PACK -> reflowPack(state);
+                case BLIND_SELECT -> reflowBlindSelect(state);
+                default -> reflowRound(state);
+            }
+            reflowOk = true;
+        } finally {
+            // 无论 reflow 成功或抛异常，都必须清理本帧未使用的 Interaction，
+            // 避免陈旧 balatro_i_* 命中盒残留导致误点击。
+            hideExtraInteractions();
+            // 若 reflow 失败且回退了阶段，保证下一帧重新完整重建
+            if (!reflowOk && phaseChanged) {
+                activePhase = prev;
+            }
         }
-        hideExtraInteractions();
-        // 进入商店/补充包时，自动把所有简介发到聊天框便于判断
-        if (prev != state.phase) {
+        // 进入商店/补充包时，自动把所有简介发到聊天框便于判断（仅 reflow 成功时）
+        if (reflowOk && phaseChanged) {
             if (state.phase == Phase.SHOP) sendShopInfo(state);
             else if (state.phase == Phase.PACK) sendPackInfo(state);
         }
