@@ -79,4 +79,63 @@ class ScoringChaosFuzzTest {
             assertTrue(s.roundScore >= 0, "roundScore 为负（trial=" + trial + "）：" + s.roundScore);
         }
     }
+
+    /**
+     * R100：复制类小丑（blueprint/brainstorm）混入随机槽位的计分 fuzz。
+     *
+     * <p>复制类经 Engine.resolveCopy 触发**其他**小丑的钩子（蓝图=右邻、头脑风暴=最左），
+     * 随机位置组合下：蓝图右邻可能是蓝图/头脑风暴（返回 null 跳过）、头脑风暴最左可能是
+     * 自身（null）、被复制者与持有者版本加成的归属（R4：按持有者）等路径全部混沌覆盖。
+     * 首个 fuzz 的随机池不含复制类，此为补充盲区。
+     */
+    @Test
+    void copyJokersInRandomSlotsNeverCrash() {
+        Random rnd = new Random(20260819L);
+        String[] copyJokers = {"blueprint", "brainstorm"};
+        for (int trial = 0; trial < TRIALS; trial++) {
+            RunState s = Engine.createRun("red", 0, "COPY" + trial, null);
+            Engine.selectBlind(s, Data.BlindType.SMALL, false);
+            // 随机装 2~6 个：计分小丑与复制类混合（复制类至少 1 个保证路径触发）
+            int total = 2 + rnd.nextInt(5);
+            boolean anyCopy = false;
+            for (int j = 0; j < total; j++) {
+                String key;
+                if (!anyCopy && j == total - 1) {
+                    key = copyJokers[rnd.nextInt(2)]; // 保证至少一个复制类
+                } else {
+                    key = rnd.nextInt(3) == 0 ? copyJokers[rnd.nextInt(2)] : SCORING_JOKERS[rnd.nextInt(SCORING_JOKERS.length)];
+                }
+                if ("blueprint".equals(key) || "brainstorm".equals(key)) anyCopy = true;
+                var inst = cn.quotidietium.balatro.engine.joker.JokerRegistry.create(key);
+                if (inst != null && s.jokers.size() < 10) s.jokers.add(inst);
+            }
+            Engine.recomputeFlags(s);
+            // 手牌随机增强（让被复制的 onScoreCard/onScore 有区分度）
+            for (Card c : s.hand) {
+                if (rnd.nextInt(3) == 0) c.setEnh(Data.Enhancement.values()[rnd.nextInt(8)]);
+            }
+            long scoreBefore = s.roundScore;
+            List<Integer> playIds = new ArrayList<>();
+            int playN = 1 + rnd.nextInt(Math.min(5, s.hand.size()));
+            for (int i = 0; i < playN && i < s.hand.size(); i++) playIds.add(s.hand.get(i).id());
+            try {
+                Engine.PlayResult r = Engine.playHand(s, playIds);
+                assertTrue(r.score >= 0, "score 为负（trial=" + trial + "）：" + r.score);
+                if (r.ok) {
+                    assertTrue(s.roundScore >= scoreBefore,
+                            "roundScore 倒退（trial=" + trial + "）");
+                }
+            } catch (RuntimeException ex) {
+                fail("复制类组合计分抛异常（trial=" + trial + "，小丑=" + jokerKeys(s) + "）：" + ex);
+            }
+            assertTrue(s.jokers.size() <= 40, "小丑泄漏（trial=" + trial + "）");
+            assertTrue(s.roundScore >= 0, "roundScore 为负（trial=" + trial + "）");
+        }
+    }
+
+    private static String jokerKeys(RunState s) {
+        StringBuilder sb = new StringBuilder();
+        for (var j : s.jokers) sb.append(j.def.key()).append(",");
+        return sb.toString();
+    }
 }
