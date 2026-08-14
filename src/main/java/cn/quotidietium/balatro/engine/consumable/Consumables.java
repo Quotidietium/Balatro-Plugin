@@ -292,7 +292,10 @@ public final class Consumables {
                     if (copyable.isEmpty()) return Result.err("没有可用的小丑");
                     JokerInstance src = st.pick(copyable);
                     s.jokers.removeIf(j -> j != src && !j.eternal);
-                    s.gainJoker(src.def.key(), src.edition);
+                    // R114 对齐真版：贴纸（永恒/易腐/租赁）随复制保留；负片版本不被 ankh 复制
+                    // （Ankh Wiki/Steam：Ankh duplicate of a Negative joker loses Negative）
+                    Data.Edition ed = src.edition == Data.Edition.NEGATIVE ? null : src.edition;
+                    s.duplicateJoker(src, ed);
                     return Result.ok();
                 }
                 case "cryptid": {

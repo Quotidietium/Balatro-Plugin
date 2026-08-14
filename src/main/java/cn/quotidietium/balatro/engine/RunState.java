@@ -394,6 +394,26 @@ public final class RunState {
         return gainJoker(pick.key(), null);
     }
 
+    /**
+     * 复制一张小丑（ankh/隐形小丑产线，R114 对齐真版）：产出新实例并**继承贴纸**——
+     * 永恒/租赁/易腐（含剩余回合计数）随复制保留（[Invisible Joker Wiki]/
+     * [Reddit：copies the whole joker, even the remaining rounds counter]）；
+     * 版本按调用方传入（ankh 不复制负片：[Ankh Wiki/Steam]）。
+     * REF gainJoker 仅传版本、贴纸全丢——REF bug，按用户「对齐原版机制，REF 有问题一并修」修正。
+     * sellBonus 不复制（无证据支持，保持新实例起步）。不消耗流。
+     */
+    public boolean duplicateJoker(JokerInstance src, Data.Edition edition) {
+        boolean ok = gainJoker(src.def.key(), edition);
+        if (ok) {
+            JokerInstance copy = jokers.get(jokers.size() - 1);
+            copy.eternal = src.eternal;
+            copy.rental = src.rental;
+            copy.perishable = src.perishable;
+            copy.perishCount = src.perishCount;
+        }
+        return ok;
+    }
+
     /** 把一张牌加入牌组（触发 onCardAdded）。 */
     public void addCardToDeck(Card c) {
         fullDeck.add(c);

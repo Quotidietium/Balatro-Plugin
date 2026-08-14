@@ -1267,7 +1267,9 @@ public enum BasicJoker implements Joker {
             for (JokerInstance x : state.jokers) if (x != self) others.add(x);
             if (!others.isEmpty() && state.jokerSpace() > 0) {
                 JokerInstance src = state.stream("invisible").pick(others);
-                state.gainJoker(src.def.key(), src.edition);
+                // R114 对齐真版：隐形小丑复制保留贴纸（Reddit：copies the whole joker,
+                // even the remaining rounds counter）；版本原样复制
+                state.duplicateJoker(src, src.edition);
                 state.msg("隐形小丑：复制了 " + src.def.displayName());
             }
         }
