@@ -3,7 +3,7 @@
 本插件提供两层扩展 API，供第三方插件接入，**无需 fork 本插件**：
 
 1. **自定义事件**（`api.event`）——在关键节点（开局/计分/盲注结算/底注通过/本局结束）发出，可监听、部分可取消。**推荐的集成方式。**
-2. **服务接口**（`api.service`）——经济 / 统计 / 排行榜 / 奖励四个接口，默认实现可被替换。
+2. **服务接口**（`api.service`）——经济 / 统计 / 排行榜 / 奖励 / 通关计数五个接口，默认实现可被替换。
 
 > 所有 API 都在 `cn.quotidietium.balatro.api` 包下；事件在主线程同步发出。插件名为 `Balatro`，主类 `cn.quotidietium.balatro.BalatroPlugin`。
 
@@ -72,7 +72,7 @@ public void onStart(BalatroRunStartEvent e) {
 
 ## 二、服务接口
 
-包：`cn.quotidietium.balatro.api.service`。四个接口，默认实现可运行期替换。
+包：`cn.quotidietium.balatro.api.service`。五个接口，默认实现可运行期替换。
 
 ### `EconomyService` — 外部经济（Vault/PlayerPoints 等）
 
