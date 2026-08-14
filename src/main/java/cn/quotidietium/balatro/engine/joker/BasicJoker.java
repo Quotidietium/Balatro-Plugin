@@ -578,7 +578,9 @@ public enum BasicJoker implements Joker {
             if (j == null) return;
             for (Card c : info.scoredCards) {
                 if (c.enh() != null && !c.debuff()) {
-                    c.setEnh(null);
+                    // 移除增强：石头牌(enh==STONE)满足条件也会被移除——用 applyEnhancement(null)
+                    // 正确恢复 rank/suit，否则石头牌 enh=null 但 rank=0/suit<1 致状态矛盾（对齐真版）。
+                    c.applyEnhancement(null);
                     j.extra.put("x", gd(j.extra, "x") + 0.1);
                     state.msg("吸血鬼：移除了增强，倍率累积");
                 }
@@ -647,7 +649,9 @@ public enum BasicJoker implements Joker {
     MIDAS("midas", "迈达斯面具", "每张计分的人头牌变为黄金牌", 7) {
         @Override
         public void onScoreCard(ScoreContext ctx, Card card) {
-            if (ctx.isFace(card) && !card.debuff()) card.setEnh(Data.Enhancement.GOLD);
+            // Pareidolia(allFace) 下石头牌也视为人头牌会触发——用 applyEnhancement 正确恢复
+            // rank/suit，否则石头牌 enh=GOLD 但 rank=0/suit<1 致状态矛盾（对齐真版）。
+            if (ctx.isFace(card) && !card.debuff()) card.applyEnhancement(Data.Enhancement.GOLD);
         }
     },
     SIXTHSENSE("sixthsense", "第六感", "回合第一次出牌为单张 6 时：销毁它并获得一张幻灵牌", 6) {

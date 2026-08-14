@@ -60,7 +60,7 @@ public final class Consumables {
     }
 
     /**
-     * 设置牌的增强，正确处理石头牌转换（对齐真版）。
+     * 设置牌的增强，正确处理石头牌转换（委托 {@link Card#applyEnhancement}）。
      *
      * <p>真版语义（[Reddit](https://www.reddit.com/r/balatro/comments/1bn9dpi/) +
      * [Stone cards Wiki](https://balatrowiki.org/w/Stone_cards)）：增强塔罗替换原增强；
@@ -72,15 +72,7 @@ public final class Consumables {
      * @param enh  新增强（含 STONE）
      */
     private static void applyEnhancement(Card card, Data.Enhancement enh) {
-        card.setEnh(enh);
-        if (enh == Data.Enhancement.STONE) {
-            card.setRank(0);
-            card.setSuit(-1);
-        } else if (card.rank() == 0 || card.suit() < 0) {
-            // 从石头转为普通增强：恢复合法底层（无底层记录时用黑桃2，对齐 marble 小丑的石头壳默认）
-            if (card.rank() < 2) card.setRank(2);
-            if (card.suit() < 0) card.setSuit(0);
-        }
+        card.applyEnhancement(enh);
     }
 
     private static List<Card> targets(RunState s, List<Integer> targetIds, boolean inRound, int max, boolean exact) {

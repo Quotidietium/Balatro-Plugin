@@ -115,6 +115,32 @@ public final class Card {
         return enh == Data.Enhancement.STONE || rank == 0 || suit < 0;
     }
 
+    /**
+     * 设置牌的增强，正确处理石头牌转换（对齐真版）。
+     *
+     * <p>真版语义（[Reddit](https://www.reddit.com/r/balatro/comments/1bn9dpi/) +
+     * [Stone cards Wiki](https://balatrowiki.org/w/Stone_cards)）：增强替换原增强；
+     * 石头牌被转为非 stone 增强后不再是石头，须恢复合法 rank/suit。REF engine.js 此处未恢复
+     * （REF bug：石头牌转其他增强/setEnh(null) 后 rank/suit 仍 0/-1，isStone 按 rank==0 仍判石头
+     * 但 enh 已非 stone，HandEval/scoreOneCard 按 enh!=stone 当普通牌，rank=0/suit=-1 参与判定致混乱）。
+     *
+     * <p>消耗品（magician/empress/hierophant/lovers/chariot/justice/devil/tower）、
+     * 小丑（vampire 移除增强、midas 变黄金）共用本方法保证石头牌转换的状态一致性。
+     *
+     * @param newEnh 新增强（含 STONE 与 null）
+     */
+    public void applyEnhancement(Data.Enhancement newEnh) {
+        this.enh = newEnh;
+        if (newEnh == Data.Enhancement.STONE) {
+            this.rank = 0;
+            this.suit = -1;
+        } else if (this.rank == 0 || this.suit < 0) {
+            // 从石头转为普通增强/无增强：恢复合法底层（无底层记录时用黑桃2，对齐 marble 石头壳默认）
+            if (this.rank < 2) this.rank = 2;
+            if (this.suit < 0) this.suit = 0;
+        }
+    }
+
     /** 人头牌 J/Q/K。 */
     public boolean isFace() {
         return rank >= 11 && rank <= 13;
