@@ -190,12 +190,10 @@ public enum BasicJoker implements Joker {
             ctx.addMult(gi(ctx.joker.extra, "mult", 0));
         }
         @Override
-        public void onPlayHand(RunState state, PlayHandInfo info) {
-            JokerInstance j = info.findJoker("ridebus");
-            if (j == null) return;
-            if (info.hasFace) { j.extra.put("mult", 0); return; }
-            int m = gi(j.extra, "mult", 0) + 1;
-            j.extra.put("mult", m);
+        public void onPlayHand(RunState state, PlayHandInfo info, JokerInstance self) {
+            if (info.hasFace) { self.extra.put("mult", 0); return; }
+            int m = gi(self.extra, "mult", 0) + 1;
+            self.extra.put("mult", m);
             state.msg("搭便车：倍率累积至 +" + m);
         }
     },
@@ -205,12 +203,10 @@ public enum BasicJoker implements Joker {
             ctx.addChips(gi(ctx.joker.extra, "chips", 100));
         }
         @Override
-        public void onPlayHand(RunState state, PlayHandInfo info) {
-            JokerInstance j = info.findJoker("icecream");
-            if (j == null) return;
-            int c = gi(j.extra, "chips", 100) - 5;
-            j.extra.put("chips", c);
-            if (c <= 0) state.destroyJoker(j, "冰淇淋融化了！");
+        public void onPlayHand(RunState state, PlayHandInfo info, JokerInstance self) {
+            int c = gi(self.extra, "chips", 100) - 5;
+            self.extra.put("chips", c);
+            if (c <= 0) state.destroyJoker(self, "冰淇淋融化了！");
         }
     },
     SPLASH("splash", "水花", "所有打出的牌都参与计分", 3) {
@@ -231,12 +227,10 @@ public enum BasicJoker implements Joker {
             ctx.addChips(gi(ctx.joker.extra, "chips", 0));
         }
         @Override
-        public void onPlayHand(RunState state, PlayHandInfo info) {
+        public void onPlayHand(RunState state, PlayHandInfo info, JokerInstance self) {
             if (info.handType != Data.HandType.STRAIGHT) return;
-            JokerInstance j = info.findJoker("runner");
-            if (j == null) return;
-            int c = gi(j.extra, "chips", 0) + 15;
-            j.extra.put("chips", c);
+            int c = gi(self.extra, "chips", 0) + 15;
+            self.extra.put("chips", c);
             state.msg("跑者：筹码累积至 +" + c);
         }
     },
@@ -246,9 +240,8 @@ public enum BasicJoker implements Joker {
             ctx.addMult(gi(ctx.joker.extra, "mult", 0));
         }
         @Override
-        public void onPlayHand(RunState state, PlayHandInfo info) {
-            JokerInstance j = info.findJoker("green");
-            if (j != null) j.extra.put("mult", gi(j.extra, "mult", 0) + 1);
+        public void onPlayHand(RunState state, PlayHandInfo info, JokerInstance self) {
+            self.extra.put("mult", gi(self.extra, "mult", 0) + 1);
         }
         @Override
         public void onDiscard(RunState state, List<Card> cards, JokerInstance self) {
@@ -257,10 +250,8 @@ public enum BasicJoker implements Joker {
     },
     TODO_JOKER("todo", "待办清单", "打出指定牌型 +$4（牌型每回合结束时更换）", 4) {
         @Override
-        public void onPlayHand(RunState state, PlayHandInfo info) {
-            JokerInstance j = info.findJoker("todo");
-            if (j == null) return;
-            Object h = j.extra.get("hand");
+        public void onPlayHand(RunState state, PlayHandInfo info, JokerInstance self) {
+            Object h = self.extra.get("hand");
             Data.HandType target = h instanceof Data.HandType ? (Data.HandType) h : Data.HandType.PAIR;
             if (info.handType == target) state.gainMoney(4);
         }
@@ -287,12 +278,10 @@ public enum BasicJoker implements Joker {
             ctx.addChips(gi(ctx.joker.extra, "chips", 0));
         }
         @Override
-        public void onPlayHand(RunState state, PlayHandInfo info) {
+        public void onPlayHand(RunState state, PlayHandInfo info, JokerInstance self) {
             if (info.playedCards.size() != 4) return;
-            JokerInstance j = info.findJoker("square");
-            if (j == null) return;
-            int c = gi(j.extra, "chips", 0) + 4;
-            j.extra.put("chips", c);
+            int c = gi(self.extra, "chips", 0) + 4;
+            self.extra.put("chips", c);
             state.msg("方形小丑：筹码累积至 +" + c);
         }
     },
@@ -573,15 +562,13 @@ public enum BasicJoker implements Joker {
             ctx.xMult(1 + gd(ctx.joker.extra, "x"));
         }
         @Override
-        public void onPlayHand(RunState state, PlayHandInfo info) {
-            JokerInstance j = info.findJoker("vampire");
-            if (j == null) return;
+        public void onPlayHand(RunState state, PlayHandInfo info, JokerInstance self) {
             for (Card c : info.scoredCards) {
                 if (c.enh() != null && !c.debuff()) {
                     // 移除增强：石头牌(enh==STONE)满足条件也会被移除——用 applyEnhancement(null)
                     // 正确恢复 rank/suit，否则石头牌 enh=null 但 rank=0/suit<1 致状态矛盾（对齐真版）。
                     c.applyEnhancement(null);
-                    j.extra.put("x", gd(j.extra, "x") + 0.1);
+                    self.extra.put("x", gd(self.extra, "x") + 0.1);
                     state.msg("吸血鬼：移除了增强，倍率累积");
                 }
             }
@@ -639,11 +626,9 @@ public enum BasicJoker implements Joker {
             ctx.xMult(1 + gd(ctx.joker.extra, "x"));
         }
         @Override
-        public void onPlayHand(RunState state, PlayHandInfo info) {
-            JokerInstance j = info.findJoker("obelisk");
-            if (j == null) return;
-            if (info.isMostPlayed) { j.extra.put("x", 0.0); state.msg("方尖碑：重置"); }
-            else j.extra.put("x", gd(j.extra, "x") + 0.2);
+        public void onPlayHand(RunState state, PlayHandInfo info, JokerInstance self) {
+            if (info.isMostPlayed) { self.extra.put("x", 0.0); state.msg("方尖碑：重置"); }
+            else self.extra.put("x", gd(self.extra, "x") + 0.2);
         }
     },
     MIDAS("midas", "迈达斯面具", "每张计分的人头牌变为黄金牌", 7) {
@@ -780,12 +765,10 @@ public enum BasicJoker implements Joker {
             ctx.addMult(gi(ctx.joker.extra, "mult", 0));
         }
         @Override
-        public void onPlayHand(RunState state, PlayHandInfo info) {
+        public void onPlayHand(RunState state, PlayHandInfo info, JokerInstance self) {
             if (info.handType != Data.HandType.TWOPAIR) return;
-            JokerInstance j = info.findJoker("trousers");
-            if (j == null) return;
-            int m = gi(j.extra, "mult", 0) + 2;
-            j.extra.put("mult", m);
+            int m = gi(self.extra, "mult", 0) + 2;
+            self.extra.put("mult", m);
             state.msg("备用长裤：倍率累积至 +" + m);
         }
     },
@@ -823,12 +806,10 @@ public enum BasicJoker implements Joker {
             return 1;
         }
         @Override
-        public void onPlayHand(RunState state, PlayHandInfo info) {
-            JokerInstance j = info.findJoker("seltzer");
-            if (j == null) return;
-            int u = gi(j.extra, "uses", 10) - 1;
-            j.extra.put("uses", u);
-            if (u <= 0) state.destroyJoker(j, "苏打水喝完了！");
+        public void onPlayHand(RunState state, PlayHandInfo info, JokerInstance self) {
+            int u = gi(self.extra, "uses", 10) - 1;
+            self.extra.put("uses", u);
+            if (u <= 0) state.destroyJoker(self, "苏打水喝完了！");
         }
     },
     CASTLE("castle", "城堡", "每弃一张指定花色的牌：永久 +3 筹码（花色每回合更换）", 6) {

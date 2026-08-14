@@ -41,6 +41,16 @@ public interface Joker {
     default void onPlayHand(RunState state, PlayHandInfo info) {
     }
 
+    /**
+     * 出牌后钩子（带触发实例）。多副本累积器（runner/icecream/seltzer 等）必须经 {@code self}
+     * 修改各自 extra——经 {@code info.findJoker(key)} 只取第一份会让副本1 被重复衰减、
+     * 副本2+ 永不衰减（REF-inherited 缺陷，R111 修正；真版每副本独立计数）。
+     * 默认委托旧两参形式（第三方 2 参实现无须改动）。
+     */
+    default void onPlayHand(RunState state, PlayHandInfo info, JokerInstance self) {
+        onPlayHand(state, info);
+    }
+
     default void onDiscard(RunState state, List<Card> cards, JokerInstance self) {
     }
 

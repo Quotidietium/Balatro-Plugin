@@ -692,7 +692,7 @@ public final class Engine {
         List<JokerInstance> jokersSnap = new ArrayList<>(s.jokers);
         for (JokerInstance j : jokersSnap) {
             if (!j.debuff && !j.debuffHand && s.jokers.contains(j)) {
-                j.def.onPlayHand(s, info);
+                j.def.onPlayHand(s, info, j); // 传触发实例：多副本累积器各自计数（R111）
             }
         }
 
