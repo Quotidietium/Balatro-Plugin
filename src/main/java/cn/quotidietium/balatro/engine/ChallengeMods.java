@@ -82,6 +82,9 @@ public final class ChallengeMods {
                 case "noHandPay" -> m.noHandPay = bool(v);
                 case "faceDouble" -> m.faceDouble = bool(v);
                 case "xrayFacedown" -> m.xrayFacedown = bool(v);
+                // 禁入清单（真版煎蛋卷：经济券/小丑不进商店与随机池）——R108 对齐真版新增
+                case "banVouchers" -> { for (String bk : v.split(",")) if (!bk.isEmpty()) m.bannedVouchers.add(bk); }
+                case "banJokers" -> { for (String bk : v.split(",")) if (!bk.isEmpty()) m.bannedJokers.add(bk); }
                 case "money" -> s.money = Long.parseLong(v);
                 default -> { /* 未知 mod（如 hands=-99，被 handsSet 覆盖）忽略 */ }
             }

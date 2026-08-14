@@ -40,4 +40,8 @@ public final class Mods {
     public boolean noHandPay;        // 煎蛋卷（真版）：剩余出牌不再产生金钱
     public boolean faceDouble;       // 十五分钟城市（真版）：人头牌翻倍（替换所有 A/2/3）
     public boolean xrayFacedown;     // X 光视界（真版）：抽到的牌 1/4 概率面朝下
+    /** 禁入券（真版煎蛋卷：种子基金/摇钱树不进商店券池）。空 = 无禁入。 */
+    public final java.util.Set<String> bannedVouchers = new java.util.HashSet<>();
+    /** 禁入小丑（真版煎蛋卷：奔月/火箭/黄金/卫星不进商店与随机小丑池）。空 = 无禁入。 */
+    public final java.util.Set<String> bannedJokers = new java.util.HashSet<>();
 }

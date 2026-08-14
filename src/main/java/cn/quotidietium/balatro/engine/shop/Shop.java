@@ -128,6 +128,8 @@ public final class Shop {
         for (Data.Voucher v : Data.VOUCHERS) {
             if (s.vouchers.contains(v.key)) continue;
             if (v.requires != null && !s.vouchers.contains(v.requires)) continue;
+            // 禁入券（真版煎蛋卷：种子基金/摇钱树不进券池）——R108 对齐真版
+            if (s.mods.bannedVouchers.contains(v.key)) continue;
             avail.add(v);
         }
         // extraVoucher 计数（标签每次叠加 +1；0 表示无额外券）
@@ -267,6 +269,8 @@ public final class Shop {
             if (JokerRegistry.rarityOf(j.key()) != rarity) continue;
             if (j.key().equals("cavendish") && !s.grosDead) continue;
             if (s.mods.noJokers) continue;
+            // 禁入小丑（真版煎蛋卷：经济小丑不进商店池）——R108 对齐真版
+            if (s.mods.bannedJokers.contains(j.key())) continue;
             if (!Boolean.TRUE.equals(s.flags.get("allowDupes"))) {
                 boolean owned = false;
                 for (JokerInstance o : s.jokers) if (o.def.key().equals(j.key())) { owned = true; break; }

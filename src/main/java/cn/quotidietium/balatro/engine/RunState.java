@@ -387,6 +387,8 @@ public final class RunState {
             int r = cn.quotidietium.balatro.engine.joker.JokerRegistry.rarityOf(j.key());
             if (rarity == null ? r < 3 : r == rarity) pool.add(j);
         }
+        // 禁入小丑（真版煎蛋卷：随机获得路径同样不产出经济小丑）——R108 对齐真版
+        pool.removeIf(j -> mods.bannedJokers.contains(j.key()));
         if (pool.isEmpty()) return false;
         Joker pick = st.pick(pool);
         return gainJoker(pick.key(), null);

@@ -40,7 +40,7 @@ final class BalatroHelp {
                 "赌注越高越难；从 §e0§f 开始体验，逐步挑战更高赌注。"
         });
         add("挑战模式（play 传挑战名，共 20 · 上）", new String[]{
-                "§eomelette§f煎蛋卷(5蛋/无盲注奖·出牌金·利息) §ecity15§f十五分钟城市(人头牌翻倍)",
+                "§eomelette§f煎蛋卷(5蛋/三金封禁/经济券丑禁入) §ecity15§f十五分钟城市(人头牌翻倍)",
                 "§erich§f富者愈富(利息翻倍) §eknife§f刀尖行走(目标分×1.5)",
                 "§exray§fX光视界(1/4抽牌面朝下) §emadworld§f疯狂世界(每底注2Boss)",
                 "§eluxury§f奢侈品税(每小丑目标分+10%) §enonperish§f永不过期(全永恒/6折)",

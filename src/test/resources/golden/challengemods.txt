@@ -3,6 +3,8 @@ jokers=egg,egg,egg,egg,egg
 noInterest=true
 noBlindReward=true
 noHandPay=true
+banVouchers=seedmoney,moneytree
+banJokers=tothemoon,rocket,golden,satellite
 END
 CHALLENGE city15
 faceDouble=true

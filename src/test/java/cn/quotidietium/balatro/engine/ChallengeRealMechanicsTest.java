@@ -69,6 +69,46 @@ class ChallengeRealMechanicsTest {
     }
 
     @Test
+    void omeletteBannedEconomyContentNeverOffered() {
+        // 真版禁入清单（Wiki）：券=种子基金/摇钱树；小丑=奔月/火箭/黄金/卫星（R108）
+        RunState s = Engine.createRun("red", 0, "REALBAN", "omelette");
+        assertEquals(java.util.Set.of("seedmoney", "moneytree"), s.mods.bannedVouchers, "禁入券清单");
+        assertEquals(java.util.Set.of("tothemoon", "rocket", "golden", "satellite"), s.mods.bannedJokers, "禁入小丑清单");
+
+        // ① 随机小丑路径（wraith/soul/gainRandomJoker）：清空 5 蛋腾槽，反复随机获得，
+        //    收集 key 断言与禁入集不相交
+        s.jokers.clear();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (int i = 0; i < 400 && s.jokers.size() < 10; i++) {
+            int before = s.jokers.size();
+            s.gainRandomJoker(null);
+            if (s.jokers.size() > before) seen.add(s.jokers.get(s.jokers.size() - 1).def.key());
+        }
+        for (String k : seen) {
+            assertTrue(!s.mods.bannedJokers.contains(k), "随机路径不得产出禁入小丑: " + k);
+        }
+
+        // ② 商店券池 + ③ 商店小丑位：反复开店收集，断言 disjoint
+        java.util.Set<String> vouchersSeen = new java.util.HashSet<>();
+        java.util.Set<String> shopJokersSeen = new java.util.HashSet<>();
+        for (int round = 0; round < 60; round++) {
+            cn.quotidietium.balatro.engine.shop.Shop.openShop(s);
+            for (var v : s.shop.vouchers) vouchersSeen.add(v.voucher.key);
+            for (var c : s.shop.cards) {
+                if ("joker".equals(c.kind) && c.joker != null) shopJokersSeen.add(c.joker.def.key());
+            }
+        }
+        for (String k : vouchersSeen) {
+            assertTrue(!s.mods.bannedVouchers.contains(k), "商店不得出售禁入券: " + k);
+        }
+        for (String k : shopJokersSeen) {
+            assertTrue(!s.mods.bannedJokers.contains(k), "商店不得出售禁入小丑: " + k);
+        }
+        // 非空性防退化（60 家店应有券；小丑池禁 4 只后仍极大）
+        assertTrue(!vouchersSeen.isEmpty(), "应有券出现在样本中（防过滤误伤全池）");
+    }
+
+    @Test
     void xrayKeepsHandSizeAndDrawsFacedown() {
         RunState s = Engine.createRun("red", 0, "REALXRAY", "xray");
         assertEquals(8, s.handSizeBase, "真版 X 光视界无手牌上限 -2");
