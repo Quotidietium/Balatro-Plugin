@@ -21,7 +21,7 @@ import java.util.Map;
  * <p>其余 135+ 小丑随 0.4.0 补齐。
  */
 public enum BasicJoker implements Joker {
-    JOKER("joker", "小丑", "+4 倍率", 4) {
+    JOKER("joker", "小丑", "+4 倍率", 2) {
         @Override
         public void onScore(ScoreContext ctx) {
             ctx.addMult(4);
@@ -51,28 +51,28 @@ public enum BasicJoker implements Joker {
             if (ctx.isSuit(card, 2)) ctx.addMult(3);
         }
     },
-    JOLLY("jolly", "快乐小丑", "若牌型为对子：+8 倍率", 3) {
+    JOLLY("jolly", "快乐小丑", "若手牌包含对子：+8 倍率", 3) {
         @Override
         public void onScore(ScoreContext ctx) {
-            if (ctx.handIs("pair")) ctx.addMult(8);
+            if (ctx.handContains("pair")) ctx.addMult(8);
         }
     },
-    ZANY("zany", "滑稽小丑", "若牌型为三条：+12 倍率", 4) {
+    ZANY("zany", "滑稽小丑", "若手牌包含三条：+12 倍率", 4) {
         @Override
         public void onScore(ScoreContext ctx) {
-            if (ctx.handIs("three")) ctx.addMult(12);
+            if (ctx.handContains("three")) ctx.addMult(12);
         }
     },
-    SLY("sly", "狡猾小丑", "若牌型为对子：+50 筹码", 3) {
+    SLY("sly", "狡猾小丑", "若手牌包含对子：+50 筹码", 3) {
         @Override
         public void onScore(ScoreContext ctx) {
-            if (ctx.handIs("pair")) ctx.addChips(50);
+            if (ctx.handContains("pair")) ctx.addChips(50);
         }
     },
-    WILY("wily", "诡计小丑", "若牌型为三条：+100 筹码", 4) {
+    WILY("wily", "诡计小丑", "若手牌包含三条：+100 筹码", 4) {
         @Override
         public void onScore(ScoreContext ctx) {
-            if (ctx.handIs("three")) ctx.addChips(100);
+            if (ctx.handContains("three")) ctx.addChips(100);
         }
     },
     HALF("half", "半个小丑", "若出牌不超过 3 张：+20 倍率", 5) {
@@ -81,10 +81,10 @@ public enum BasicJoker implements Joker {
             if (ctx.playedCards.size() <= 3) ctx.addMult(20);
         }
     },
-    BANNER("banner", "旗帜", "每张剩余的弃牌次数 +40 筹码", 5) {
+    BANNER("banner", "旗帜", "每张剩余的弃牌次数 +30 筹码", 5) {
         @Override
         public void onScore(ScoreContext ctx) {
-            ctx.addChips(40L * ctx.state.discardsLeft);
+            ctx.addChips(30L * ctx.state.discardsLeft); // R130 真版 +30
         }
     },
     SUMMIT("summit", "神秘峰顶", "若弃牌次数为 0：+15 倍率", 5) {
@@ -99,21 +99,26 @@ public enum BasicJoker implements Joker {
             ctx.addMult(ctx.rngInt(0, 23));
         }
     },
-    RAISEDFIST("raisedfist", "举拳", "手中最小点数牌的点数 ×2 加入倍率", 5) {
+    RAISEDFIST("raisedfist", "举拳", "手中最小牌的牌面筹码值 ×2 加入倍率（最低牌 debuff 时 +0）", 5) {
         @Override
         public void onScore(ScoreContext ctx) {
-            Integer min = null;
+            // R130 真版：×牌面筹码值（人头=10、A=11；Raised Fist Wiki），石头永不参与；
+            // 全手牌中最低者 debuff 时给 +0（不回落到次低牌）
+            Card lowest = null;
             for (Card c : ctx.heldCards) {
-                if (c.isStone() || c.debuff()) continue;
-                if (min == null || c.rank() < min) min = c.rank();
+                if (c.isStone()) continue;
+                if (lowest == null || c.rank() <= lowest.rank()) lowest = c;
             }
-            if (min != null) ctx.addMult(min * 2);
+            if (lowest == null) return;
+            if (lowest.debuff()) return; // 最低牌 debuffed → +0
+            int nominal = Data.rankChips(lowest.rank()); // 2-10=rank / JQK=10 / A=11
+            ctx.addMult(nominal * 2);
         }
     },
-    CRAFTY("crafty", "灵巧小丑", "若牌型为同花：+80 筹码", 4) {
+    CRAFTY("crafty", "灵巧小丑", "若手牌包含同花：+80 筹码", 4) {
         @Override
         public void onScore(ScoreContext ctx) {
-            if (ctx.handIs("flush")) ctx.addChips(80);
+            if (ctx.handContains("flush")) ctx.addChips(80);
         }
     },
     FIBONACCI("fibonacci", "斐波那契", "每张计分的 A/2/3/5/8 +8 倍率", 8) {
@@ -158,11 +163,11 @@ public enum BasicJoker implements Joker {
             if (card.rank() <= 10 && card.rank() % 2 == 0) ctx.addMult(4);
         }
     },
-    ODDTODD("oddtodd", "奇数托德", "每张计分的 A/3/5/7/9 +30 筹码", 4) {
+    ODDTODD("oddtodd", "奇数托德", "每张计分的 A/3/5/7/9 +31 筹码", 4) {
         @Override
         public void onScoreCard(ScoreContext ctx, Card card) {
             int r = card.rank();
-            if (r == 14 || (r <= 9 && r % 2 == 1)) ctx.addChips(30);
+            if (r == 14 || (r <= 9 && r % 2 == 1)) ctx.addChips(31); // R130 真版 +31
         }
     },
     SCHOLAR("scholar", "学者", "每张计分的 A：+20 筹码、+4 倍率", 4) {
@@ -184,14 +189,15 @@ public enum BasicJoker implements Joker {
             ctx.addMult(ctx.state.handPlayedCount.getOrDefault(ctx.handType, 0) + 1);
         }
     },
-    RIDEBUS("ridebus", "搭便车", "连续打出无人头牌的手牌：倍率 +1（累积）；含人头牌则重置", 6) {
+    RIDEBUS("ridebus", "搭便车", "连续打出无【计分】人头牌的手牌：倍率 +1（累积）；计分人头牌才重置", 6) {
         @Override
         public void onScore(ScoreContext ctx) {
             ctx.addMult(gi(ctx.joker.extra, "mult", 0));
         }
         @Override
         public void onPlayHand(RunState state, PlayHandInfo info, JokerInstance self) {
-            if (info.hasFace) { self.extra.put("mult", 0); return; }
+            // R130 真版：仅【计分的】人头牌重置（Ride the Bus Wiki：debuff/未计分人头牌不重置）
+            if (info.hasScoringFace) { self.extra.put("mult", 0); return; }
             int m = gi(self.extra, "mult", 0) + 1;
             self.extra.put("mult", m);
             state.msg("搭便车：倍率累积至 +" + m);
@@ -221,14 +227,15 @@ public enum BasicJoker implements Joker {
             ctx.addChips(2L * ctx.state.drawPile.size());
         }
     },
-    RUNNER("runner", "跑者", "每次打出顺子：永久 +15 筹码", 5) {
+    RUNNER("runner", "跑者", "每次打出包含顺子的手牌：永久 +15 筹码", 5) {
         @Override
         public void onScore(ScoreContext ctx) {
             ctx.addChips(gi(ctx.joker.extra, "chips", 0));
         }
         @Override
         public void onPlayHand(RunState state, PlayHandInfo info, JokerInstance self) {
-            if (info.handType != Data.HandType.STRAIGHT) return;
+            // R130 真版：contains a Straight（含同花顺/皇家，Runner Wiki 明示）
+            if (!info.handContains(Data.HandType.STRAIGHT)) return;
             int c = gi(self.extra, "chips", 0) + 15;
             self.extra.put("chips", c);
             state.msg("跑者：筹码累积至 +" + c);
@@ -324,10 +331,10 @@ public enum BasicJoker implements Joker {
             if (card.rank() == 10 || card.rank() == 4) { ctx.addChips(10); ctx.addMult(4); }
         }
     },
-    SMILEY("smiley", "笑脸", "每张计分的人头牌 +4 倍率", 4) {
+    SMILEY("smiley", "笑脸", "每张计分的人头牌 +5 倍率", 4) {
         @Override
         public void onScoreCard(ScoreContext ctx, Card card) {
-            if (ctx.isFace(card)) ctx.addMult(4);
+            if (ctx.isFace(card)) ctx.addMult(5); // R130 真版 +5（1.0.1f）
         }
     },
     JUGGLER("juggler", "杂耍者", "手牌上限 +1", 4) {
@@ -364,7 +371,7 @@ public enum BasicJoker implements Joker {
             ctx.addMult(sum);
         }
     },
-    CHAD("chad", "悬吊乍得", "重新触发第一张计分牌 2 次", 5) {
+    CHAD("chad", "悬吊乍得", "重新触发第一张计分牌 2 次", 4) {
         @Override
         public int retrigger(Card card, ScoreContext ctx) {
             return ctx.scoreIndex == 0 ? 2 : 0;
@@ -386,11 +393,12 @@ public enum BasicJoker implements Joker {
             ctx.addChips(250);
         }
     },
-    SEEINGDOUBLE("seeingdouble", "重影", "若出牌含梅花与另一种花色：×2 倍率", 6) {
+    SEEINGDOUBLE("seeingdouble", "重影", "若【计分牌】含梅花与另一种花色：×2 倍率", 6) {
         @Override
         public void onScore(ScoreContext ctx) {
+            // R130 真版：只看计分牌（wiki 明示 scoring hand）
             boolean club = false, other = false;
-            for (Card c : ctx.playedCards) {
+            for (Card c : ctx.scoredCards) {
                 if (c.isStone()) continue;
                 if (ctx.isSuit(c, 2)) club = true;
                 else other = true;
@@ -398,10 +406,11 @@ public enum BasicJoker implements Joker {
             if (club && other) ctx.xMult(2);
         }
     },
-    STENCIL("stencil", "模板小丑", "每个空小丑槽 ×1 倍率", 8) {
+    STENCIL("stencil", "模板小丑", "每个空小丑槽 ×1 倍率（自身槽亦计入）", 8) {
         @Override
         public void onScore(ScoreContext ctx) {
-            int empty = ctx.state.jokerSlots - ctx.state.jokers.size();
+            // R130 真版：自身槽计入空槽（单持 5 槽 = X5；公式 = 空槽 + 模板数）
+            int empty = ctx.state.jokerSlots - (ctx.state.jokers.size() - 1);
             if (empty > 0) ctx.xMult(empty);
         }
     },
@@ -469,14 +478,8 @@ public enum BasicJoker implements Joker {
             if (n > 0) ctx.xMult(1 + 0.2 * n);
         }
     },
-    SPACE("space", "太空小丑", "每次出牌有 1/4 概率升级所出牌型", 5) {
-        @Override
-        public void onPlayHand(RunState state, PlayHandInfo info) {
-            if (info.findJoker("space") != null && state.stream("space").chance(0.25)) {
-                state.levelUpHand(info.handType, 1);
-                state.msg("太空小丑：「" + info.handType.name + "」升 1 级");
-            }
-        }
+    SPACE("space", "太空小丑", "每次出牌有 1/4 概率升级所出牌型（计分前生效，当手即受益）", 5) {
+        // R130 真版：升级发生在【计分前】——由 Engine 计分前阶段驱动（当手即吃升级后等级）
     },
     BURGLAR("burglar", "窃贼", "选择盲注时：出牌次数 +3、弃牌次数清零", 6) {
         @Override
@@ -489,21 +492,25 @@ public enum BasicJoker implements Joker {
     BLACKBOARD("blackboard", "黑板", "若手中没有红桃/方块：×3 倍率", 6) {
         @Override
         public void onScore(ScoreContext ctx) {
+            // R130 真版：手中石头牌【阻止】触发（无花色）；wild 视作黑桃/梅花不阻止
             for (Card c : ctx.heldCards) {
-                if (c.enh() == Data.Enhancement.STONE) continue;
+                if (c.isStone()) return;
                 if (c.enh() == Data.Enhancement.WILD) continue;
                 if (c.suit() == 1 || c.suit() == 3) return;
             }
             ctx.xMult(3);
         }
     },
-    DNA("dna", "DNA", "回合第一次出牌仅 1 张时：复制该牌加入手中", 8) {
+    DNA("dna", "DNA", "回合第一次出牌仅 1 张时：永久复制该牌加入牌组与手中", 8) {
         @Override
         public void onPlayHand(RunState state, PlayHandInfo info) {
             if (info.findJoker("dna") == null) return;
             if (state.handsPlayedThisRound == 1 && info.playedCards.size() == 1) {
                 Card src = info.playedCards.get(0);
-                state.hand.add(state.cloneCard(src));
+                // R130 真版：永久复制（入牌组；经 addCardToDeck 统一触发 onCardAdded）
+                Card copy = state.cloneCard(src);
+                state.addCardToDeck(copy);
+                state.hand.add(copy);
                 state.msg("DNA：复制了 " + state.cardName(src));
             }
         }
@@ -541,17 +548,20 @@ public enum BasicJoker implements Joker {
             if (blindType == Data.BlindType.BOSS) return;
             List<JokerInstance> others = new java.util.ArrayList<>();
             for (JokerInstance x : state.jokers) if (x != self && !x.eternal) others.add(x);
+            // R130 真版：累积不依赖销毁成功（"not dependent on the destruction"）
+            self.extra.put("x", gd(self.extra, "x") + 0.25);
             if (!others.isEmpty()) {
                 JokerInstance victim = state.stream("madness").pick(others);
                 state.destroyJoker(victim, "癫狂销毁了 " + victim.def.displayName());
-                self.extra.put("x", gd(self.extra, "x") + 0.5);
             }
         }
     },
-    SEANCE("seance", "降灵会", "若打出皇家同花顺：获得一张随机幻灵牌", 6) {
+    SEANCE("seance", "降灵会", "若打出同花顺（含皇家）：获得一张随机幻灵牌", 6) {
         @Override
         public void onPlayHand(RunState state, PlayHandInfo info) {
-            if (info.handType == Data.HandType.ROYAL && info.findJoker("seance") != null) {
+            // R130 真版：Straight Flush（含皇家同花顺）
+            boolean sf = info.handType == Data.HandType.ROYAL || info.handType == Data.HandType.SFLUSH;
+            if (sf && info.findJoker("seance") != null) {
                 state.gainConsumable("spectral");
             }
         }
@@ -620,15 +630,15 @@ public enum BasicJoker implements Joker {
             self.extra.put("pay", gi(self.extra, "pay", 1) + 2);
         }
     },
-    OBELISK("obelisk", "方尖碑", "连续打出非最常用牌型：×0.2 倍率（累积）；打出最常用牌型则重置", 8) {
+    OBELISK("obelisk", "方尖碑", "连续打出非最常用牌型：×0.2 倍率（累积）；打出【唯一】最常用牌型则重置（并列安全）", 8) {
         @Override
         public void onScore(ScoreContext ctx) {
             ctx.xMult(1 + gd(ctx.joker.extra, "x"));
         }
         @Override
         public void onPlayHand(RunState state, PlayHandInfo info, JokerInstance self) {
-            if (info.isMostPlayed) { self.extra.put("x", 0.0); state.msg("方尖碑：重置"); }
-            else self.extra.put("x", gd(self.extra, "x") + 0.2);
+            // R130 真版：重置在【计分前】由 Engine 驱动（严格唯一最常用才重置，并列安全）
+            self.extra.put("x", gd(self.extra, "x") + 0.2);
         }
     },
     MIDAS("midas", "迈达斯面具", "每张计分的人头牌变为黄金牌", 7) {
@@ -665,10 +675,10 @@ public enum BasicJoker implements Joker {
             return 0;
         }
     },
-    TURTLE("turtle", "海龟豆", "手牌上限 +3；每回合结束 -1", 6) {
+    TURTLE("turtle", "海龟豆", "手牌上限 +5；每回合结束 -1", 6) {
         @Override
         public Map<String, Object> flagsFn(RunState state, JokerInstance self) {
-            return Map.of("handSize", gi(self.extra, "size", 3));
+            return Map.of("handSize", gi(self.extra, "size", 5)); // R130 真版 +5
         }
         @Override
         public long onRoundEnd(RunState state, JokerInstance self) {
@@ -684,7 +694,7 @@ public enum BasicJoker implements Joker {
             ctx.addMult(4L * Math.max(0, 52 - ctx.state.fullDeck.size()));
         }
     },
-    PARKING("parking", "预留车位", "手中每张人头牌有 1/2 概率 +$1", 5) {
+    PARKING("parking", "预留车位", "手中每张人头牌有 1/2 概率 +$1", 6) {
         @Override
         public void onHeld(ScoreContext ctx, Card card) {
             if (ctx.isFace(card) && ctx.prob(0.5)) ctx.dollars(1);
@@ -759,14 +769,15 @@ public enum BasicJoker implements Joker {
             self.extra.put("mult", gi(self.extra, "mult", 0) + 2);
         }
     },
-    TROUSERS("trousers", "备用长裤", "每次打出两对：永久 +2 倍率", 6) {
+    TROUSERS("trousers", "备用长裤", "每次打出包含两对的手牌：永久 +2 倍率", 6) {
         @Override
         public void onScore(ScoreContext ctx) {
             ctx.addMult(gi(ctx.joker.extra, "mult", 0));
         }
         @Override
         public void onPlayHand(RunState state, PlayHandInfo info, JokerInstance self) {
-            if (info.handType != Data.HandType.TWOPAIR) return;
+            // R130 真版：contains a Two Pair（葫芦也触发，Wiki 举例明确）
+            if (!info.handContains(Data.HandType.TWOPAIR)) return;
             int m = gi(self.extra, "mult", 0) + 2;
             self.extra.put("mult", m);
             state.msg("备用长裤：倍率累积至 +" + m);
@@ -862,7 +873,7 @@ public enum BasicJoker implements Joker {
             state.gainTag("double");
         }
     },
-    CAMPFIRE("campfire", "篝火", "每卖出一张牌：×0.5 倍率（累积）；击败 Boss 盲注后重置", 9) {
+    CAMPFIRE("campfire", "篝火", "每卖出一张牌：×0.25 倍率（累积）；击败 Boss 盲注后重置", 9) {
         @Override
         public void onScore(ScoreContext ctx) {
             ctx.xMult(1 + gd(ctx.joker.extra, "x"));
@@ -932,7 +943,7 @@ public enum BasicJoker implements Joker {
             return Map.of("allowDupes", true);
         }
     },
-    FLOWERPOT("flowerpot", "花盆", "若出牌含全部四种花色：×3 倍率", 6) {
+    FLOWERPOT("flowerpot", "花盆", "若【计分牌】含全部四种花色：×3 倍率", 6) {
         @Override
         public void onScore(ScoreContext ctx) {
             boolean[] seen = new boolean[4];
@@ -944,10 +955,10 @@ public enum BasicJoker implements Joker {
             if (seen[0] && seen[1] && seen[2] && seen[3]) ctx.xMult(3);
         }
     },
-    WEE("wee", "小不点", "+10 筹码；每张计分的 2 使其永久 +8 筹码", 8) {
+    WEE("wee", "小不点", "+0 筹码起步；每张计分的 2 使其永久 +8 筹码", 8) {
         private long chips(JokerInstance j) {
             Object v = j.extra.get("chips");
-            return v instanceof Number ? ((Number) v).longValue() : 10;
+            return v instanceof Number ? ((Number) v).longValue() : 0; // R130 真版初始 +0
         }
         @Override
         public void onScore(ScoreContext ctx) {
@@ -986,11 +997,11 @@ public enum BasicJoker implements Joker {
             if (n >= 16) ctx.xMult(3);
         }
     },
-    CARTOMANCER("cartomancer", "卡牌术士", "击败盲注后获得一张塔罗牌", 6) {
+    CARTOMANCER("cartomancer", "卡牌术士", "选择盲注时获得一张塔罗牌（须有空位）", 6) {
         @Override
-        public long onRoundEnd(RunState state, JokerInstance self) {
+        public void onBlindStart(RunState state, JokerInstance self) {
+            // R130 真版：选盲时创建（须有空位；gainConsumable 满槽静默不产）
             state.gainConsumable("tarot");
-            return 0;
         }
     },
     ASTRONOMER("astronomer", "天文学家", "商店与天体包中的星球牌免费", 8) {
@@ -999,9 +1010,11 @@ public enum BasicJoker implements Joker {
             return Map.of("freePlanets", true);
         }
     },
-    BURNT("burnt", "烧焦小丑", "每次弃牌后升级所弃牌构成的牌型", 6) {
+    BURNT("burnt", "烧焦小丑", "每回合的第一次弃牌：升级所弃牌构成的牌型", 8) {
         @Override
         public void onDiscard(RunState state, List<Card> cards, JokerInstance self) {
+            // R130 真版：每回合仅第一次弃牌触发（Burnt Wiki）
+            if (state.discardsUsedThisRound > 1) return;
             HandEval.Result res = state.evaluateHand(cards);
             if (res != null) {
                 state.levelUpHand(res.type, 1);
@@ -1035,7 +1048,7 @@ public enum BasicJoker implements Joker {
             return 0;
         }
     },
-    HITTHEROAD("hittheroad", "上路", "每弃一张 J：×0.5 倍率（累积）", 8) {
+    HITTHEROAD("hittheroad", "上路", "本回合每弃一张 J：×0.5 倍率（每回合重置）", 8) {
         @Override
         public void onScore(ScoreContext ctx) {
             ctx.xMult(1 + gd(ctx.joker.extra, "x"));
@@ -1044,35 +1057,39 @@ public enum BasicJoker implements Joker {
         public void onDiscard(RunState state, List<Card> cards, JokerInstance self) {
             for (Card c : cards) if (c.rank() == 11) self.extra.put("x", gd(self.extra, "x") + 0.5);
         }
-    },
-    DUO("duo", "二人组", "若牌型为对子：×2 倍率", 8) {
         @Override
-        public void onScore(ScoreContext ctx) {
-            if (ctx.handIs("pair")) ctx.xMult(2);
+        public void onBlindStart(RunState state, JokerInstance self) {
+            self.extra.put("x", 0.0); // R130 真版：每回合重置（"this round"）
         }
     },
-    TRIO("trio", "三人组", "若牌型为三条：×3 倍率", 8) {
+    DUO("duo", "二人组", "若手牌包含对子：×2 倍率", 8) {
         @Override
         public void onScore(ScoreContext ctx) {
-            if (ctx.handIs("three")) ctx.xMult(3);
+            if (ctx.handContains("pair")) ctx.xMult(2);
         }
     },
-    FAMILY("family", "家族", "若牌型为四条：×4 倍率", 8) {
+    TRIO("trio", "三人组", "若手牌包含三条：×3 倍率", 8) {
         @Override
         public void onScore(ScoreContext ctx) {
-            if (ctx.handIs("four")) ctx.xMult(4);
+            if (ctx.handContains("three")) ctx.xMult(3);
         }
     },
-    ORDER("order", "秩序", "若牌型为顺子：×3 倍率", 8) {
+    FAMILY("family", "家族", "若手牌包含四条：×4 倍率", 8) {
         @Override
         public void onScore(ScoreContext ctx) {
-            if (ctx.handIs("straight")) ctx.xMult(3);
+            if (ctx.handContains("four")) ctx.xMult(4);
         }
     },
-    TRIBE("tribe", "部落", "若牌型为同花：×2 倍率", 8) {
+    ORDER("order", "秩序", "若手牌包含顺子：×3 倍率", 8) {
         @Override
         public void onScore(ScoreContext ctx) {
-            if (ctx.handIs("flush")) ctx.xMult(2);
+            if (ctx.handContains("straight")) ctx.xMult(3);
+        }
+    },
+    TRIBE("tribe", "部落", "若手牌包含同花：×2 倍率", 8) {
+        @Override
+        public void onScore(ScoreContext ctx) {
+            if (ctx.handContains("flush")) ctx.xMult(2);
         }
     },
     BLUEPRINT("blueprint", "蓝图", "复制右侧小丑的能力", 10) {
@@ -1139,22 +1156,22 @@ public enum BasicJoker implements Joker {
             return 0;
         }
     },
-    CLEVER("clever", "聪明小丑", "若牌型为两对：+80 筹码", 4) {
+    CLEVER("clever", "聪明小丑", "若手牌包含两对：+80 筹码", 4) {
         @Override
         public void onScore(ScoreContext ctx) {
-            if (ctx.handIs("twopair")) ctx.addChips(80);
+            if (ctx.handContains("twopair")) ctx.addChips(80);
         }
     },
-    CRAZY("crazy", "癫狂小丑", "若牌型为顺子：+12 倍率", 4) {
+    CRAZY("crazy", "癫狂小丑", "若手牌包含顺子：+12 倍率", 4) {
         @Override
         public void onScore(ScoreContext ctx) {
-            if (ctx.handIs("straight")) ctx.addMult(12);
+            if (ctx.handContains("straight")) ctx.addMult(12);
         }
     },
-    DROLL("droll", "古怪小丑", "若牌型为同花：+10 倍率", 4) {
+    DROLL("droll", "古怪小丑", "若手牌包含同花：+10 倍率", 4) {
         @Override
         public void onScore(ScoreContext ctx) {
-            if (ctx.handIs("flush")) ctx.addMult(10);
+            if (ctx.handContains("flush")) ctx.addMult(10);
         }
     },
     MAD_JOKER("mad", "疯狂小丑", "若牌型为两对：+10 倍率", 4) {
@@ -1199,10 +1216,11 @@ public enum BasicJoker implements Joker {
             state.msg("红牌：倍率累积至 +" + gi(self.extra, "mult", 0));
         }
     },
-    SUPERPOSITION("superposition", "叠加态", "若出牌含一张 A 且构成顺子：获得一张塔罗牌", 4) {
+    SUPERPOSITION("superposition", "叠加态", "若手牌包含顺子且【计分牌】含 A：获得一张塔罗牌", 4) {
         @Override
         public void onPlayHand(RunState state, PlayHandInfo info) {
-            if (info.handType == Data.HandType.STRAIGHT && info.hasRank(14)) {
+            // R130 真版：contains Straight（含同花顺/皇家）且 A 必须【计分】
+            if (info.handContains(Data.HandType.STRAIGHT) && info.scoredHasRank(14)) {
                 if (info.findJoker("superposition") != null) state.gainConsumable("tarot");
             }
         }
@@ -1240,41 +1258,43 @@ public enum BasicJoker implements Joker {
         public void onRoundStart(RunState state, JokerInstance self) {
             Card c = state.randomPlayingCard();
             c.setSeal(state.stream("certificate").pick(seals));
+            // R130 真版：加入牌组统一走 addCardToDeck（触发全息海报等 onCardAdded）
+            state.addCardToDeck(c);
             state.hand.add(c);
-            state.fullDeck.add(c);
             state.msg("证书：获得 " + state.cardName(c));
         }
     },
-    DEVIOUS("devious", "阴险小丑", "若牌型为顺子：+100 筹码", 4) {
+    DEVIOUS("devious", "阴险小丑", "若手牌包含顺子：+100 筹码", 4) {
         @Override
         public void onScore(ScoreContext ctx) {
-            if (ctx.handIs("straight")) ctx.addChips(100);
+            if (ctx.handContains("straight")) ctx.addChips(100);
         }
     },
-    INVISIBLE("invisible", "隐形小丑", "持有 3 回合后出售：复制一张随机其他小丑", 10) {
+    INVISIBLE("invisible", "隐形小丑", "持有 2 回合后出售：复制一张随机其他小丑（副本去除负片）", 8) {
         @Override
         public long onRoundEnd(RunState state, JokerInstance self) {
-            self.extra.put("rounds", gi(self.extra, "rounds", 3) - 1);
+            self.extra.put("rounds", gi(self.extra, "rounds", 2) - 1); // R130 真版 2 回合
             return 0;
         }
         @Override
         public void onSell(RunState state, JokerInstance self) {
-            if (gi(self.extra, "rounds", 3) > 0) {
-                state.msg("隐形小丑：还未显形（需持有 3 回合）");
+            if (gi(self.extra, "rounds", 2) > 0) {
+                state.msg("隐形小丑：还未显形（需持有 2 回合）");
                 return;
             }
             List<JokerInstance> others = new java.util.ArrayList<>();
             for (JokerInstance x : state.jokers) if (x != self) others.add(x);
             if (!others.isEmpty() && state.jokerSpace() > 0) {
                 JokerInstance src = state.stream("invisible").pick(others);
-                // R114 对齐真版：隐形小丑复制保留贴纸（Reddit：copies the whole joker,
-                // even the remaining rounds counter）；版本原样复制
-                state.duplicateJoker(src, src.edition);
+                // R114 对齐真版：复制保留贴纸；R130 真版：副本【去除负片】
+                // （Invisible Wiki："Removes Negative from copy"，其余版本保留）
+                Data.Edition ed = src.edition == Data.Edition.NEGATIVE ? null : src.edition;
+                state.duplicateJoker(src, ed);
                 state.msg("隐形小丑：复制了 " + src.def.displayName());
             }
         }
     },
-    BONES("bones", "骨头先生", "若回合得分 ≥ 目标的 25%：免除一次失败并自毁", 8) {
+    BONES("bones", "骨头先生", "若回合得分 ≥ 目标的 25%：免除一次失败并自毁", 5) {
         // 免死特判在 Engine.playHand 内（handsLeft<=0 分支）
     };
 

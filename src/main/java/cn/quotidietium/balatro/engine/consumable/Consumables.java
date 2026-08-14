@@ -241,7 +241,7 @@ public final class Consumables {
                         Card card = s.randomPlayingCard();
                         card.setRank(st.pick(ranks));
                         card.setEnh(enhs[st.range(0, enhs.length - 1)]);
-                        s.fullDeck.add(card);
+                        s.addCardToDeck(card); // R130：统一入口（触发 onCardAdded）
                         s.hand.add(card);
                     }
                     trimHand(s);
@@ -307,7 +307,8 @@ public final class Consumables {
                     if (t == null) return Result.err("请选择 1 张手牌");
                     for (int i = 0; i < 2; i++) {
                         Card copy = s.cloneCard(t.get(0));
-                        s.fullDeck.add(copy); s.hand.add(copy);
+                        // R130：统一入口（触发 onCardAdded，如全息海报）
+                        s.addCardToDeck(copy); s.hand.add(copy);
                     }
                     trimHand(s);
                     return Result.ok();

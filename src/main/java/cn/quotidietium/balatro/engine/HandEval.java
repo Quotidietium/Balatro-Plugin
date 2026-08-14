@@ -19,10 +19,23 @@ public final class HandEval {
     public static final class Result {
         public final Data.HandType type;
         public final List<Card> scoring;
+        /** R130 真版 contains 语义：打出的牌**包含**的牌型集合（附加型小丑触发口径，
+         *  Jolly/Wily/Runner 等族； wiki Important Joker Terms "Contains"）。 */
+        public final java.util.Set<Data.HandType> contains;
 
         public Result(Data.HandType type, List<Card> scoring) {
+            this(type, scoring, java.util.Set.of());
+        }
+
+        public Result(Data.HandType type, List<Card> scoring, java.util.Set<Data.HandType> contains) {
             this.type = type;
             this.scoring = scoring;
+            this.contains = contains;
+        }
+
+        /** 手牌是否**包含**指定牌型（真版 contains 口径）。 */
+        public boolean contains(Data.HandType t) {
+            return contains.contains(t);
         }
     }
 
@@ -151,7 +164,23 @@ public final class HandEval {
             scoring.clear();
             scoring.addAll(cards);
         }
-        return new Result(type, scoring);
+        // R130 真版 contains 集合（wiki Important Joker Terms）：
+        // pair=任一秩≥2 张；twopair=至少两个秩各≥2 张（四条不含两对）；three/four/five=对应张数；
+        // straight/flush=独立判定（四指/捷径放宽口径，与主判定一致）；
+        // full=三条+对子；sflush/royal=顺子∪同花（附加型只需 contains straight 与 flush）。
+        java.util.Set<Data.HandType> contains = new java.util.HashSet<>();
+        // 计数语义（真版 contains）：c0/c1 为降序计数——对子=任一秩≥2（c0>=2，含三条/四条/葫芦）、
+        // 两对=至少两个秩各≥2（c1>=2，含葫芦）、三条/四条/五条同理放宽。
+        if (c0 >= 2) contains.add(Data.HandType.PAIR);
+        if (c1 >= 2) contains.add(Data.HandType.TWOPAIR);
+        if (c0 >= 3) contains.add(Data.HandType.THREE);
+        if (c0 >= 4) contains.add(Data.HandType.FOUR);
+        if (c0 >= 5) contains.add(Data.HandType.FIVE);
+        if (isFull) contains.add(Data.HandType.FULL);
+        if (hasStraight) contains.add(Data.HandType.STRAIGHT);
+        if (hasFlush) contains.add(Data.HandType.FLUSH);
+        contains.add(type); // 手牌本身必然被包含
+        return new Result(type, scoring, contains);
     }
 
     private static boolean suitMatch(Card c, int s, boolean smeared) {

@@ -118,7 +118,9 @@ public final class Shop {
                 for (Data.Pack x : Data.PACKS) if (x.type == Data.PackType.SPECTRAL) p = x;
                 s.nextShop.remove("etherealPack");
             }
-            boolean free = s.nextShop.get("coupon") != null;
+            // R130 真版：天文学家使天体包免费（"All Planet cards and Celestial Packs are free"）
+            boolean free = s.nextShop.get("coupon") != null
+                    || (p.type == Data.PackType.CELESTIAL && s.vouchers.contains("astronomer"));
             PackItem pi = new PackItem();
             pi.pack = p; pi.name = p.name; pi.desc = p.size + " 张选 " + p.choose + " 张";
             pi.price = free ? 0 : shopPrice(s, p.cost);
@@ -239,7 +241,8 @@ public final class Shop {
             case 2: {
                 Data.Planet p = st.pick(List.of(Data.Planet.values()));
                 boolean free = s.nextShop.get("freePlanet") != null
-                        || (s.flags != null && Boolean.TRUE.equals(s.flags.get("freePlanets")));
+                        || (s.flags != null && Boolean.TRUE.equals(s.flags.get("freePlanets")))
+                        || s.vouchers.contains("astronomer"); // R130 真版：天文学家使星球牌免费
                 return item("planet", p.key, p.name, p.desc, free ? 0 : shopPrice(s, 3));
             }
             case 4: {

@@ -1,4 +1,4 @@
-JOKER|joker|0|4|小丑
+JOKER|joker|0|2|小丑
 JOKER|greedy|0|5|贪婪小丑
 JOKER|lusty|0|5|好色小丑
 JOKER|wrathful|0|5|愤怒小丑
@@ -49,13 +49,13 @@ JOKER|hallucination|0|4|幻觉
 JOKER|juggler|0|4|杂耍者
 JOKER|drunkard|0|4|酒鬼
 JOKER|golden|0|6|黄金小丑
-JOKER|bull|0|6|公牛
+JOKER|bull|1|6|公牛
 JOKER|popcorn|0|5|爆米花
 JOKER|walkie|0|4|对讲机
 JOKER|smiley|0|4|笑脸
 JOKER|ticket|0|5|黄金门票
 JOKER|swashbuckler|0|4|剑客
-JOKER|chad|0|5|悬吊乍得
+JOKER|chad|0|4|悬吊乍得
 JOKER|moon|0|5|射月
 JOKER|stuntman|2|7|特技演员
 JOKER|seeingdouble|1|6|重影
@@ -73,7 +73,7 @@ JOKER|space|1|5|太空小丑
 JOKER|burglar|1|6|窃贼
 JOKER|blackboard|1|6|黑板
 JOKER|dna|2|8|DNA
-JOKER|sixthsense|2|6|第六感
+JOKER|sixthsense|1|6|第六感
 JOKER|constellation|1|6|星座
 JOKER|hiker|1|5|徒步者
 JOKER|cardsharp|1|6|老千
@@ -93,10 +93,10 @@ JOKER|photograph|0|5|照片
 JOKER|giftcard|1|6|礼品卡
 JOKER|turtle|1|6|海龟豆
 JOKER|erosion|1|6|侵蚀
-JOKER|parking|0|5|预留车位
+JOKER|parking|0|6|预留车位
 JOKER|mailin|0|4|邮寄返利
-JOKER|tothemoon|0|5|奔月
-JOKER|fortune|2|6|算命先生
+JOKER|tothemoon|1|5|奔月
+JOKER|fortune|0|6|算命先生
 JOKER|stone|1|6|石头小丑
 JOKER|luckycat|1|6|招财猫
 JOKER|baseball|2|8|棒球卡
@@ -109,9 +109,9 @@ JOKER|ramen|1|6|拉面
 JOKER|seltzer|1|6|苏打水
 JOKER|castle|1|6|城堡
 JOKER|campfire|2|9|篝火
-JOKER|bones|2|8|骨头先生
+JOKER|bones|1|5|骨头先生
 JOKER|acrobat|1|6|杂技演员
-JOKER|sock|2|6|袜子与布偶
+JOKER|sock|1|6|袜子与布偶
 JOKER|troubadour|1|6|吟游诗人
 JOKER|certificate|1|6|证书
 JOKER|smeared|1|7|污渍小丑
@@ -126,12 +126,12 @@ JOKER|flowerpot|1|6|花盆
 JOKER|wee|2|8|小不点
 JOKER|merry|1|7|快乐安迪
 JOKER|oops|1|4|全是 6
-JOKER|invisible|2|10|隐形小丑
+JOKER|invisible|2|8|隐形小丑
 JOKER|satellite|1|6|卫星
 JOKER|license|2|7|驾照
 JOKER|cartomancer|1|6|卡牌术士
-JOKER|astronomer|2|8|天文学家
-JOKER|burnt|2|6|烧焦小丑
+JOKER|astronomer|1|8|天文学家
+JOKER|burnt|2|8|烧焦小丑
 JOKER|bootstraps|1|7|自力更生
 JOKER|matador|1|7|斗牛士
 JOKER|idol|1|6|偶像

@@ -49,8 +49,8 @@ class JokerDuplicationSemanticsTest {
         // 重新装隐形并快进 3 回合（直接调 onRoundEnd 模拟回合结束钩子）
         JokerInstance inv2 = JokerRegistry.create("invisible");
         s.jokers.add(inv2);
-        for (int r = 0; r < 3; r++) inv2.def.onRoundEnd(s, inv2);
-        assertEquals(0, ((Number) inv2.extra.get("rounds")).intValue(), "3 回合后到期");
+        for (int r = 0; r < 2; r++) inv2.def.onRoundEnd(s, inv2); // R130 真版 2 回合
+        assertEquals(0, ((Number) inv2.extra.get("rounds")).intValue(), "2 回合后到期");
         int before = s.jokers.size();
         assertTrue(s.sellJoker(s.jokers.indexOf(inv2)), "到期出售");
         assertEquals(before, s.jokers.size(), "卖一得一：数量不变");

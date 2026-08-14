@@ -72,6 +72,18 @@ public final class ScoreContext {
         return handType.key.equals(key);
     }
 
+    /** R130 真版 contains 口径：手牌是否**包含**指定牌型（附加型小丑触发条件，
+     *  wiki Important Joker Terms）。由 Engine 注入本手的 contains 集合。 */
+    public java.util.Set<Data.HandType> handContainsSet = java.util.Set.of();
+
+    /** R130 真版：本手【计分牌】（重影/花盆判定口径）；由 Engine 注入，缺省回落为打出牌。 */
+    public java.util.List<Card> scoredCards = java.util.List.of();
+
+    public boolean handContains(String key) {
+        for (Data.HandType t : handContainsSet) if (t.key.equals(key)) return true;
+        return false;
+    }
+
     /**
      * 获得随机消耗品（对齐 engine.js ctx.gainConsumable）：
      * 按 kind 从对应池经 {@code consumable} 流随机取；加入成功则记入本手事件。

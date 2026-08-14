@@ -608,6 +608,8 @@ public final class Engine {
         }
 
         ScoreContext ctx = new ScoreContext(s, type, chips, mult, cards, heldCards, events);
+        ctx.handContainsSet = evalRes.contains; // R130 contains 口径注入
+        ctx.scoredCards = evalRes.scoring; // R130 计分牌口径注入
 
         // 绯红之心：随机禁用一张小丑（本次出牌内）
         if ("heart".equals(bk) && !activeJokers.isEmpty()) {
@@ -636,6 +638,23 @@ public final class Engine {
             }
             int times = card.debuff() ? 0 : (1 + retriggers);
             for (int t = 0; t < times; t++) {
+        // R130 真版【计分前】阶段：Space 升级（当手即生效）与 Obelisk 重置（先重置再计分）
+        List<JokerInstance> preSnap = new ArrayList<>(s.jokers);
+        for (JokerInstance pj : preSnap) {
+            if (pj.debuff || !s.jokers.contains(pj)) continue;
+            if (pj.def.key().equals("space") && s.stream("space").chance(0.25)) {
+                s.levelUpHand(type, 1);
+                s.msg("太空小丑：「" + type.name + "」升 1 级（计分前）");
+            } else if (pj.def.key().equals("obelisk")) {
+                // 真版：打出前已是【严格唯一】最常用牌型才重置（并列安全）
+                Data.HandType strict = strictMostPlayed(s);
+                if (strict == type) {
+                    pj.extra.put("x", 0.0);
+                    s.msg("方尖碑：重置");
+                }
+            }
+        }
+
                 scoreOneCard(s, ctx, card);
                 for (int ji = 0; ji < activeJokers.size(); ji++) {
                     JokerInstance src = resolveCopy(activeJokers, ji);
@@ -748,7 +767,7 @@ public final class Engine {
         }
 
         // 小丑 onPlayHand
-        PlayHandInfo info = new PlayHandInfo(s, type, cards, scoringCards);
+        PlayHandInfo info = new PlayHandInfo(s, type, cards, scoringCards, evalRes.contains); // R130 contains
         List<JokerInstance> jokersSnap = new ArrayList<>(s.jokers);
         for (JokerInstance j : jokersSnap) {
             if (!j.debuff && !j.debuffHand && s.jokers.contains(j)) {
@@ -770,6 +789,12 @@ public final class Engine {
                 if (v.seal() == Data.Seal.PURPLE && !v.debuff()) {
                     Data.Tarot t40 = s.stream("consumable").pick(List.of(Data.Tarot.values()));
                     if (s.addConsumableKey("tarot", t40.key)) s.msg("紫色蜡封：获得 " + t40.name);
+                }
+                // R130 真版：被动弃牌同样触发小丑 onDiscard（Green Wiki："whether by the
+                // player or game mechanics"；对齐 burnt 的首弃守卫/faceless/castle 等同口径）
+                List<JokerInstance> hookSnap = new ArrayList<>(s.jokers);
+                for (JokerInstance hj : hookSnap) {
+                    if (!hj.debuff && s.jokers.contains(hj)) hj.def.onDiscard(s, List.of(v), hj);
                 }
             }
             events.add("钩子：随机弃掉了 2 张牌");
@@ -1053,7 +1078,17 @@ public final class Engine {
         return true;
     }
 
-    /** 进入无尽模式（通关后可选）。 */
+        /** R130 真版：严格唯一最常用牌型（并列返回 null——Obelisk 并列安全）。 */
+    static Data.HandType strictMostPlayed(RunState s) {
+        Data.HandType best = null; int bestN = 0; boolean tie = false;
+        for (Map.Entry<Data.HandType, Integer> e : s.handPlayedCount.entrySet()) {
+            if (e.getValue() > bestN) { bestN = e.getValue(); best = e.getKey(); tie = false; }
+            else if (e.getValue() == bestN && bestN > 0) tie = true;
+        }
+        return tie ? null : best;
+    }
+
+/** 进入无尽模式（通关后可选）。 */
     public static boolean continueEndless(RunState s) {
         if (!s.endlessPending) return false;
         s.endless = true;
