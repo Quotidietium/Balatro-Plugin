@@ -656,10 +656,11 @@ public final class Engine {
             }
         }
 
-        // 2) 持有牌效果（钢铁 + onHeld；哑剧重触发）
-        int heldRepeat = Boolean.TRUE.equals(s.flags.get("mimeRetrigger")) ? 2 : 1;
+        // 2) 持有牌效果（钢铁 + onHeld；哑剧重触发 + 红蜡封同样重触发手中效果——R129 真版）
+        boolean mime = Boolean.TRUE.equals(s.flags.get("mimeRetrigger"));
         for (Card card : heldCards) {
             if (card.debuff()) continue;
+            int heldRepeat = 1 + (mime ? 1 : 0) + (card.seal() == Data.Seal.RED ? 1 : 0);
             for (int rep = 0; rep < heldRepeat; rep++) {
                 if (card.enh() == Data.Enhancement.STEEL) ctx.xMult(1.5);
                 for (int ji = 0; ji < activeJokers.size(); ji++) {
@@ -758,13 +759,18 @@ public final class Engine {
         // 恢复 debuffHand
         for (JokerInstance j : s.jokers) j.debuffHand = false;
 
-        // Boss：钩子（出牌后随机弃 2 张）
+        // Boss：钩子（出牌后随机弃 2 张）——R129 真版：被动弃牌同样触发紫蜡封
+        // （Seals Wiki："when discarded (either player or automatic discards)"；REF 漏触发为 REF bug）
         if ("hook".equals(bk) && !s.hand.isEmpty()) {
             Rng.Stream st = s.stream("hook");
             for (int i = 0; i < 2 && !s.hand.isEmpty(); i++) {
                 Card v = st.pick(s.hand);
                 s.hand.remove(v);
                 s.discardPile.add(v);
+                if (v.seal() == Data.Seal.PURPLE && !v.debuff()) {
+                    Data.Tarot t40 = s.stream("consumable").pick(List.of(Data.Tarot.values()));
+                    if (s.addConsumableKey("tarot", t40.key)) s.msg("紫色蜡封：获得 " + t40.name);
+                }
             }
             events.add("钩子：随机弃掉了 2 张牌");
             s.bossTriggeredThisHand = true;
