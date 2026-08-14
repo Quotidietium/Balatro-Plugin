@@ -311,7 +311,7 @@ JROUND flowerpot GOLDEN1 target=300
 HAND 13.1,12.0,12.3,10.1,9.3,8.0,6.2,3.2
 PLAY ok=1 type=pair score=60 won=0 lost=0 rs=60 hl=3
 PLAY ok=1 type=pair score=52 won=0 lost=0 rs=112 hl=2
-PLAY ok=1 type=twopair score=240 won=1 lost=0 rs=352 hl=1
+PLAY ok=1 type=twopair score=80 won=0 lost=0 rs=192 hl=1
 ENDROUND
 JROUND wee GOLDEN1 target=300
 HAND 13.1,12.0,12.3,10.1,9.3,8.0,6.2,3.2

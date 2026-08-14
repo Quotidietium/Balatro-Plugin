@@ -801,7 +801,11 @@ public final class Engine {
                 // player or game mechanics"；对齐 burnt 的首弃守卫/faceless/castle 等同口径）
                 List<JokerInstance> hookSnap = new ArrayList<>(s.jokers);
                 for (JokerInstance hj : hookSnap) {
-                    if (!hj.debuff && s.jokers.contains(hj)) hj.def.onDiscard(s, List.of(v), hj);
+                    // R134 真版：Burnt 不被钩子强弃激活（Burnt Wiki："The Hook's forced discards
+                    // won't activate it"）；Green 等其余 onDiscard 照常（R132 已证）
+                    if (!hj.debuff && s.jokers.contains(hj) && !hj.def.key().equals("burnt")) {
+                        hj.def.onDiscard(s, List.of(v), hj);
+                    }
                 }
             }
             events.add("钩子：随机弃掉了 2 张牌");

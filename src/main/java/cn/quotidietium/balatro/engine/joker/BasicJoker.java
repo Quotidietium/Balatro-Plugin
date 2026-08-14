@@ -399,7 +399,7 @@ public enum BasicJoker implements Joker {
             // R130 真版：只看计分牌（wiki 明示 scoring hand）
             boolean club = false, other = false;
             for (Card c : ctx.scoredCards) {
-                if (c.isStone()) continue;
+                if (c.isStone() || c.debuff()) continue; // R134 真版：debuffed 不计（Seeing Double Wiki）
                 if (ctx.isSuit(c, 2)) club = true;
                 else other = true;
             }
@@ -951,9 +951,11 @@ public enum BasicJoker implements Joker {
     FLOWERPOT("flowerpot", "花盆", "若【计分牌】含全部四种花色：×3 倍率", 6) {
         @Override
         public void onScore(ScoreContext ctx) {
+            // R134 真版：只看【计分且非 debuff】的牌（R130 只改了 desc、循环漏改）；
+            // 石头无花色跳过；wild 计作全花色（Flower Pot Wiki 口径）
             boolean[] seen = new boolean[4];
-            for (Card c : ctx.playedCards) {
-                if (c.isStone()) continue;
+            for (Card c : ctx.scoredCards) {
+                if (c.isStone() || c.debuff()) continue;
                 if (c.enh() == Data.Enhancement.WILD) { seen[0] = seen[1] = seen[2] = seen[3] = true; break; }
                 seen[c.suit()] = true;
             }
