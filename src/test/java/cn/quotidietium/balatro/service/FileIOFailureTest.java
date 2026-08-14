@@ -8,17 +8,14 @@ import cn.quotidietium.balatro.api.RunSummary;
 import java.nio.file.Path;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 /**
  * FileStats/FileWinCounter IO 异常处理测试（轮次 41）。
  *
  * <p>验证磁盘满/权限不足/路径无效时，record/load 不崩溃、记日志、返回空/默认。
+ * <p>R108：临时目录自管（替代 @TempDir，规避 Windows 清理竞态假红，见 TempTestDirs）。
  */
 class FileIOFailureTest {
-
-    @TempDir
-    Path tempDir;
 
     @Test
     void fileStatsWithInvalidPathDoesNotCrash() {
@@ -40,34 +37,44 @@ class FileIOFailureTest {
 
     @Test
     void fileStatsNormalRoundTrip() {
-        Path file = tempDir.resolve("stats.txt");
-        FileStats stats = new FileStats(file, null);
-        UUID p = UUID.randomUUID();
-        RunSummary rs = new RunSummary(p, true, 8, "SEED1", "red", 0, 1234567890L);
-        stats.record(rs);
-        // 重新加载验证持久化
-        FileStats reloaded = new FileStats(file, null);
-        assertEquals(1, reloaded.all().size(), "重载后应读回 1 条记录");
-        assertEquals("SEED1", reloaded.all().get(0).seed());
+        Path dir = TempTestDirs.newDir();
+        try {
+            Path file = dir.resolve("stats.txt");
+            FileStats stats = new FileStats(file, null);
+            UUID p = UUID.randomUUID();
+            RunSummary rs = new RunSummary(p, true, 8, "SEED1", "red", 0, 1234567890L);
+            stats.record(rs);
+            // 重新加载验证持久化
+            FileStats reloaded = new FileStats(file, null);
+            assertEquals(1, reloaded.all().size(), "重载后应读回 1 条记录");
+            assertEquals("SEED1", reloaded.all().get(0).seed());
+        } finally {
+            TempTestDirs.rm(dir);
+        }
     }
 
     @Test
     void fileStatsCorruptedLineSkipped() {
-        Path file = tempDir.resolve("corrupt.txt");
-        // 写入正常行 + 脏行
+        Path dir = TempTestDirs.newDir();
         try {
-            java.nio.file.Files.writeString(file,
-                "00000000-0000-0000-0000-000000000001|true|8|GOOD|red|0|100\n" +
-                "CORRUPT_LINE_WITH_NO_PIPES\n" +
-                "00000000-0000-0000-0000-000000000002|false|5|BAD|blue|0|200\n",
-                java.nio.charset.StandardCharsets.UTF_8);
-        } catch (java.io.IOException e) {
-            // 跳过——测试环境无写入权限
-            return;
+            Path file = dir.resolve("corrupt.txt");
+            // 写入正常行 + 脏行
+            try {
+                java.nio.file.Files.writeString(file,
+                    "00000000-0000-0000-0000-000000000001|true|8|GOOD|red|0|100\n" +
+                    "CORRUPT_LINE_WITH_NO_PIPES\n" +
+                    "00000000-0000-0000-0000-000000000002|false|5|BAD|blue|0|200\n",
+                    java.nio.charset.StandardCharsets.UTF_8);
+            } catch (java.io.IOException e) {
+                // 跳过——测试环境无写入权限
+                return;
+            }
+            FileStats stats = new FileStats(file, null);
+            assertEquals(2, stats.all().size(), "脏行应被跳过，保留 2 条正常记录");
+            assertEquals("GOOD", stats.all().get(0).seed());
+        } finally {
+            TempTestDirs.rm(dir);
         }
-        FileStats stats = new FileStats(file, null);
-        assertEquals(2, stats.all().size(), "脏行应被跳过，保留 2 条正常记录");
-        assertEquals("GOOD", stats.all().get(0).seed());
     }
 
     @Test
@@ -84,31 +91,41 @@ class FileIOFailureTest {
 
     @Test
     void fileWinCounterNormalRoundTrip() {
-        Path file = tempDir.resolve("wins.txt");
-        FileWinCounter fwc = new FileWinCounter(file, null);
-        UUID p = UUID.randomUUID();
-        fwc.increment(p);
-        fwc.increment(p);
-        fwc.increment(p);
-        // 重载验证持久化
-        FileWinCounter reloaded = new FileWinCounter(file, null);
-        assertEquals(3, reloaded.count(p), "重载后应有 3 次通关计数");
+        Path dir = TempTestDirs.newDir();
+        try {
+            Path file = dir.resolve("wins.txt");
+            FileWinCounter fwc = new FileWinCounter(file, null);
+            UUID p = UUID.randomUUID();
+            fwc.increment(p);
+            fwc.increment(p);
+            fwc.increment(p);
+            // 重载验证持久化
+            FileWinCounter reloaded = new FileWinCounter(file, null);
+            assertEquals(3, reloaded.count(p), "重载后应有 3 次通关计数");
+        } finally {
+            TempTestDirs.rm(dir);
+        }
     }
 
     @Test
     void fileWinCounterCorruptedLineSkipped() {
-        Path file = tempDir.resolve("wins_corrupt.txt");
+        Path dir = TempTestDirs.newDir();
         try {
-            java.nio.file.Files.writeString(file,
-                "00000000-0000-0000-0000-000000000001=5\n" +
-                "CORRUPT_NO_EQUALS\n" +
-                "00000000-0000-0000-0000-000000000002=3\n",
-                java.nio.charset.StandardCharsets.UTF_8);
-        } catch (java.io.IOException e) {
-            return;
+            Path file = dir.resolve("wins_corrupt.txt");
+            try {
+                java.nio.file.Files.writeString(file,
+                    "00000000-0000-0000-0000-000000000001=5\n" +
+                    "CORRUPT_NO_EQUALS\n" +
+                    "00000000-0000-0000-0000-000000000002=3\n",
+                    java.nio.charset.StandardCharsets.UTF_8);
+            } catch (java.io.IOException e) {
+                return;
+            }
+            FileWinCounter fwc = new FileWinCounter(file, null);
+            assertEquals(5, fwc.count(UUID.fromString("00000000-0000-0000-0000-000000000001")));
+            assertEquals(3, fwc.count(UUID.fromString("00000000-0000-0000-0000-000000000002")));
+        } finally {
+            TempTestDirs.rm(dir);
         }
-        FileWinCounter fwc = new FileWinCounter(file, null);
-        assertEquals(5, fwc.count(UUID.fromString("00000000-0000-0000-0000-000000000001")));
-        assertEquals(3, fwc.count(UUID.fromString("00000000-0000-0000-0000-000000000002")));
     }
 }
