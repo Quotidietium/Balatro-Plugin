@@ -141,9 +141,11 @@ public final class Consumables {
                     return Result.ok();
                 }
                 case "emperor": {
+                    // REF 语义：全池抽取（消耗流），抽中 emperor 跳过；R123 扩展：禁入塔罗同样跳过
+                    // （标准局无禁入 → 与 REF 取流逐字一致，种子复现不变）
                     for (int i = 0; i < 2; i++) {
                         Data.Tarot t = st.pick(List.of(Data.Tarot.values()));
-                        if (t.key.equals("emperor")) continue;
+                        if (t.key.equals("emperor") || s.mods.bannedTarots.contains(t.key)) continue;
                         if (!s.addConsumableKey("tarot", t.key)) break;
                     }
                     return Result.ok();

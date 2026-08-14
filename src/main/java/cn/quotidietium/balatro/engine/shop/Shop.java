@@ -70,7 +70,8 @@ public final class Shop {
         if (hasVoucher(s, "liquidation")) p = (long) Math.ceil(p * 0.5);
         else if (hasVoucher(s, "clearance")) p = (long) Math.ceil(p * 0.75);
         if (s.mods.shopDiscount != 0) p = (long) Math.ceil(p * s.mods.shopDiscount);
-        if (s.mods.inflation) p += s.inflation;
+        // 通胀（真版 R123）：每次购买永久 +$1（重掷不涨）；旧 mods.inflation 保留引擎兼容
+        if (s.mods.inflationPerBuy || s.mods.inflation) p += s.inflation;
         return Math.max(1, p);
     }
 
@@ -106,7 +107,11 @@ public final class Shop {
         // 补充包 2 个
         List<PackItem> packs = new ArrayList<>();
         List<Data.Pack> packPool = new ArrayList<>();
-        for (Data.Pack p : Data.PACKS) if (p.type != Data.PackType.SPECTRAL) packPool.add(p);
+        for (Data.Pack p : Data.PACKS) {
+            if (p.type == Data.PackType.SPECTRAL) continue;
+            if (s.mods.bannedPacks.contains(p.key)) continue; // R123 真版禁入包（标准/丑牌包）
+            packPool.add(p);
+        }
         for (int i = 0; i < 2; i++) {
             Data.Pack p = st.pick(packPool);
             if (s.nextShop.get("etherealPack") != null) {
@@ -215,7 +220,13 @@ public final class Shop {
         switch (kindCode) {
             case 0: return makeJokerItem(s, null, null);
             case 1: {
-                Data.Tarot t = st.pick(List.of(Data.Tarot.values()));
+                List<Data.Tarot> tarotPool = new ArrayList<>();
+                for (Data.Tarot t0 : Data.Tarot.values()) {
+                    if (!s.mods.bannedTarots.contains(t0.key)) tarotPool.add(t0); // R123 真版禁入
+                }
+                Data.Tarot t = tarotPool.isEmpty() ? null : st.pick(tarotPool);
+                if (t == null) return item("tarot", "fool",
+                        Data.Tarot.byKey("fool").name, Data.Tarot.byKey("fool").desc, shopPrice(s, 3));
                 boolean free = s.nextShop.get("freeTarot") != null;
                 return item("tarot", t.key, t.name, t.desc, free ? 0 : shopPrice(s, 3));
             }
@@ -226,7 +237,12 @@ public final class Shop {
                 return item("planet", p.key, p.name, p.desc, free ? 0 : shopPrice(s, 3));
             }
             case 4: {
-                Data.Spectral sp = st.pick(List.of(Data.Spectral.values()));
+                List<Data.Spectral> spPool = new ArrayList<>();
+                for (Data.Spectral s0 : Data.Spectral.values()) {
+                    if (!s.mods.bannedSpectrals.contains(s0.key)) spPool.add(s0); // R123 真版禁入
+                }
+                Data.Spectral sp = spPool.isEmpty() ? null : st.pick(spPool);
+                if (sp == null) return makeJokerItem(s, null, null);
                 return item("spectral", sp.key, sp.name, sp.desc, shopPrice(s, 4));
             }
             case 3: {
@@ -348,6 +364,7 @@ public final class Shop {
             s.msg("获得：" + it.name);
         }
         it.sold = true;
+        if (s.mods.inflationPerBuy) s.inflation++; // 真版通胀：每次购买 +$1（R123）
         cn.quotidietium.balatro.engine.Engine.recomputeFlags(s);
         return true;
     }
@@ -359,6 +376,7 @@ public final class Shop {
         if (it.sold || !canAfford(s, it.price)) return false;
         s.money -= it.price;
         it.sold = true;
+        if (s.mods.inflationPerBuy) s.inflation++; // 真版通胀：每次购买 +$1（R123）
         Packs.open(s, it.pack); // 进入补充包选择
         return true;
     }
@@ -371,6 +389,7 @@ public final class Shop {
         if (it.sold || !canAfford(s, it.price)) return false;
         s.money -= it.price;
         it.sold = true;
+        if (s.mods.inflationPerBuy) s.inflation++; // 真版通胀：每次购买 +$1（R123）
         Data.Voucher v = it.voucher;
         s.vouchers.add(v.key);
         s.msg("获得优惠券：" + v.name);

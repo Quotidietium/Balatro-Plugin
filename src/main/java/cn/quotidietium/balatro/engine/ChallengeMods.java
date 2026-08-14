@@ -96,6 +96,31 @@ public final class ChallengeMods {
                     String[] mm = v.split(",");
                     if (mm.length == 2) { m.rankMin = Integer.parseInt(mm[0]); m.rankMax = Integer.parseInt(mm[1]); }
                 }
+                // ---- R123：其余 13 挑战真版对齐 ----
+                case "banTarots" -> { for (String bk : v.split(",")) if (!bk.isEmpty()) m.bannedTarots.add(bk); }
+                case "banSpectrals" -> { for (String bk : v.split(",")) if (!bk.isEmpty()) m.bannedSpectrals.add(bk); }
+                case "banPacks" -> { for (String bk : v.split(",")) if (!bk.isEmpty()) m.bannedPacks.add(bk); }
+                case "banTags" -> { for (String bk : v.split(",")) if (!bk.isEmpty()) m.bannedTags.add(bk); }
+                case "chipsCapByMoney" -> m.chipsCapByMoney = bool(v);
+                case "playedDebuff" -> m.playedDebuff = bool(v);
+                case "redSealDeck" -> m.redSealDeck = bool(v);
+                case "glassDeck" -> m.glassDeck = bool(v);
+                case "typecastTrigger" -> m.typecastTrigger = bool(v);
+                case "luxuryTax" -> m.luxuryTax = bool(v);
+                case "inflationPerBuy" -> m.inflationPerBuy = bool(v);
+                case "discardCost" -> m.discardCost = bool(v);
+                case "smallBigNoReward" -> m.smallBigNoReward = bool(v);
+                case "discardsSet" -> m.discardsSet = Integer.parseInt(v);
+                case "jokerSlotsSet" -> m.jokerSlotsSet = Integer.parseInt(v);
+                // 开局持有券（富者愈富：种子基金+摇钱树；布拉姆：戏法+幻觉 等）
+                case "vouchers" -> { for (String vk : v.split(",")) if (!vk.isEmpty()) s.vouchers.add(vk); }
+                // 开局消耗品（布拉姆：皇帝+女皇）——格式 kind:key
+                case "startConsumables" -> {
+                    for (String ck : v.split(",")) {
+                        int c = ck.indexOf(':');
+                        if (c > 0) s.addConsumableKey(ck.substring(0, c), ck.substring(c + 1));
+                    }
+                }
                 case "money" -> s.money = Long.parseLong(v);
                 default -> { /* 未知 mod（如 hands=-99，被 handsSet 覆盖）忽略 */ }
             }

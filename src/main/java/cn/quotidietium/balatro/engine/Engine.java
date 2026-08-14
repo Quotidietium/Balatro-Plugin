@@ -133,6 +133,13 @@ public final class Engine {
                 if (c.rank() >= 2 && c.rank() <= 10) c.setRank(stream.pick(List.of(11, 12, 13)));
             }
         }
+        // R123 真版挑战牌组修饰
+        if (m.redSealDeck) {
+            for (Card c : deck) c.setSeal(Data.Seal.RED); // 孤注一掷：全牌组红蜡封（重触发）
+        }
+        if (m.glassDeck) {
+            for (Card c : deck) c.setEnh(Data.Enhancement.GLASS); // 易碎品：全牌组玻璃
+        }
     }
 
     // ================= 底注 / 盲注 =================
@@ -262,8 +269,13 @@ public final class Engine {
         if (skip) {
             if (type == Data.BlindType.BOSS) return false;
             s.statsBlindsSkipped++;
-            Data.Tag tag = s.stream("skiptag").pick(Data.TAGS);
-            gainTag(s, tag.key());
+            // 禁入标签过滤（R123 真版无丑牌/易碎品）：池空则跳过无标签（跳盲本身仍生效）
+            List<Data.Tag> tagPool = new ArrayList<>();
+            for (Data.Tag t : Data.TAGS) {
+                if (!s.mods.bannedTags.contains(t.key())) tagPool.add(t);
+            }
+            Data.Tag tag = tagPool.isEmpty() ? null : s.stream("skiptag").pick(tagPool);
+            if (tag != null) gainTag(s, tag.key());
             List<JokerInstance> skipSnap = new ArrayList<>(s.jokers);
             for (JokerInstance j : skipSnap) {
                 if (!j.debuff && s.jokers.contains(j)) j.def.onSkip(s, j);
@@ -280,12 +292,14 @@ public final class Engine {
 
     private static void applyVouchersPassive(RunState s) {
         s.jokerSlots = 5 + ("black".equals(s.deckKey) ? 1 : 0) - ("painted".equals(s.deckKey) ? 1 : 0);
+        if (s.mods.jokerSlotsSet >= 0) s.jokerSlots = s.mods.jokerSlotsSet; // R123 真版固定槽（0 合法；券加成叠加其上）
         s.consumableSlots = 2 + ("nebula".equals(s.deckKey) ? -1 : 0);
         s.shopSlots = 2;
         s.handSizeBase = 8 + ("painted".equals(s.deckKey) ? 2 : 0);
         s.handsBase = 4 + ("blue".equals(s.deckKey) ? 1 : 0) - ("black".equals(s.deckKey) ? 1 : 0);
         s.discardsBase = 3 + ("red".equals(s.deckKey) ? 1 : 0) - (s.stakeIdx >= 4 ? 1 : 0);
         if (s.mods.handsSet != 0) s.handsBase = s.mods.handsSet;
+        if (s.mods.discardsSet != 0) s.discardsBase = s.mods.discardsSet; // R123 真版固定弃牌
         if (s.mods.handSize != 0) s.handSizeBase += s.mods.handSize;
         s.interestCap = 5;
 
@@ -352,6 +366,9 @@ public final class Engine {
 
         s.blindTarget = blindTarget(s, s.blindType);
         s.handSizeRound = Math.max(1, s.handSizeBase + intFlag(f, "handSize"));
+        if (s.mods.luxuryTax) { // R123 奢侈品税（真版）：每持 $5 手牌上限 -1（基础 10）
+            s.handSizeRound = Math.max(0, s.handSizeRound - (int) (s.money / 5));
+        }
         if (s.nextShop.get("juggle") != null) { s.handSizeRound += 3; s.nextShop.remove("juggle"); }
         s.handsLeft = Math.max(0, s.handsBase + intFlag(f, "hands"));
         s.discardsLeft = Math.max(0, s.discardsBase + intFlag(f, "discards"));
@@ -654,6 +671,11 @@ public final class Engine {
             ctx.mult = Math.round(avg);
         }
 
+        // 富者愈富（真版）：单手筹码不得超当前金钱（R123）
+        if (s.mods.chipsCapByMoney) {
+            ctx.chips = Math.min(ctx.chips, Math.max(0, s.money));
+        }
+
         long chipsR = Math.round(ctx.chips);
         double multR = Math.round(ctx.mult * 100.0) / 100.0;
         long score = Math.round(chipsR * multR);
@@ -668,6 +690,12 @@ public final class Engine {
         s.handPlayedCount.merge(type, 1, Integer::sum);
         s.playedTypesThisRound.add(type);
         for (Card c : cards) s.playedThisAnte.add(c.id());
+
+        // 孤注一掷（真版）：计分后的牌失效（R123）——牌入弃牌堆时带 debuff，
+        // 换盲注时 startRound 的 fullDeck 全清兜底恢复
+        if (s.mods.playedDebuff) {
+            for (Card c : cards) c.setDebuff(true);
+        }
 
         // Boss：公牛（最常用牌型→金钱归零）/牙齿（每牌-$1）/手臂（牌型降级）
         if ("ox".equals(bk)) {
@@ -805,6 +833,15 @@ public final class Engine {
     public static PlayResult discard(RunState s, List<Integer> cardIds) {
         if (s.phase != Phase.ROUND) return PlayResult.err("当前不在回合中");
         if (s.discardsLeft <= 0) return PlayResult.err("没有剩余弃牌次数");
+        // 金针（真版）：每次弃牌花费 $1（信用卡允许负余额，R123）
+        if (s.mods.discardCost) {
+            long credit = s.flags != null && s.flags.get("credit") instanceof Number
+                    ? ((Number) s.flags.get("credit")).longValue() : 0;
+            if (RunState.satAdd(s.money, credit) < 1) {
+                return PlayResult.err("弃牌需要 $1（资金不足）");
+            }
+            s.money -= 1;
+        }
         if (cardIds == null || cardIds.size() < 1 || cardIds.size() > 5) return PlayResult.err("请选择 1-5 张牌");
         if (new HashSet<>(cardIds).size() != cardIds.size()) return PlayResult.err("不能重复选择同一张牌");
 
@@ -854,6 +891,7 @@ public final class Engine {
         // 盲注奖励金
         long reward = s.blindType.reward;
         if (s.mods.redStake && s.blindType == Data.BlindType.SMALL) reward = 0;
+        if (s.mods.smallBigNoReward && s.blindType != Data.BlindType.BOSS) reward = 0; // R123 残酷（真版）
         if (s.mods.smallBigRewardHalf && s.blindType != Data.BlindType.BOSS) reward = (long) Math.ceil(reward / 2.0);
         if (s.mods.rewardMult != 0) reward *= s.mods.rewardMult;
         if (s.mods.noBlindReward) reward = 0; // 煎蛋卷（真版）：所有盲注无奖励金（R102 对齐真版）
@@ -933,6 +971,12 @@ public final class Engine {
             }
             // 浮雕牌组(anaglyph)：每击败一个 Boss 盲注获得一个翻倍标签（对齐 engine.js）
             if ("anaglyph".equals(s.deckKey)) gainTag(s, "double");
+            // 刻板印象（真版）：击败第 4 底注 Boss 后全员永恒 + 槽位归零（R123）
+            if (s.mods.typecastTrigger && s.ante == 4) {
+                for (JokerInstance j : s.jokers) j.eternal = true;
+                s.jokerSlots = 0;
+                s.msg("刻板印象：全体小丑永恒，小丑槽归零");
+            }
             s.bossQueue.remove(0);
             if (!s.bossQueue.isEmpty()) {
                 // 双 Boss 挑战（对齐 engine.js）：无商店间隔，立即接第二个 Boss

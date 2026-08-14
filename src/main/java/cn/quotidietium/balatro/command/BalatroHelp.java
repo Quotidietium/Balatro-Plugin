@@ -41,14 +41,14 @@ final class BalatroHelp {
         });
         add("挑战模式（play 传挑战名，共 20 · 上）", new String[]{
                 "§eomelette§f煎蛋卷(5蛋/三金封禁/经济券丑禁入) §ecity15§f十五分钟城市(人头牌翻倍)",
-                "§erich§f富者愈富(利息翻倍) §eknife§f刀尖行走(目标分×1.5)",
+                "§erich§f富者愈富(筹码≤金钱/$100) §eknife§f刀尖行走(永恒仪式匕首)",
                 "§exray§fX光视界(1/4抽牌面朝下) §emadworld§f疯狂世界(2~9牌组/植物禁现)",
-                "§eluxury§f奢侈品税(每小丑目标分+10%) §enonperish§f永不过期(全永恒/6折)",
-                "§emedusa§f美杜莎(人头变石头) §edouble§f孤注一掷(1出牌/目标减半)"
+                "§eluxury§f奢侈品税(每$5手牌-1) §enonperish§f永不过期(全永恒/衰减类禁)",
+                "§emedusa§f美杜莎(人头变石头/永恒大理石) §edouble§f孤注一掷(计分后失效/红蜡封)"
         });
         add("挑战模式（共 20 · 下）", new String[]{
-                "§etypecast§f刻板印象(仅黑桃红桃) §einflation§f通货膨胀(每回合+价)",
-                "§ebram§f布拉姆扑克(数字变人头) §efragile§f易碎品(玻璃更易碎)",
+                "§etypecast§f刻板印象(底注4全永恒槽0) §einflation§f通货膨胀(每购+价)",
+                "§ebram§f布拉姆扑克(永恒吸血鬼) §efragile§f易碎品(全玻璃/双6！)",
                 "§emonolith§f巨石阵(全石头牌) §eblastoff§f点火升空(开局火箭/$0)",
                 "§efivecard§f五张抽牌(必出5张) §egolden§f金针(1出牌/奖励×3)",
                 "§ecruelty§f残酷(小大盲奖励减半) §ejokerless§f无丑之地(无法获得小丑)"

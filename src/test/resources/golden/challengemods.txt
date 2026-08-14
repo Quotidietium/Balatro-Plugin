@@ -11,11 +11,12 @@ faceDouble=true
 eternalJokers=ridebus,shortcut
 END
 CHALLENGE rich
-doubleInterest=true
-minRewardMoney=10
+chipsCapByMoney=true
+money=100
+vouchers=seedmoney,moneytree
 END
 CHALLENGE knife
-blindMult=1.5
+eternalJokers=dagger
 END
 CHALLENGE xray
 xrayFacedown=true
@@ -28,49 +29,86 @@ rankRange=2,9
 banBosses=plant
 END
 CHALLENGE luxury
-jokerTax=0.1
+luxuryTax=true
+handSize=2
 END
 CHALLENGE nonperish
 allEternal=true
-shopDiscount=0.6
+banJokers=grossmichel,cavendish,icecream,turtle,ramen,cola,seltzer,popcorn,bones,invisible,luchador
+banBosses=leaf
 END
 CHALLENGE medusa
 facesToStone=true
+eternalJokers=marble
 END
 CHALLENGE double
-hands=-99
-handsSet=1
-blindMult=0.5
+playedDebuff=true
+redSealDeck=true
 END
 CHALLENGE typecast
-checkered=true
+typecastTrigger=true
+banBosses=leaf
 END
 CHALLENGE inflation
-inflation=true
+inflationPerBuy=true
+jokers=creditcard
+banVouchers=clearance,liquidation
 END
 CHALLENGE bram
-numbersToFaces=true
+noJokers=true
+eternalJokers=vampire
+startConsumables=tarot:emperor,tarot:empress
+vouchers=magictrick,illusion
 END
 CHALLENGE fragile
-glassDouble=true
+eternalJokers=oops|negative,oops|negative
+glassDeck=true
+banJokers=marble,vampire,midas,certificate
+banTarots=magician,empress,hierophant,chariot,devil,tower,lovers
+banSpectrals=incantation,grim,familiar
+banVouchers=magictrick,illusion
+banPacks=standard1,standard2,standard3
+banTags=standard
 END
 CHALLENGE monolith
-allStone=true
+eternalJokers=obelisk,marble|negative
 END
 CHALLENGE blastoff
-jokers=rocket
-money=0
+handsSet=2
+discardsSet=2
+jokerSlotsSet=4
+eternalJokers=constellation,rocket
+vouchers=planetm,planett
+banVouchers=grabber,nacho
+banJokers=burglar
 END
 CHALLENGE fivecard
-must5=true
+discardsSet=6
+handSize=-3
+jokerSlotsSet=7
+jokers=cardsharp,joker
+banJokers=juggler,troubadour,turtle
 END
 CHALLENGE golden
+discardCost=true
 handsSet=1
-rewardMult=3
+discardsSet=6
+money=10
+jokers=creditcard
+banJokers=burglar
+banVouchers=grabber,nacho
 END
 CHALLENGE cruelty
-smallBigRewardHalf=true
+smallBigNoReward=true
+jokerSlotsSet=3
 END
 CHALLENGE jokerless
 noJokers=true
+jokerSlotsSet=0
+banTarots=judgement
+banSpectrals=wraith,soul
+banTags=uncommon,rare,negative,foil,holo,poly,buffoon,topup
+banBosses=heart,leaf,acorn
+banVouchers=antimatter
+banPacks=buffoon1,buffoon2,buffoon3
 END

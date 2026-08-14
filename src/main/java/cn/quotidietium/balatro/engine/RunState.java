@@ -206,19 +206,27 @@ public final class RunState {
         Engine.recomputeFlags(this);
     }
 
-    /** 小丑售价（含版本加成，max(1)）。 */
+    /** 小丑售价（含版本加成，max(1)）。R123：通胀挑战持有物基价同步上涨。 */
     public int sellValue(JokerInstance j) {
         int cost = j.def.cost();
         if (j.edition == Data.Edition.FOIL) cost += 2;
         else if (j.edition == Data.Edition.HOLO) cost += 3;
         else if (j.edition == Data.Edition.POLY) cost += 5;
         else if (j.edition == Data.Edition.NEGATIVE) cost += 5;
+        if (mods.inflationPerBuy) cost += (int) Math.min(inflation, 1000); // 真版：基价随购买数上涨
         return Math.max(1, cost / 2 + j.sellBonus);
     }
 
     /** 消耗品售价（max(1)，含 sellBonus 加成）。统一口径，供渲染/对话框/引擎共用。 */
     public static int sellValue(Consumable c) {
         return Math.max(1, 1 + c.sellBonus);
+    }
+
+    /** 消耗品售价（实例口径）：通胀挑战持有物基价同步上涨（R123）。 */
+    public int sellValueC(Consumable c) {
+        int v = 1 + c.sellBonus;
+        if (mods.inflationPerBuy) v += (int) Math.min(inflation, 1000);
+        return Math.max(1, v);
     }
 
     /** 出售第 idx 张小丑（永恒不可出售；触发 onSell/onAnySell；解除翠绿之叶）。 */
@@ -245,7 +253,7 @@ public final class RunState {
     public boolean sellConsumable(int idx) {
         if (idx < 0 || idx >= consumables.size()) return false;
         Consumable c = consumables.remove(idx);
-        int val = sellValue(c);
+        int val = sellValueC(c);
         gainMoney(val);
         msg("出售消耗品 +$" + val);
         return true;
@@ -291,20 +299,29 @@ public final class RunState {
         removeCardFromDeck(c);
     }
 
-    /** 获得随机消耗品（按 kind 从对应池随机取；对齐 engine.js：加入成功时提示"获得：名称"）。 */
+    /** 获得随机消耗品（按 kind 从对应池随机取；对齐 engine.js：加入成功时提示"获得：名称"）。
+     *  R123：禁入清单（真版易碎品/无丑牌）过滤抽取池。 */
     public void gainConsumable(String kind) {
         switch (kind) {
             case "tarot" -> {
-                Data.Tarot t = stream("consumable").pick(List.of(Data.Tarot.values()));
-                if (addConsumableKey("tarot", t.key)) msg("获得：" + t.name);
+                List<Data.Tarot> pool = new ArrayList<>();
+                for (Data.Tarot t : Data.Tarot.values()) {
+                    if (!mods.bannedTarots.contains(t.key)) pool.add(t);
+                }
+                Data.Tarot t = pool.isEmpty() ? null : stream("consumable").pick(pool);
+                if (t != null && addConsumableKey("tarot", t.key)) msg("获得：" + t.name);
             }
             case "planet" -> {
                 Data.Planet p = stream("consumable").pick(List.of(Data.Planet.values()));
                 if (addConsumableKey("planet", p.key)) msg("获得：" + p.name);
             }
             default -> {
-                Data.Spectral sp = stream("consumable").pick(List.of(Data.Spectral.values()));
-                if (addConsumableKey("spectral", sp.key)) msg("获得：" + sp.name);
+                List<Data.Spectral> pool = new ArrayList<>();
+                for (Data.Spectral sp0 : Data.Spectral.values()) {
+                    if (!mods.bannedSpectrals.contains(sp0.key)) pool.add(sp0);
+                }
+                Data.Spectral sp = pool.isEmpty() ? null : stream("consumable").pick(pool);
+                if (sp != null && addConsumableKey("spectral", sp.key)) msg("获得：" + sp.name);
             }
         }
     }

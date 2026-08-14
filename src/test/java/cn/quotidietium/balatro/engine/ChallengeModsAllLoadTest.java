@@ -57,10 +57,19 @@ class ChallengeModsAllLoadTest {
                 || m.inflation || m.doubleBoss || m.must5 || m.noJokers
                 || m.smallBigRewardHalf
                 // R102 对齐真版的 4 个新挑战 mod
-                || m.noBlindReward || m.noHandPay || m.faceDouble || m.xrayFacedown) return true;
+                || m.noBlindReward || m.noHandPay || m.faceDouble || m.xrayFacedown
+                // R123 对齐真版的 13 个新挑战 mod
+                || m.chipsCapByMoney || m.playedDebuff || m.redSealDeck || m.glassDeck
+                || m.typecastTrigger || m.luxuryTax || m.inflationPerBuy || m.discardCost
+                || m.smallBigNoReward || m.rankMin > 0
+                || !m.bannedTarots.isEmpty() || !m.bannedSpectrals.isEmpty()
+                || !m.bannedPacks.isEmpty() || !m.bannedTags.isEmpty()
+                || !m.bannedBosses.isEmpty() || !m.bannedVouchers.isEmpty()
+                || !m.bannedJokers.isEmpty()) return true;
         // 数值 mod（默认 0）
         if (m.handsSet != 0 || m.handSize != 0 || m.blindMult != 0 || m.jokerTax != 0
-                || m.rewardMult != 0 || m.shopDiscount != 0 || m.minRewardMoney != 0) return true;
+                || m.rewardMult != 0 || m.shopDiscount != 0 || m.minRewardMoney != 0
+                || m.discardsSet != 0 || m.jokerSlotsSet != 0) return true; // R123
         // jokers/money mod（blastoff/omelette：开局即改 jokers 数或 money）
         // red 基线 money=4；blastoff money=0；omelette 5 蛋；typecast/monolith 改牌组（非 mods 字段，但 buildFullDeck 读 mods.checkered/allStone）
         if (!s.jokers.isEmpty()) return true;       // omelette(5蛋)/blastoff(rocket)
