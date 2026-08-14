@@ -196,9 +196,9 @@ class BossEndToEndTest {
         s.bossQueue.add("vessel");
         s.nextBlind = "boss";
         Engine.selectBlind(s, Data.BlindType.BOSS, false);
-        // vessel 替换 boss mult 为 3（不是叠加），目标分 = base × 3
-        long expectedBase = Data.blindBase(s.ante) * 3;
-        assertEquals(expectedBase, s.blindTarget, "vessel 目标分应替换 boss mult 为 ×3");
+        // R126 对齐真版：vessel 替换 boss mult 为 6（Violet Vessel Wiki "6x base"；REF ×3 为 REF bug）
+        long expectedBase = Data.blindBase(s.ante) * 6;
+        assertEquals(expectedBase, s.blindTarget, "vessel 目标分应替换 boss mult 为 ×6");
     }
 
     @Test

@@ -12,7 +12,7 @@ PLAY ok=1 type=pair score=52 won=0 lost=0 rs=112 hl=2 money=0
 PLAY ok=1 type=pair score=48 won=0 lost=0 rs=160 hl=1 money=0
 PLAY ok=1 type=three score=135 won=0 lost=1 rs=295 hl=0 money=0
 ENDBOSS
-BOSS needle BOSS1 target=600 handSize=8 hands=1 discards=4
+BOSS needle BOSS1 target=300 handSize=8 hands=1 discards=4
 HAND 13.0,13.2,12.0,11.2,10.1,8.3,7.1,7.2
 PLAY ok=1 type=pair score=60 won=0 lost=1 rs=60 hl=0 money=4
 ENDBOSS

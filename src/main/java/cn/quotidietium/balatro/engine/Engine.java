@@ -154,20 +154,27 @@ public final class Engine {
 
     private static void chooseBoss(RunState s) {
         Rng.Stream st = s.stream("boss");
-        Data.Boss picked = st.pick(BOSSES);
+        // R126 对齐真版（Boss_Blinds Wiki）：Showdown 5 终结者仅在底注 8/16…出现；
+        // 底注 1~7 只从 23 个常规 Boss 抽取（REF 28 个混抽为 REF bug，R45 曾"验证"该错误分布）。
+        List<Data.Boss> pool = new ArrayList<>();
+        boolean showdown = s.ante % 8 == 0;
+        for (Data.Boss b : BOSSES) {
+            if (Data.FINISHERS.contains(b.key) == showdown) pool.add(b);
+        }
+        Data.Boss picked = st.pick(pool);
         for (int tries = 0; tries < 5 && (picked.key.equals(s.bossKey)
                 || s.mods.bannedBosses.contains(picked.key)); tries++) {
-            picked = st.pick(BOSSES);
+            picked = st.pick(pool);
         }
         s.bossKey = picked.key;
         s.bossQueue.clear();
         s.bossQueue.add(picked.key);
         if (s.mods.doubleBoss) {
             // 双 Boss（engine 能力，对齐 engine.js chooseBoss）：再抽第二个不同的 Boss（5 次尽力去重）
-            Data.Boss second = st.pick(BOSSES);
+            Data.Boss second = st.pick(pool);
             for (int tries = 0; tries < 5 && (second.key.equals(picked.key)
                     || s.mods.bannedBosses.contains(second.key)); tries++) {
-                second = st.pick(BOSSES);
+                second = st.pick(pool);
             }
             s.bossQueue.add(second.key);
         }
@@ -253,8 +260,11 @@ public final class Engine {
         double mult = type.mult;
         if (type == Data.BlindType.BOSS) {
             String bk = s.bossQueue.isEmpty() ? null : s.bossQueue.get(0);
+            // R126 对齐真版（Boss_Blinds Wiki）：高墙 4×；紫罗兰之瓶 6×（REF 的 3× 为 REF bug）；
+            // 缝衣针 1× 基础分（"Play only 1 hand" 的 1x base，REF 漏乘数修正）。
             if ("wall".equals(bk)) mult = 4;
-            else if ("vessel".equals(bk)) mult = 3;
+            else if ("vessel".equals(bk)) mult = 6;
+            else if ("needle".equals(bk)) mult = 1;
         }
         if ("plasma".equals(s.deckKey)) mult *= 2;
         if (s.mods.blindMult != 0) mult *= s.mods.blindMult;
@@ -895,6 +905,11 @@ public final class Engine {
 
         // 盲注奖励金
         long reward = s.blindType.reward;
+        // R126 对齐真版：Showdown Boss（底注 8 的 5 终结者）奖励 $8（Boss_Blinds/Violet Vessel Wiki）
+        if (s.blindType == Data.BlindType.BOSS && !s.bossQueue.isEmpty()
+                && Data.FINISHERS.contains(s.bossQueue.get(0))) {
+            reward = 8;
+        }
         if (s.mods.redStake && s.blindType == Data.BlindType.SMALL) reward = 0;
         if (s.mods.smallBigNoReward && s.blindType != Data.BlindType.BOSS) reward = 0; // R123 残酷（真版）
         if (s.mods.smallBigRewardHalf && s.blindType != Data.BlindType.BOSS) reward = (long) Math.ceil(reward / 2.0);

@@ -254,6 +254,9 @@ public final class Data {
     }
 
     // ================= Boss 盲注（28） =================
+    /** 真版 Showdown Boss（R126 对齐真版：仅在底注 8/16…出现，奖励 $8；紫罗兰之瓶 6×）。 */
+    public static final java.util.Set<String> FINISHERS =
+            java.util.Set.of("acorn", "leaf", "vessel", "heart", "bell");
     // 28 个 Boss 的 key/name/desc；效果实现见 Engine.java 各 Boss 分支（startRound/drawOne/
     // drawUpTo/playHand/blindTarget 等）+ RunState.disableBoss/sellJoker（leaf 解除）。
     public enum Boss {
