@@ -78,9 +78,17 @@ public final class GuiState {
         return true;
     }
 
-    /** 设置种子（调用方须先用 {@code Rng.isValidSeed} 校验）。 */
-    public void setSeed(String seed) {
+    /**
+     * 设置种子。自带 {@link cn.quotidietium.balatro.engine.Rng#isValidSeed} 校验——
+     * 非法种子被拒绝（保留原值），调用方无需重复校验（防御性加固：即使调用方遗漏校验，
+     * SessionManager 仍会兜底，但此处提前拒绝避免 GUI 状态持有非法种子）。
+     *
+     * @return 是否设置成功（非法种子返回 false）
+     */
+    public boolean setSeed(String seed) {
+        if (!cn.quotidietium.balatro.engine.Rng.isValidSeed(seed)) return false;
         this.seed = seed;
+        return true;
     }
 
     /** 恢复随机种子。 */

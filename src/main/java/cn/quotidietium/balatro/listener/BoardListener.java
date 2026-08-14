@@ -148,7 +148,13 @@ public final class BoardListener implements Listener {
                 } else if (act.startsWith("cons:")) {
                     Integer i = parseIntSafe(act.substring("cons:".length()));
                     if (i != null) {
-                        board.sendUseConfirm(player, i);
+                        // 商店阶段右键消耗品 = 出售（对齐原版：商店里持有的消耗品可点击出售）；
+                        // 回合阶段右键消耗品 = 使用（保持原有行为）。
+                        if (session.state().phase == cn.quotidietium.balatro.engine.Phase.SHOP) {
+                            board.sendSellConsumableConfirm(player, i);
+                        } else {
+                            board.sendUseConfirm(player, i);
+                        }
                         click(player, 1.0f);
                     }
                 }

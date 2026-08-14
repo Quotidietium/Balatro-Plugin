@@ -65,7 +65,14 @@ final class BalatroHelp {
                 "§e/balatro buy <序号>§f 购买卡牌  §7|§e buybag <序号>§f 购买补充包",
                 "§e/balatro buyvoucher§f   购买优惠券",
                 "§e/balatro reroll§f   重掷商店商品",
-                "§e/balatro next§f 离开商店 → §ego§f 开始盲注 / §eskip§f 跳过(获标签)"
+                "§e/balatro next§f 离开商店 → §ego§f/skip  §7出售持有牌见 §e/balatro help 8"
+        });
+        add("商店出售持有牌", new String[]{
+                "商店阶段可在全息牌桌上看到并出售持有的小丑/消耗品（对齐原版）。",
+                "§e右键持有小丑§f → 确认出售（永恒不可售）；§e右键消耗品§f → 确认出售。",
+                "§e/balatro sellj <序号>§f 命令出售小丑  §7|§e sellc <序号>§f 命令出售消耗品",
+                "售价 = 购买价的一半（最少 $1），蛋/礼品卡可额外增加售价。",
+                "回合阶段右键消耗品仍为「使用」，商店阶段右键才为「出售」。"
         });
         add("消耗品与补充包", new String[]{
                 "§e/balatro cons§f   查看持有的消耗品（塔罗/星球/幻灵）",
@@ -160,7 +167,8 @@ final class BalatroHelp {
         cmd("play", new String[]{}, "开始一局", new String[]{
                 "§e/balatro play [牌组] [赌注] [挑战] [种子]",
                 "参数顺序不限，自动识别：牌组名(15)/赌注数字(0~7)/挑战名(20)，其余视作种子。",
-                "例：§e/balatro play blue 1§f · §e/balatro play red 0 omelette",
+                "§7单数字 0~7 识别为赌注；种子含数字时需混入字母（如 seed3）或用 GUI 输入。",
+                "例：§e/balatro play blue 1§f · §e/balatro play red 0 omelette§f · §e/balatro play myseed",
                 "留空 = 随机种子 · 红牌组 · 白注。牌组/赌注/挑战详见 §e/balatro help 2~5"
         });
         cmd("playcard", new String[]{"pc"}, "出牌", new String[]{
@@ -240,11 +248,12 @@ final class BalatroHelp {
         cmd("sellj", new String[]{}, "出售小丑", new String[]{
                 "§e/balatro sellj <序号>",
                 "出售第 N 张小丑（永恒小丑不可出售）。",
-                "全息：右键小丑牌。"
+                "全息：回合或商店阶段右键小丑牌 → 确认出售。"
         });
         cmd("sellc", new String[]{}, "出售消耗品", new String[]{
                 "§e/balatro sellc <序号>",
-                "出售第 N 个消耗品。"
+                "出售第 N 个消耗品。",
+                "全息：商店阶段右键消耗品 → 确认出售。"
         });
         cmd("endless", new String[]{}, "进入无尽模式", new String[]{
                 "§e/balatro endless",

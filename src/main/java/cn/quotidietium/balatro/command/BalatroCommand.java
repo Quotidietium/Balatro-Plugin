@@ -19,17 +19,19 @@ import org.jetbrains.annotations.NotNull;
 /**
  * /balatro 命令（别名 blt / joker），仅玩家可用。
  *
- * <p>子命令（序号均从 1 起；全息右键为等价操作，命令为备用）：
+ * <p>子命令（序号均从 1 起）：
  * <ul>
- *   <li>通用：{@code gui | play [牌组] [赌注] [挑战] [种子] | status | endless | top | quit}</li>
- *   <li>回合：{@code playcard <序号...> | disc <序号...>}</li>
- *   <li>盲注选择：{@code go | skip}</li>
- *   <li>商店：{@code shop | buy <序号> | buybag <序号> | buyvoucher | reroll | next}</li>
- *   <li>消耗品：{@code cons | use <序号> [手牌序号...]}</li>
- *   <li>补充包：{@code packs | pick <序号> | skipack}</li>
- *   <li>出售：{@code sellj <序号> | sellc <序号>}</li>
+ *   <li>通用（仅命令）：{@code gui | play [牌组] [赌注] [挑战] [种子] | status | endless | top | quit | version}</li>
+ *   <li>回合（全息等价）：{@code playcard <序号...> | disc <序号...>}</li>
+ *   <li>盲注选择（全息等价）：{@code go | skip}</li>
+ *   <li>商店（全息等价）：{@code shop | buy <序号> | buybag <序号> | buyvoucher | reroll | next}</li>
+ *   <li>消耗品（全息等价）：{@code cons | use <序号> [手牌序号...]}</li>
+ *   <li>补充包（全息等价）：{@code packs | pick <序号> | skipack}</li>
+ *   <li>出售（全息等价）：{@code sellj <序号> | sellc <序号>}</li>
  * </ul>
- * {@code cancel} 仅为全息出售确认框「[取消]」按钮的回执，不列入帮助。
+ * 标注「全息等价」的命令均可通过全息牌桌右键完成相同操作（命令为备用）；
+ * 标注「仅命令」的为管理/信息类命令，无全息对应。
+ * {@code cancel} 仅为全息确认框「[取消]」按钮的回执，不列入帮助。
  * 分页详细玩法与单命令详情见 {@link BalatroHelp}。
  */
 public final class BalatroCommand implements CommandExecutor, TabCompleter {
@@ -503,10 +505,15 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         long target = cn.quotidietium.balatro.engine.Engine.blindTarget(s.state(), bt);
         String boss = "";
         if (bt == cn.quotidietium.balatro.engine.Data.BlindType.BOSS && !s.state().bossQueue.isEmpty()) {
-            boss = "（" + cn.quotidietium.balatro.engine.Data.Boss.byKey(s.state().bossQueue.get(0)).name + "）";
+            var bd = cn.quotidietium.balatro.engine.Data.Boss.byKey(s.state().bossQueue.get(0));
+            boss = "（" + bd.name + "）";
+            player.sendMessage("§6下一盲注：§f底注 " + s.state().ante + " · " + blindName(bt.key) + boss
+                    + " · 目标 " + target + " 分");
+            player.sendMessage("§6Boss 效果：§f" + bd.desc);
+        } else {
+            player.sendMessage("§6下一盲注：§f底注 " + s.state().ante + " · " + blindName(bt.key)
+                    + " · 目标 " + target + " 分");
         }
-        player.sendMessage("§6下一盲注：§f底注 " + s.state().ante + " · " + blindName(bt.key) + boss
-                + " · 目标 " + target + " 分");
         player.sendMessage("§e/balatro go §7开始盲注    §e/balatro skip §7跳过并获标签" + (bt == cn.quotidietium.balatro.engine.Data.BlindType.BOSS ? "（Boss 不可跳过）" : ""));
     }
 
@@ -672,6 +679,13 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         if (s == null) { player.sendMessage("§c当前没有进行中的局。"); return; }
         int idx = parseOne(player, args);
         if (idx < 0) return;
+        // 全息「确认出售」按钮在第 3 参数携带期望 kind:key：确认后到点击前消耗品列表
+        // 可能已变化（使用/出售收缩列表），序号可能指向另一个消耗品——
+        // 校验不一致则取消，防止错位卖错。手动输入不带标识则跳过校验（向后兼容）。
+        if (args.length >= 3 && !consKindKeyAt(s, idx).equals(args[2])) {
+            player.sendMessage("§c消耗品列表已变化，出售已取消。请重新右键该消耗品确认。");
+            return;
+        }
         if (s.sellConsumable(idx)) player.sendMessage("§a消耗品已出售！");
         else player.sendMessage("§c出售失败（无效）。");
     }
@@ -685,8 +699,7 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
 
     private void cmdTop(Player player) {
         // 聚合排行榜每次全量遍历统计记录（上限上万条）：篡改客户端可宏刷这条只读命令，
-        // 让主线程反复做聚合+排序——每玩家 1s 节流。节流表惰性清扫（>60s 即失效），
-        // 长期运行玩家流转下有界。
+        // 让主线程反复做聚合+排序——每玩家 1s 节流。
         long now = System.currentTimeMillis();
         Long last = lastTop.get(player.getUniqueId());
         if (last != null && now - last < TOP_THROTTLE_MS) {
@@ -694,9 +707,11 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
             return;
         }
         lastTop.put(player.getUniqueId(), now);
-        if (lastTop.size() > 128) {
-            lastTop.values().removeIf(t -> now - t > 60_000L);
-        }
+        // 无条件惰性清扫：每次调用都清理 >60s 的过期条目。
+        // 此前仅在 size>128 时清扫——大量不同 UUID（离线模式/UUID 伪造）在 60s 内各调用一次
+        // 会导致 Map 无限增长（慢速内存泄漏）。改为无条件清扫使 Map 大小自然受限于
+        // 「过去 60s 内调用过 /top 的不同玩家数」，无需依赖 PlayerQuitEvent。
+        lastTop.values().removeIf(t -> now - t > 60_000L);
         java.util.List<cn.quotidietium.balatro.api.PlayerStat> aggregated;
         try {
             aggregated = plugin.services().leaderboard().topAggregated(10);
@@ -752,7 +767,7 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(line(t("playcard"), " 出牌  ", t("disc"), " 弃牌（各 1~5 张）"));
         player.sendMessage("§6■ 盲注选择（商店 next 之后）");
         player.sendMessage(line(t("go"), " 开始盲注  ", t("skip"), " 跳过并获标签（Boss 不可跳过）"));
-        player.sendMessage("§6■ 商店");
+        player.sendMessage("§6■ 商店（可右键持有牌出售）");
         player.sendMessage(line(t("shop"), " 查看  ", t("buy"), " 买卡  ", t("buybag"), " 买补充包"));
         player.sendMessage(line(t("buyvoucher"), " 买券  ", t("reroll"), " 重掷  ", t("next"), " 离开商店"));
         player.sendMessage("§6■ 消耗品（塔罗 / 星球 / 幻灵）");

@@ -278,17 +278,33 @@ public final class GameSession {
         sendRunStats(won, anteReached);
         if (!won) {
             // 失败：销毁牌桌并移除会话，玩家可立刻 /balatro play 再来一局。
-            // endIfCurrent：RunEnd 事件监听器可能已重开新局——不得误杀新会话。
-            plugin.sessionManager().endIfCurrent(player, this);
+            // RunEnd 事件监听器可能已在回调中 end 旧局 + start 新局——此时 Map 里已是新会话。
+            // endIfCurrent 防误杀新局：仅当本会话仍是当前会话时才 end。
+            // 但若已被替换，旧会话的牌桌实体仍需回收（否则泄漏到世界直到重启）。
+            if (!plugin.sessionManager().endIfCurrent(player, this)) {
+                // 已被替换：仅回收本（旧）会话的牌桌实体，不触碰新会话
+                try {
+                    despawnBoard();
+                } catch (RuntimeException ex) {
+                    plugin.getLogger().warning("旧局牌桌回收失败（玩家 " + player.getName() + "）：" + ex);
+                }
+            }
         }
         // 通关(won)：保留会话与牌桌，玩家可选 /endless 继续或 /quit 结束
     }
 
-    /** 调用可替换服务并兜底：第三方实现抛异常仅记日志，不向游戏流程传播。 */
+    /**
+     * 调用可替换服务并兜底：第三方实现抛异常仅记日志，不向游戏流程传播。
+     *
+     * <p>捕获 {@link Exception}（含 {@link RuntimeException}）：第三方 RewardService/StatsService/
+     * WinCounter 的任何受检/非受检异常都不应中断后续服务调用（如 reward 异常吃掉统计落盘）。
+     * {@link Error}（如 {@link StackOverflowError}/{@link OutOfMemoryError}/{@link NoClassDefFoundError}）
+     * 不捕获——这类表示 JVM/类加载级故障，应当向上传播让框架感知，而非静默吞掉。
+     */
     private void safeService(String what, Runnable r) {
         try {
             r.run();
-        } catch (RuntimeException ex) {
+        } catch (Exception ex) {
             plugin.getLogger().warning(what + " 异常（玩家 " + player.getName() + "）：" + ex);
         }
     }

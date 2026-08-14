@@ -216,6 +216,11 @@ public final class RunState {
         return Math.max(1, cost / 2 + j.sellBonus);
     }
 
+    /** 消耗品售价（max(1)，含 sellBonus 加成）。统一口径，供渲染/对话框/引擎共用。 */
+    public static int sellValue(Consumable c) {
+        return Math.max(1, 1 + c.sellBonus);
+    }
+
     /** 出售第 idx 张小丑（永恒不可出售；触发 onSell/onAnySell；解除翠绿之叶）。 */
     public boolean sellJoker(int idx) {
         if (idx < 0 || idx >= jokers.size()) return false;
@@ -240,7 +245,7 @@ public final class RunState {
     public boolean sellConsumable(int idx) {
         if (idx < 0 || idx >= consumables.size()) return false;
         Consumable c = consumables.remove(idx);
-        int val = Math.max(1, 1 + c.sellBonus);
+        int val = sellValue(c);
         gainMoney(val);
         msg("出售消耗品 +$" + val);
         return true;

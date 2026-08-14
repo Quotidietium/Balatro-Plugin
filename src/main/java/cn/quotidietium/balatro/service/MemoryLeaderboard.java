@@ -24,8 +24,10 @@ import java.util.UUID;
  */
 public final class MemoryLeaderboard implements LeaderboardProvider {
 
-    private StatsService stats;
-    private WinCounter winCounter;
+    // volatile：Services 可在运行期替换统计源/计数器（主线程外的异步上下文），
+    // volatile 保证替换后其他线程立即可见，不出现脏读。
+    private volatile StatsService stats;
+    private volatile WinCounter winCounter;
 
     public MemoryLeaderboard(StatsService stats) {
         this.stats = stats;

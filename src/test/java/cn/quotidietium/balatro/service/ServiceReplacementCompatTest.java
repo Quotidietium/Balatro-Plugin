@@ -1,11 +1,14 @@
 package cn.quotidietium.balatro.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import cn.quotidietium.balatro.api.RunSummary;
 import cn.quotidietium.balatro.api.PlayerStat;
 import cn.quotidietium.balatro.api.service.EconomyService;
+import cn.quotidietium.balatro.api.service.LeaderboardProvider;
 import cn.quotidietium.balatro.api.service.RewardService;
 import cn.quotidietium.balatro.api.service.StatsService;
 import cn.quotidietium.balatro.api.service.WinCounter;
@@ -162,5 +165,25 @@ class ServiceReplacementCompatTest {
         assertEquals(0, s.economy().balance(UUID.randomUUID()));
         assertTrue(s.economy().has(UUID.randomUUID(), 0));
         assertTrue(s.economy().has(UUID.randomUUID(), -1));
+    }
+
+    @Test
+    void nullReplacementIsRejected() {
+        // 所有 setter 拒绝 null：保留原实现，避免后续调用 NPE（第三方误传 null 的安全防线）
+        Services s = new Services();
+        StatsService originalStats = s.stats();
+        EconomyService originalEcon = s.economy();
+        LeaderboardProvider originalLb = s.leaderboard();
+        RewardService originalReward = s.reward();
+        s.setStats(null);
+        s.setEconomy(null);
+        s.setLeaderboard(null);
+        s.setReward(null);
+        s.setWinCounter(null);
+        assertSame(originalStats, s.stats(), "setStats(null) 应保留原实现");
+        assertSame(originalEcon, s.economy(), "setEconomy(null) 应保留原实现");
+        assertSame(originalLb, s.leaderboard(), "setLeaderboard(null) 应保留原实现");
+        assertSame(originalReward, s.reward(), "setReward(null) 应保留原实现");
+        assertNull(s.winCounter(), "winCounter 默认为 null（onEnable 注入），setWinCounter(null) 保持 null");
     }
 }
