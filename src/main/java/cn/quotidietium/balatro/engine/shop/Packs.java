@@ -114,7 +114,9 @@ public final class Packs {
         switch (item.kind) {
             case "joker" -> {
                 if (item.joker == null) return false; // 防御：毒数据绝不入 jokers 列表
-                if (s.jokerSpace() <= 0) return false;
+                // negative 版本小丑自带 +1 槽：满槽时仍可选（对齐真版，见 RunState.gainJoker 注释）。
+                boolean neg = item.joker.edition == cn.quotidietium.balatro.engine.Data.Edition.NEGATIVE;
+                if (neg ? s.jokerSpace() < 0 : s.jokerSpace() <= 0) return false;
                 s.jokers.add(item.joker);
                 s.msg("获得小丑：" + item.name);
             }

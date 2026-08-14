@@ -324,7 +324,10 @@ public final class Shop {
         CardItem it = shop.cards.get(idx);
         if (it.sold || !canAfford(s, it.price)) return false;
         if (it.kind.equals("joker")) {
-            if (s.jokerSpace() <= 0) return false;
+            // negative 版本小丑自带 +1 槽：满槽时仍可购买（对齐真版，见 RunState.gainJoker 注释）。
+            // REF engine.js buyCard 此处不区分 edition 满槽拒绝 negative——REF bug，此处按真版修正。
+            boolean neg = it.joker.edition == cn.quotidietium.balatro.engine.Data.Edition.NEGATIVE;
+            if (neg ? s.jokerSpace() < 0 : s.jokerSpace() <= 0) return false;
             s.money -= it.price;
             s.jokers.add(it.joker);
             s.msg("获得小丑：" + it.name);

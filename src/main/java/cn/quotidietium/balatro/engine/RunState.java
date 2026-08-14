@@ -345,9 +345,22 @@ public final class RunState {
         return jokerSlots + neg - jokers.size();
     }
 
-    /** 获得一张指定小丑（0.2.0 商店/效果共用）。对齐 engine.js gainJoker：加入后重算 flags。 */
+    /**
+     * 获得一张指定小丑（0.2.0 商店/效果共用）。对齐 engine.js gainJoker：加入后重算 flags。
+     *
+     * <p><b>对 REF 的有意修正（第 6 处）</b>：negative 版本小丑自带 +1 槽，按真版语义
+     * （[Negative Wiki](https://balatrowiki.org/w/Negative)：「+1 Joker slot」；
+     * Steam 讨论：「increase your maximum slots by 1, able to buy one with a full hand」）
+     * 满槽（jokerSpace==0）时仍可加入——因为加入后它自身贡献的 +1 槽正好容纳自身。
+     * REF engine.js 的 gainJoker/jokerSpace 在加入前检查，满槽时拒绝 negative 小丑
+     * （REF bug，与真版/描述不符）。此处按真版修正：negative 小丑只要当前未超槽即可加入。
+     * 不影响种子复现：jokerSpace 检查不消耗 random stream，商店商品序列不变。
+     */
     public boolean gainJoker(String key, Data.Edition edition) {
-        if (jokerSpace() <= 0) return false;
+        boolean negative = edition == Data.Edition.NEGATIVE;
+        // negative 小丑自带 +1 槽：jokerSpace==0（满普通槽）时仍可加入（加入后 =0 仍合法）；
+        // 非 negative 小丑要求至少 1 空槽。jokerSpace 不可能为负（正常游戏），<0 仅为超槽兜底。
+        if (negative ? jokerSpace() < 0 : jokerSpace() <= 0) return false;
         JokerInstance j = cn.quotidietium.balatro.engine.joker.JokerRegistry.create(key);
         if (j == null) return false;
         if (edition != null) j.edition = edition;
