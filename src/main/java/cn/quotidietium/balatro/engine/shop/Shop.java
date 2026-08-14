@@ -196,12 +196,18 @@ public final class Shop {
         Object forceRarity = s.nextShop.get("rarity");
         if (forceRarity != null && !items.isEmpty()) {
             items.set(0, makeJokerItem(s, (Integer) forceRarity, null));
+            // R127 真版：罕见/稀有标签的该小丑免费（"Shop has a FREE Uncommon/Rare Joker"）
+            if (Boolean.TRUE.equals(s.nextShop.get("freeFirstJoker"))) items.get(0).price = 0;
             s.nextShop.remove("rarity");
+            s.nextShop.remove("freeFirstJoker");
         }
         Object forceEdition = s.nextShop.get("edition");
         if (forceEdition != null && !items.isEmpty()) {
             items.set(items.size() - 1, makeJokerItem(s, null, (String) forceEdition));
+            // R127 真版：四版本标签的小丑免费（"...shop Joker is FREE and becomes ..."）
+            if (Boolean.TRUE.equals(s.nextShop.get("freeLastJoker"))) items.get(items.size() - 1).price = 0;
             s.nextShop.remove("edition");
+            s.nextShop.remove("freeLastJoker");
         }
         return items;
     }

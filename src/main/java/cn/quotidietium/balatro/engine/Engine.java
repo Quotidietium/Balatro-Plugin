@@ -206,27 +206,31 @@ public final class Engine {
         Rng.Stream st = s.stream("tag");
         switch (key) {
             case "double" -> s.doubleTagPending = true;
-            case "uncommon" -> s.nextShop.put("rarity", 1);
-            case "rare" -> s.nextShop.put("rarity", 2);
-            case "negative" -> s.nextShop.put("edition", "negative");
-            case "foil" -> s.nextShop.put("edition", "foil");
-            case "holo" -> s.nextShop.put("edition", "holo");
-            case "poly" -> s.nextShop.put("edition", "poly");
+            // R127 对齐真版：罕见/稀有/四版本标签的指定小丑**免费**（"Shop has a FREE ..."）
+            case "uncommon" -> { s.nextShop.put("rarity", 1); s.nextShop.put("freeFirstJoker", true); }
+            case "rare" -> { s.nextShop.put("rarity", 2); s.nextShop.put("freeFirstJoker", true); }
+            case "negative" -> { s.nextShop.put("edition", "negative"); s.nextShop.put("freeLastJoker", true); }
+            case "foil" -> { s.nextShop.put("edition", "foil"); s.nextShop.put("freeLastJoker", true); }
+            case "holo" -> { s.nextShop.put("edition", "holo"); s.nextShop.put("freeLastJoker", true); }
+            case "poly" -> { s.nextShop.put("edition", "poly"); s.nextShop.put("freeLastJoker", true); }
             case "invest" -> s.nextShop.put("invest", true);
             case "voucher" -> s.nextShop.merge("extraVoucher", 1, (a, b) -> (a instanceof Number ? ((Number) a).intValue() : 0) + 1);
             case "boss" -> rerollBoss(s, true);
-            case "standard" -> cn.quotidietium.balatro.engine.shop.Packs.open(s, firstPackOfType(Data.PackType.STANDARD));
-            case "buffoon" -> cn.quotidietium.balatro.engine.shop.Packs.open(s, firstPackOfType(Data.PackType.BUFFOON));
-            case "charm" -> s.nextShop.put("freeTarot", true);
-            case "meteor" -> s.nextShop.put("freePlanet", true);
-            case "ethereal" -> s.nextShop.put("etherealPack", true);
+            // R127 对齐真版（Tags Wiki）：Standard/Charm/Meteor/Buffoon 标签=立即免费开 **Mega** 包；
+            // 幽冥标签=立即免费开幻灵包（此前为商店修饰，属 REF bug）
+            case "standard" -> cn.quotidietium.balatro.engine.shop.Packs.open(s, megaPackOfType(Data.PackType.STANDARD));
+            case "buffoon" -> cn.quotidietium.balatro.engine.shop.Packs.open(s, megaPackOfType(Data.PackType.BUFFOON));
+            case "charm" -> cn.quotidietium.balatro.engine.shop.Packs.open(s, megaPackOfType(Data.PackType.ARCANA));
+            case "meteor" -> cn.quotidietium.balatro.engine.shop.Packs.open(s, megaPackOfType(Data.PackType.CELESTIAL));
+            case "ethereal" -> cn.quotidietium.balatro.engine.shop.Packs.open(s, firstPackOfType(Data.PackType.SPECTRAL));
             case "coupon" -> s.nextShop.put("coupon", true);
             case "d6" -> s.nextShop.put("freeReroll", true);
             case "topup" -> { s.gainRandomJoker(0); s.gainRandomJoker(0); }
             case "handy" -> s.gainMoney(s.statsHandsPlayed);
             case "garbage" -> s.gainMoney(s.statsDiscardsUnused);
             case "speed" -> s.gainMoney(5L * s.statsBlindsSkipped);
-            case "economy" -> s.gainMoney(Math.min(25, s.money / 5));
+            // R127 对齐真版（Tags Wiki）：经济标签=金钱翻倍（至多 +$40）——REF 的 $1/$5 上限$25 为 REF bug
+            case "economy" -> s.gainMoney(Math.max(0, Math.min(40, s.money)));
             case "orbital" -> s.levelUpHand(st.pick(List.of(Data.HandType.values())), 3);
             case "juggle" -> s.nextShop.put("juggle", true);
             default -> { }
@@ -250,6 +254,13 @@ public final class Engine {
     private static Data.Pack firstPackOfType(Data.PackType type) {
         for (Data.Pack p : Data.PACKS) if (p.type == type) return p;
         return Data.PACKS.get(0);
+    }
+
+    /** 取指定类型的**大号**（Mega，x2 档）补充包定义——R127 真版标签开包等第
+     *  （Standard/Charm/Meteor/Buffoon 标签均给 Mega 包，Tags Wiki）。 */
+    private static Data.Pack megaPackOfType(Data.PackType type) {
+        for (Data.Pack p : Data.PACKS) if (p.type == type && p.key.endsWith("2")) return p;
+        return firstPackOfType(type);
     }
 
     /** 盲注目标分。 */
