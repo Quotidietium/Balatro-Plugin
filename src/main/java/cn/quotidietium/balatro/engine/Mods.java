@@ -44,4 +44,10 @@ public final class Mods {
     public final java.util.Set<String> bannedVouchers = new java.util.HashSet<>();
     /** 禁入小丑（真版煎蛋卷：奔月/火箭/黄金/卫星不进商店与随机小丑池）。空 = 无禁入。 */
     public final java.util.Set<String> bannedJokers = new java.util.HashSet<>();
+    // ---- R122：真版疯狂世界（Mad World）对齐 ----
+    /** 禁现 Boss（真版疯狂世界：植物禁现）。空 = 无禁现。 */
+    public final java.util.Set<String> bannedBosses = new java.util.HashSet<>();
+    /** 牌组点数带 [rankMin, rankMax]（真版疯狂世界：仅 2~9 共 32 张）。0 = 标准 2~14。 */
+    public int rankMin; // 0 表示未启用
+    public int rankMax;
 }

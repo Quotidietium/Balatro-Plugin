@@ -108,6 +108,11 @@ public final class Engine {
                 for (int r = 4; r <= 10; r++) deck.add(s.makeCard(r, su));
                 for (int rep = 0; rep < 2; rep++) for (int r = 11; r <= 13; r++) deck.add(s.makeCard(r, su));
             }
+        } else if (m.rankMin > 0) {
+            // 疯狂世界（真版）：仅 2~9 共 32 张（R122 对齐真版；REF 未实现，属 REF bug）
+            for (int su = 0; su < 4; su++) {
+                for (int r = m.rankMin; r <= m.rankMax; r++) deck.add(s.makeCard(r, su));
+            }
         } else {
             for (int su = 0; su < 4; su++) {
                 for (int r = 2; r <= 14; r++) {
@@ -143,18 +148,18 @@ public final class Engine {
     private static void chooseBoss(RunState s) {
         Rng.Stream st = s.stream("boss");
         Data.Boss picked = st.pick(BOSSES);
-        if (s.bossKey != null) {
-            for (int tries = 0; tries < 5 && picked.key.equals(s.bossKey); tries++) {
-                picked = st.pick(BOSSES);
-            }
+        for (int tries = 0; tries < 5 && (picked.key.equals(s.bossKey)
+                || s.mods.bannedBosses.contains(picked.key)); tries++) {
+            picked = st.pick(BOSSES);
         }
         s.bossKey = picked.key;
         s.bossQueue.clear();
         s.bossQueue.add(picked.key);
         if (s.mods.doubleBoss) {
-            // 双 Boss 挑战（对齐 engine.js chooseBoss）：再抽第二个不同的 Boss（5 次尽力去重）
+            // 双 Boss（engine 能力，对齐 engine.js chooseBoss）：再抽第二个不同的 Boss（5 次尽力去重）
             Data.Boss second = st.pick(BOSSES);
-            for (int tries = 0; tries < 5 && second.key.equals(picked.key); tries++) {
+            for (int tries = 0; tries < 5 && (second.key.equals(picked.key)
+                    || s.mods.bannedBosses.contains(second.key)); tries++) {
                 second = st.pick(BOSSES);
             }
             s.bossQueue.add(second.key);

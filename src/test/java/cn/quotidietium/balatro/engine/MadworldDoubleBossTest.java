@@ -9,7 +9,8 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
- * 疯狂世界（madworld）双 Boss 挑战回归测试（轮次 R4）。
+ * mods.doubleBoss 引擎能力回归测试（轮次 R4；R122 起与 madworld 挑战解耦——
+ * 真版疯狂世界不再使用双 Boss 规则，见 MadworldRealMechanicsTest）。
  *
  * <p>移植对照 REF engine.js：chooseBoss 在 mods.doubleBoss 下抽取两个不同 Boss 入队；
  * 击败第一个 Boss 后无商店间隔、立即以 blindSelect/boss 接第二个 Boss（endRound 提前 return）。
@@ -19,8 +20,10 @@ class MadworldDoubleBossTest {
     @Test
     void chooseBossQueuesTwoDistinctBosses() {
         for (String seed : new String[]{"MADW001", "MADW002", "MADW003", "MADW004", "MADW005"}) {
-            RunState s = Engine.createRun("red", 0, seed, "madworld");
-            assertEquals(2, s.bossQueue.size(), "madworld 开局应排队 2 个 Boss（seed=" + seed + "）");
+            RunState s = Engine.createRun("red", 0, seed, null);
+            s.mods.doubleBoss = true;
+            Engine.rerollBoss(s, true); // 免费重抽触发 chooseBoss（mods 在 createRun 后置位）
+            assertEquals(2, s.bossQueue.size(), "doubleBoss 应排队 2 个 Boss（seed=" + seed + "）");
             assertNotEquals(s.bossQueue.get(0), s.bossQueue.get(1), "两个 Boss 应不同（seed=" + seed + "）");
         }
     }
@@ -33,7 +36,9 @@ class MadworldDoubleBossTest {
 
     @Test
     void firstBossDefeatChainsToSecondBossWithoutShop() {
-        RunState s = Engine.createRun("red", 0, "MADCHAIN1", "madworld");
+        RunState s = Engine.createRun("red", 0, "MADCHAIN1", null);
+        s.mods.doubleBoss = true;
+        Engine.rerollBoss(s, true); // 重抽以双 Boss 模式重建队列
         String boss1 = s.bossQueue.get(0);
         String boss2 = s.bossQueue.get(1);
 

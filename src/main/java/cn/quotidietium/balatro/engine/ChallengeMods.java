@@ -66,12 +66,17 @@ public final class ChallengeMods {
                 case "noJokers" -> m.noJokers = bool(v);
                 case "jokers" -> { for (String jk : v.split(",")) if (!jk.isEmpty()) s.gainJoker(jk, null); }
                 // 永恒小丑开局（真版十五分钟城市：永恒「乘公交」+「捷径」）——R102 对齐真版新增
+                // R122 扩展：值可带版本后缀 "key|negative"（真版疯狂世界：永恒负片空想性错觉）
                 case "eternalJokers" -> {
                     for (String jk : v.split(",")) {
                         if (jk.isEmpty()) continue;
-                        var ji = cn.quotidietium.balatro.engine.joker.JokerRegistry.create(jk);
+                        String[] kv = jk.split("\\|");
+                        var ji = cn.quotidietium.balatro.engine.joker.JokerRegistry.create(kv[0]);
                         if (ji != null && s.jokerSpace() > 0) {
                             ji.eternal = true;
+                            if (kv.length > 1 && "negative".equals(kv[1])) {
+                                ji.edition = cn.quotidietium.balatro.engine.Data.Edition.NEGATIVE;
+                            }
                             s.jokers.add(ji);
                             s.msg("获得永恒小丑：" + cn.quotidietium.balatro.engine.joker.JokerRegistry.nameOf(jk));
                         }
@@ -85,6 +90,12 @@ public final class ChallengeMods {
                 // 禁入清单（真版煎蛋卷：经济券/小丑不进商店与随机池）——R108 对齐真版新增
                 case "banVouchers" -> { for (String bk : v.split(",")) if (!bk.isEmpty()) m.bannedVouchers.add(bk); }
                 case "banJokers" -> { for (String bk : v.split(",")) if (!bk.isEmpty()) m.bannedJokers.add(bk); }
+                // R122 真版疯狂世界：禁现 Boss + 牌组点数带（仅 2~9 共 32 张）
+                case "banBosses" -> { for (String bk : v.split(",")) if (!bk.isEmpty()) m.bannedBosses.add(bk); }
+                case "rankRange" -> {
+                    String[] mm = v.split(",");
+                    if (mm.length == 2) { m.rankMin = Integer.parseInt(mm[0]); m.rankMax = Integer.parseInt(mm[1]); }
+                }
                 case "money" -> s.money = Long.parseLong(v);
                 default -> { /* 未知 mod（如 hands=-99，被 handsSet 覆盖）忽略 */ }
             }

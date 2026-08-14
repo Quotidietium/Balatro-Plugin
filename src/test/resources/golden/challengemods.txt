@@ -21,7 +21,11 @@ CHALLENGE xray
 xrayFacedown=true
 END
 CHALLENGE madworld
-doubleBoss=true
+noInterest=true
+noHandPay=true
+eternalJokers=pareidolia|negative,business
+rankRange=2,9
+banBosses=plant
 END
 CHALLENGE luxury
 jokerTax=0.1

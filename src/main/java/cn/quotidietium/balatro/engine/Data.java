@@ -598,7 +598,7 @@ public final class Data {
             new Challenge("rich", "富者愈富", "利息翻倍，但资金低于 $10 时无法获得出牌奖励"),
             new Challenge("knife", "刀尖行走", "所有盲注目标分 ×1.5"),
             new Challenge("xray", "X 光视界", "抽到的牌有 1/4 概率面朝下"),
-            new Challenge("madworld", "疯狂世界", "没有大小盲注，每个底注打 2 个 Boss"),
+            new Challenge("madworld", "疯狂世界", "无利息与剩余出牌金；开局永恒负片「空想性错觉」与永恒「名片」；牌组仅 2~9 共 32 张；Boss「植物」禁现"),
             new Challenge("luxury", "奢侈品税", "每持有 1 张小丑，盲注目标分 +10%"),
             new Challenge("nonperish", "永不过期", "所有小丑均为永恒（不可出售），但商店价格 6 折"),
             new Challenge("medusa", "美杜莎", "所有人头牌变为石头牌"),
