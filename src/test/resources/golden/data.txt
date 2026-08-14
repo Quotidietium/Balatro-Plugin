@@ -167,8 +167,8 @@ VOUCHER|wasteful|挥霍无度|每回合弃牌次数 +1|10|recyclo
 VOUCHER|recyclo|回收狂人|每回合弃牌次数再 +1|10|wasteful
 VOUCHER|magictrick|魔术技巧|商店可出现游戏牌|10|illusion
 VOUCHER|illusion|幻觉|商店的游戏牌可能带增强或版本|10|magictrick
-VOUCHER|hieroglyph|象形文字|底注 -1|10|petroglyph
-VOUCHER|petroglyph|岩画|底注再 -1|10|hieroglyph
+VOUCHER|hieroglyph|象形文字|底注 -1；每回合出牌次数 -1|10|petroglyph
+VOUCHER|petroglyph|岩画|底注再 -1；每回合弃牌次数 -1|10|hieroglyph
 VOUCHER|director|导演剪辑版|可花 $10 重掷 Boss 盲注|10|retcon
 VOUCHER|retcon|翻拍|重掷 Boss 盲注免费|10|director
 VOUCHER|paintbrush|油漆刷|手牌上限 +1|10|palette

@@ -316,6 +316,11 @@ public final class Engine {
         if (s.vouchers.contains("recyclo")) s.discardsBase += 1;        // 回收狂人：弃牌再 +1
         if (s.vouchers.contains("paintbrush")) s.handSizeBase += 1;     // 油漆刷：手牌上限 +1
         if (s.vouchers.contains("palette")) s.handSizeBase += 1;        // 调色板：手牌上限再 +1
+        // R125 对齐真版（Vouchers Wiki）：象形文字=「-1 Ante, -1 hand each round」、
+        // 岩画=「-1 Ante again, -1 discard each round」——底注扣减在 buyVoucher（购时 -1），
+        // 此处补缺失的每回合修正（REF 两券仅有底注部分，属 REF bug）。
+        if (s.vouchers.contains("hieroglyph")) s.handsBase -= 1;        // 象形文字：每回合出牌 -1
+        if (s.vouchers.contains("petroglyph")) s.discardsBase -= 1;     // 岩画：每回合弃牌 -1
     }
 
     private static void computeFlags(RunState s) {
