@@ -117,6 +117,10 @@ public final class GameSession {
                 player.sendMessage("§e第二个 Boss 出现：§f" + Engine.bossDef(state).name
                         + " §7— 用 /balatro go 或右键「▶ 开始盲注」继续");
             }
+            // 防御性守卫：playHand/endRound/openShop 路径不设 state.won（仅 Engine.nextRound 在
+            // 击败 ante8 boss 后设 true），故此处当前不可达——真正触发通关 finishRun 的是
+            // nextRound()（玩家 /balatro next 后）。保留作防御，若未来引擎在 playHand 内直接
+            // 通关则此分支生效，避免漏发 RunEnd。
             if (state.won) {
                 finishRun(true, state.ante);
             }
