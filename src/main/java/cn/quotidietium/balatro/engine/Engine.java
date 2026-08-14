@@ -229,8 +229,12 @@ public final class Engine {
             case "handy" -> s.gainMoney(s.statsHandsPlayed);
             case "garbage" -> s.gainMoney(s.statsDiscardsUnused);
             case "speed" -> s.gainMoney(5L * s.statsBlindsSkipped);
-            // R127 对齐真版（Tags Wiki）：经济标签=金钱翻倍（至多 +$40）——REF 的 $1/$5 上限$25 为 REF bug
-            case "economy" -> s.gainMoney(Math.max(0, Math.min(40, s.money)));
+            // R127/R131 对齐真版（Economy Tag Wiki）：<$40 翻倍（=+money）、≥$40 flat +$40、
+            // 负余额【归零】（$-5→$0，非停留在负值）——REF 的 $1/$5 上限$25 为 REF bug
+            case "economy" -> {
+                if (s.money < 0) s.gainMoney(-s.money);
+                else s.gainMoney(Math.min(40, s.money));
+            }
             case "orbital" -> s.levelUpHand(st.pick(List.of(Data.HandType.values())), 3);
             case "juggle" -> s.nextShop.put("juggle", true);
             default -> { }

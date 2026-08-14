@@ -37,6 +37,11 @@ class RealTagSpecTest {
         rich.money = 100;
         Engine.gainTag(rich, "economy");
         assertEquals(140, rich.money, "$100 → +$40 封顶");
+        // R131 真版（Economy Tag Wiki）：负余额【归零】而非停留负值
+        RunState neg = Engine.createRun("red", 0, "RECO3", null);
+        neg.money = -5;
+        Engine.gainTag(neg, "economy");
+        assertEquals(0, neg.money, "$-5 → $0（真版负余额归零）");
     }
 
     @Test
