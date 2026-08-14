@@ -65,6 +65,23 @@ public final class ChallengeMods {
                 case "smallBigRewardHalf" -> m.smallBigRewardHalf = bool(v);
                 case "noJokers" -> m.noJokers = bool(v);
                 case "jokers" -> { for (String jk : v.split(",")) if (!jk.isEmpty()) s.gainJoker(jk, null); }
+                // 永恒小丑开局（真版十五分钟城市：永恒「乘公交」+「捷径」）——R102 对齐真版新增
+                case "eternalJokers" -> {
+                    for (String jk : v.split(",")) {
+                        if (jk.isEmpty()) continue;
+                        var ji = cn.quotidietium.balatro.engine.joker.JokerRegistry.create(jk);
+                        if (ji != null && s.jokerSpace() > 0) {
+                            ji.eternal = true;
+                            s.jokers.add(ji);
+                            s.msg("获得永恒小丑：" + cn.quotidietium.balatro.engine.joker.JokerRegistry.nameOf(jk));
+                        }
+                    }
+                    Engine.recomputeFlags(s);
+                }
+                case "noBlindReward" -> m.noBlindReward = bool(v);
+                case "noHandPay" -> m.noHandPay = bool(v);
+                case "faceDouble" -> m.faceDouble = bool(v);
+                case "xrayFacedown" -> m.xrayFacedown = bool(v);
                 case "money" -> s.money = Long.parseLong(v);
                 default -> { /* 未知 mod（如 hands=-99，被 handsSet 覆盖）忽略 */ }
             }

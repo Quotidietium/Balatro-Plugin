@@ -35,4 +35,9 @@ public final class Mods {
     public double shopDiscount;      // 挑战：商店折扣
     public int minRewardMoney;       // 挑战：低于此金额无出牌奖励
     public boolean smallBigRewardHalf; // 挑战：小/大盲奖励减半
+    // ---- 以下 4 项为对齐真版挑战机制的修正（R102，用户拍板「对齐原版机制」；REF 上游描述与 mods 不一致） ----
+    public boolean noBlindReward;    // 煎蛋卷（真版）：所有盲注无奖励金
+    public boolean noHandPay;        // 煎蛋卷（真版）：剩余出牌不再产生金钱
+    public boolean faceDouble;       // 十五分钟城市（真版）：人头牌翻倍（替换所有 A/2/3）
+    public boolean xrayFacedown;     // X 光视界（真版）：抽到的牌 1/4 概率面朝下
 }

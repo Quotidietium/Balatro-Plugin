@@ -55,7 +55,9 @@ class ChallengeModsAllLoadTest {
                 || m.doubleInterest || m.freeReroll || m.allEternal || m.facesToStone
                 || m.checkered || m.allStone || m.numbersToFaces || m.glassDouble
                 || m.inflation || m.doubleBoss || m.must5 || m.noJokers
-                || m.smallBigRewardHalf) return true;
+                || m.smallBigRewardHalf
+                // R102 对齐真版的 4 个新挑战 mod
+                || m.noBlindReward || m.noHandPay || m.faceDouble || m.xrayFacedown) return true;
         // 数值 mod（默认 0）
         if (m.handsSet != 0 || m.handSize != 0 || m.blindMult != 0 || m.jokerTax != 0
                 || m.rewardMult != 0 || m.shopDiscount != 0 || m.minRewardMoney != 0) return true;

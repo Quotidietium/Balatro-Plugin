@@ -101,6 +101,13 @@ public final class Engine {
                 c.setEnh(Data.Enhancement.STONE);
                 deck.add(c);
             }
+        } else if (m.faceDouble) {
+            // 十五分钟城市（真版）：两张所有人头牌、无 A/2/3 —— 4~10 各 4 张(28) + J/Q/K 各 8 张(24) = 52
+            // （R102 对齐真版；REF 原版网页未实现此牌组，属 REF bug）
+            for (int su = 0; su < 4; su++) {
+                for (int r = 4; r <= 10; r++) deck.add(s.makeCard(r, su));
+                for (int rep = 0; rep < 2; rep++) for (int r = 11; r <= 13; r++) deck.add(s.makeCard(r, su));
+            }
         } else {
             for (int su = 0; su < 4; su++) {
                 for (int r = 2; r <= 14; r++) {
@@ -407,6 +414,9 @@ public final class Engine {
         String bk = effectBk(s);
         c.setFacedown(forceFacedown);
         if ("wheel".equals(bk) && s.stream("wheel").chance(1.0 / 7)) c.setFacedown(true);
+        // X 光视界（真版）：抽到的牌 1/4 概率面朝下（R102 对齐真版；REF 原版网页未实现，属 REF bug）。
+        // 命名流 "xray" 仅本挑战消耗，不影响其他挑战/标准局的种子复现。
+        if (s.mods.xrayFacedown && s.stream("xray").chance(0.25)) c.setFacedown(true);
         if ("mark".equals(bk) && c.rank() >= 11 && c.rank() <= 13) c.setFacedown(true);
         if ("pillar".equals(bk) && s.playedThisAnte.contains(c.id())) c.setDebuff(true);
         if (s.bossSuitDebuff != null && c.enh() != Data.Enhancement.STONE && c.suit() == s.bossSuitDebuff) c.setDebuff(true);
@@ -841,12 +851,14 @@ public final class Engine {
         if (s.mods.redStake && s.blindType == Data.BlindType.SMALL) reward = 0;
         if (s.mods.smallBigRewardHalf && s.blindType != Data.BlindType.BOSS) reward = (long) Math.ceil(reward / 2.0);
         if (s.mods.rewardMult != 0) reward *= s.mods.rewardMult;
+        if (s.mods.noBlindReward) reward = 0; // 煎蛋卷（真版）：所有盲注无奖励金（R102 对齐真版）
         gain += reward;
         if (reward > 0) detail.add("盲注奖励 +$" + reward);
 
         // 剩余出牌
         long handPay = s.handsLeft;
         if (s.mods.minRewardMoney != 0 && s.money < s.mods.minRewardMoney) handPay = 0;
+        if (s.mods.noHandPay) handPay = 0; // 煎蛋卷（真版）：剩余出牌不再产生金钱（R102 对齐真版）
         if ("green".equals(s.deckKey)) {
             long g = 2L * s.handsLeft + s.discardsLeft;
             gain += g;

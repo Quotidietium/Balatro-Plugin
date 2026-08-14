@@ -1,5 +1,5 @@
 CHALFX omelette money=4 jokers=egg,egg,egg,egg,egg deck=52 stone=0
-CHALFX city15 money=4 jokers= deck=52 stone=0
+CHALFX city15 money=4 jokers=ridebus,shortcut deck=52 stone=0
 CHALFX rich money=4 jokers= deck=52 stone=0
 CHALFX knife money=4 jokers= deck=52 stone=0
 CHALFX xray money=4 jokers= deck=52 stone=0

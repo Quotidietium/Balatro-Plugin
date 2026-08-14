@@ -593,11 +593,11 @@ public final class Data {
 
     public record Challenge(String key, String name, String desc) {}
     public static final java.util.List<Challenge> CHALLENGES = java.util.List.of(
-            new Challenge("omelette", "煎蛋卷", "开局拥有 5 张「蛋」；无法获得其他金钱来源"),
-            new Challenge("city15", "十五分钟城市", "商店始终满员且重掷免费"),
+            new Challenge("omelette", "煎蛋卷", "开局拥有 5 张「蛋」；盲注无奖励金、剩余出牌与利息均不产生金钱"),
+            new Challenge("city15", "十五分钟城市", "所有人头牌翻倍（替换所有 A、2、3）；开局拥有永恒的「乘公交」与「捷径」"),
             new Challenge("rich", "富者愈富", "利息翻倍，但资金低于 $10 时无法获得出牌奖励"),
             new Challenge("knife", "刀尖行走", "所有盲注目标分 ×1.5"),
-            new Challenge("xray", "X 光视界", "所有抽到的牌面朝上，但手牌上限 -2"),
+            new Challenge("xray", "X 光视界", "抽到的牌有 1/4 概率面朝下"),
             new Challenge("madworld", "疯狂世界", "没有大小盲注，每个底注打 2 个 Boss"),
             new Challenge("luxury", "奢侈品税", "每持有 1 张小丑，盲注目标分 +10%"),
             new Challenge("nonperish", "永不过期", "所有小丑均为永恒（不可出售），但商店价格 6 折"),

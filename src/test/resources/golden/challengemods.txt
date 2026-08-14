@@ -1,9 +1,12 @@
 CHALLENGE omelette
 jokers=egg,egg,egg,egg,egg
 noInterest=true
+noBlindReward=true
+noHandPay=true
 END
 CHALLENGE city15
-freeReroll=true
+faceDouble=true
+eternalJokers=ridebus,shortcut
 END
 CHALLENGE rich
 doubleInterest=true
@@ -13,7 +16,7 @@ CHALLENGE knife
 blindMult=1.5
 END
 CHALLENGE xray
-handSize=-2
+xrayFacedown=true
 END
 CHALLENGE madworld
 doubleBoss=true
