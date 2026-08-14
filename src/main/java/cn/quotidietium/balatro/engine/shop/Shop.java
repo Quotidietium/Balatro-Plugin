@@ -311,7 +311,9 @@ public final class Shop {
         if (s.mods.goldStake && st.chance(0.3)) ji.rental = true;
         if (s.mods.allEternal) ji.eternal = true;
         long price = shopPrice(s, jokerCost(ji));
-        if (ji.rental) price = Math.max(1, price - 3);
+        // R124 对齐真版：租赁小丑售价恒 $1（"costs $1 to buy"，Reddit/Steam/Stickers）；
+        // REF 的 price-3 为 REF bug（$5 小丑 $2 买）。仅金注出现，标准局零影响。
+        if (ji.rental) price = 1;
         CardItem it = new CardItem();
         it.kind = "joker"; it.joker = ji; it.name = JokerRegistry.nameOf(def.key());
         it.desc = def.desc(); it.price = price;

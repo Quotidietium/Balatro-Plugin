@@ -214,6 +214,9 @@ public final class RunState {
         else if (j.edition == Data.Edition.POLY) cost += 5;
         else if (j.edition == Data.Edition.NEGATIVE) cost += 5;
         if (mods.inflationPerBuy) cost += (int) Math.min(inflation, 1000); // 真版：基价随购买数上涨
+        // R124 对齐真版：租赁小丑卖价恒 $1（"sell for only $1"）；蛋类 sellBonus 仍叠加。
+        // REF 的 cost/2 为 REF bug（$8 租赁小丑卖 $4）。仅金注出现，标准局零影响。
+        if (j.rental) return Math.max(1, 1 + j.sellBonus);
         return Math.max(1, cost / 2 + j.sellBonus);
     }
 
