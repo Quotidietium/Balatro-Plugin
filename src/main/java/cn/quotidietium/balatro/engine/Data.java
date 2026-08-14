@@ -254,7 +254,8 @@ public final class Data {
     }
 
     // ================= Boss 盲注（28） =================
-    // 0.1.0：仅用于 chooseBoss 的可复现选取与命名展示；Boss 特殊效果在 0.3.0 生效。
+    // 28 个 Boss 的 key/name/desc；效果实现见 Engine.java 各 Boss 分支（startRound/drawOne/
+    // drawUpTo/playHand/blindTarget 等）+ RunState.disableBoss/sellJoker（leaf 解除）。
     public enum Boss {
         HOOK("hook", "钩子", "每次出牌后随机弃掉 2 张手牌"),
         OX("ox", "公牛", "打出本局最常用的牌型时，金钱归零"),
