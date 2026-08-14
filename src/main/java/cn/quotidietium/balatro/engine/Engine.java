@@ -623,6 +623,24 @@ public final class Engine {
             s.bossTriggeredThisHand = true;
         }
 
+        // R130/R132 真版【计分前】阶段（每手恰一次——R130 曾误插逐卡循环内致 space 每卡掷骰）：
+        // Space 升级当手即生效（Space Wiki："triggered before scoring"）；Obelisk 先重置再计分
+        //（Obelisk Wiki："resets before the hand is scored"），严格唯一最常用才重置（并列安全）。
+        List<JokerInstance> preSnap = new ArrayList<>(s.jokers);
+        for (JokerInstance pj : preSnap) {
+            if (pj.debuff || !s.jokers.contains(pj)) continue;
+            if (pj.def.key().equals("space") && s.stream("space").chance(0.25)) {
+                s.levelUpHand(type, 1);
+                s.msg("太空小丑：「" + type.name + "」升 1 级（计分前）");
+            } else if (pj.def.key().equals("obelisk")) {
+                Data.HandType strict = strictMostPlayed(s);
+                if (strict == type) {
+                    pj.extra.put("x", 0.0);
+                    s.msg("方尖碑：重置");
+                }
+            }
+        }
+
         // 1) 打出牌逐张计分（含重新触发）
         for (int ci = 0; ci < cards.size(); ci++) {
             Card card = cards.get(ci);
@@ -642,23 +660,6 @@ public final class Engine {
             }
             int times = card.debuff() ? 0 : (1 + retriggers);
             for (int t = 0; t < times; t++) {
-        // R130 真版【计分前】阶段：Space 升级（当手即生效）与 Obelisk 重置（先重置再计分）
-        List<JokerInstance> preSnap = new ArrayList<>(s.jokers);
-        for (JokerInstance pj : preSnap) {
-            if (pj.debuff || !s.jokers.contains(pj)) continue;
-            if (pj.def.key().equals("space") && s.stream("space").chance(0.25)) {
-                s.levelUpHand(type, 1);
-                s.msg("太空小丑：「" + type.name + "」升 1 级（计分前）");
-            } else if (pj.def.key().equals("obelisk")) {
-                // 真版：打出前已是【严格唯一】最常用牌型才重置（并列安全）
-                Data.HandType strict = strictMostPlayed(s);
-                if (strict == type) {
-                    pj.extra.put("x", 0.0);
-                    s.msg("方尖碑：重置");
-                }
-            }
-        }
-
                 scoreOneCard(s, ctx, card);
                 for (int ji = 0; ji < activeJokers.size(); ji++) {
                     JokerInstance src = resolveCopy(activeJokers, ji);
