@@ -260,10 +260,12 @@ public final class Engine {
         return Data.PACKS.get(0);
     }
 
-    /** 取指定类型的**大号**（Mega，x2 档）补充包定义——R127 真版标签开包等第
-     *  （Standard/Charm/Meteor/Buffoon 标签均给 Mega 包，Tags Wiki）。 */
+    /** 取指定类型的 **Mega**（x3 档：5 选 2 / Buffoon 4 选 2，$8）补充包定义——R135 自证修正：
+     *  真版档位 Normal($4,3选1)/Jumbo($6,5选1)/Mega($8,5选2)（Booster Packs Wiki 表），
+     *  我方 x1/x2/x3 恰对应三档；R127 的 endsWith("2") 误取 Jumbo（5 选 1）。
+     *  Standard/Charm/Meteor/Buffoon 标签均给 Mega 包（Tags Wiki）。 */
     private static Data.Pack megaPackOfType(Data.PackType type) {
-        for (Data.Pack p : Data.PACKS) if (p.type == type && p.key.endsWith("2")) return p;
+        for (Data.Pack p : Data.PACKS) if (p.type == type && p.key.endsWith("3")) return p;
         return firstPackOfType(type);
     }
 

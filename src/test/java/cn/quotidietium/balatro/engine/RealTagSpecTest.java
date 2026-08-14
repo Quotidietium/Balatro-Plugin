@@ -22,11 +22,16 @@ class RealTagSpecTest {
     @Test
     void packTagsOpenMegaPacksImmediately() {
         for (String[] kv : new String[][]{
-                {"standard", "standard2"}, {"charm", "arcana2"}, {"meteor", "celestial2"},
-                {"buffoon", "buffoon2"}, {"ethereal", "spectral1"}}) {
+                {"standard", "standard3"}, {"charm", "arcana3"}, {"meteor", "celestial3"},
+                {"buffoon", "buffoon3"}, {"ethereal", "spectral1"}}) {
             RunState s = tag("RTAG" + kv[0], kv[0]);
             assertEquals(Phase.PACK, s.phase, kv[0] + " 应立即进入补充包");
             assertEquals(kv[1], s.pack.def.key, kv[0] + " 应开 " + kv[1] + "（Mega/幽灵）");
+            if (!kv[0].equals("ethereal")) {
+                assertEquals(2, s.pack.def.choose, kv[0] + "：Mega 档必须选 2（R135 修正）");
+                assertEquals(kv[0].equals("buffoon") ? 4 : 5, s.pack.def.size,
+                        kv[0] + "：Mega 档 5 张（Buffoon 4 张）");
+            }
         }
     }
 
