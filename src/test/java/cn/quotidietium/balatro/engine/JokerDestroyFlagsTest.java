@@ -52,7 +52,8 @@ class JokerDestroyFlagsTest {
         Consumables.Result r = Consumables.use(s, 0, null);
         assertTrue(r.ok, "hex 使用应成功: " + r.err);
         assertEquals(1, s.jokers.size(), "hex 应只剩 1 张小丑");
-        assertEquals(Data.Edition.NEGATIVE, s.jokers.get(0).edition, "留下的小丑应变为负片");
+        // R128 对齐真版：妖术附加多彩（Spectral Wiki；REF 的负片为 REF bug）
+        assertEquals(Data.Edition.POLY, s.jokers.get(0).edition, "留下的小丑应变为多彩");
         assertEquals(20, ((Number) s.flags.get("credit")).intValue(),
                 "hex 销毁一张信用卡后 credit 应立即从 40 降为 20（无残留）");
     }

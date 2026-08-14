@@ -285,7 +285,9 @@ public final class Consumables {
                     if (editable.isEmpty()) return Result.err("没有可用的小丑");
                     JokerInstance keep = st.pick(editable);
                     s.jokers.removeIf(j -> j != keep && !j.eternal);
-                    keep.edition = Data.Edition.NEGATIVE;
+                    // R128 对齐真版（Spectral Wiki："Add Polychrome to a random Joker, destroy all
+                    // other Jokers"）——REF 误为 NEGATIVE（R17 逐行对 REF 的经典盲区）。
+                    keep.edition = Data.Edition.POLY;
                     return Result.ok();
                 }
                 case "ankh": {

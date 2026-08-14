@@ -321,7 +321,9 @@ public final class RunState {
             default -> {
                 List<Data.Spectral> pool = new ArrayList<>();
                 for (Data.Spectral sp0 : Data.Spectral.values()) {
-                    if (!mods.bannedSpectrals.contains(sp0.key)) pool.add(sp0);
+                    if (mods.bannedSpectrals.contains(sp0.key)) continue;
+                    if (Data.SPECIAL_SPECTRALS.contains(sp0.key)) continue; // R128 真版：产出池排除灵魂/黑洞
+                    pool.add(sp0);
                 }
                 Data.Spectral sp = pool.isEmpty() ? null : stream("consumable").pick(pool);
                 if (sp != null && addConsumableKey("spectral", sp.key)) msg("获得：" + sp.name);

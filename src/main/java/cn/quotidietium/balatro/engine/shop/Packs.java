@@ -98,7 +98,17 @@ public final class Packs {
                 c.name = item.name; c.desc = item.desc;
             }
             case SPECTRAL -> {
-                Data.Spectral sp = st.pick(List.of(Data.Spectral.values()));
+                // R128 对齐真版（Spectral Wiki）：灵魂/黑洞仅在幽灵包以 ~0.3% 概率出现
+                Data.Spectral sp;
+                if (st.chance(0.003)) sp = Data.Spectral.byKey("soul");
+                else if (st.chance(0.003)) sp = Data.Spectral.byKey("blackhole");
+                else {
+                    List<Data.Spectral> pool = new ArrayList<>();
+                    for (Data.Spectral s0 : Data.Spectral.values()) {
+                        if (!Data.SPECIAL_SPECTRALS.contains(s0.key)) pool.add(s0);
+                    }
+                    sp = st.pick(pool);
+                }
                 c.kind = "spectral"; c.key = sp.key; c.name = sp.name; c.desc = sp.desc;
             }
         }

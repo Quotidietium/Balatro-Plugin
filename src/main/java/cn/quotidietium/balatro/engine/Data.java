@@ -410,6 +410,9 @@ public final class Data {
     }
 
     // ================= 幻灵牌（18） =================
+    /** 真版特殊幽灵（R128）：灵魂/黑洞仅在幽灵补充包以 ~0.3% 概率出现，
+     *  商店与小丑产出的随机幽灵池排除二者（Spectral Cards Wiki）。 */
+    public static final java.util.Set<String> SPECIAL_SPECTRALS = java.util.Set.of("soul", "blackhole");
     public enum Spectral {
         FAMILIAR("familiar", "妖精", "销毁 1 张随机手牌，获得 3 张随机增强人头牌"),
         GRIM("grim", "鬼魂", "销毁 1 张随机手牌，获得 2 张随机增强 A"),

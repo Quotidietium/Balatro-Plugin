@@ -245,7 +245,9 @@ public final class Shop {
             case 4: {
                 List<Data.Spectral> spPool = new ArrayList<>();
                 for (Data.Spectral s0 : Data.Spectral.values()) {
-                    if (!s.mods.bannedSpectrals.contains(s0.key)) spPool.add(s0); // R123 真版禁入
+                    if (s.mods.bannedSpectrals.contains(s0.key)) continue; // R123 真版禁入
+                    if (Data.SPECIAL_SPECTRALS.contains(s0.key)) continue; // R128 真版：商店排除灵魂/黑洞
+                    spPool.add(s0);
                 }
                 Data.Spectral sp = spPool.isEmpty() ? null : st.pick(spPool);
                 if (sp == null) return makeJokerItem(s, null, null);
