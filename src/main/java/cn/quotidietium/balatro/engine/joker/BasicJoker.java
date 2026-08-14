@@ -637,7 +637,12 @@ public enum BasicJoker implements Joker {
         }
         @Override
         public void onPlayHand(RunState state, PlayHandInfo info, JokerInstance self) {
-            // R130 真版：重置在【计分前】由 Engine 驱动（严格唯一最常用才重置，并列安全）
+            // R130 真版：重置在【计分前】由 Engine 驱动（严格唯一最常用才重置，并列安全）；
+            // R133 真版：重置手【不获得增量】（"consecutive ... without playing your most played"）
+            if (Boolean.TRUE.equals(self.extra.get("obNoGain"))) {
+                self.extra.remove("obNoGain");
+                return;
+            }
             self.extra.put("x", gd(self.extra, "x") + 0.2);
         }
     },

@@ -636,6 +636,8 @@ public final class Engine {
                 Data.HandType strict = strictMostPlayed(s);
                 if (strict == type) {
                     pj.extra.put("x", 0.0);
+                    pj.extra.put("obNoGain", Boolean.TRUE); // R133：重置手不获增量（"consecutive
+                    // ... without playing your most played"——该手不计入连续），onPlayHand 据此跳过
                     s.msg("方尖碑：重置");
                 }
             }
