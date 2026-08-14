@@ -22,7 +22,10 @@ import java.util.Map;
  */
 public final class JokerRegistry {
 
-    private static final Map<String, Joker> BY_KEY = new HashMap<>();
+    // register() 是公开 API（第三方插件可在运行期追加），BY_KEY 与主线程的 byKey/allJokers
+    // 读并发——用 ConcurrentHashMap 防第三方异步注册时的丢条目/迭代异常（长期高负载加固）。
+    // RARITY/COST/NAME 仅在静态初始化（loadMeta）写入、之后只读，HashMap 即安全。
+    private static final Map<String, Joker> BY_KEY = new java.util.concurrent.ConcurrentHashMap<>();
     private static final Map<String, Integer> RARITY = new HashMap<>();
     private static final Map<String, Integer> COST = new HashMap<>();
     private static final Map<String, String> NAME = new HashMap<>();
@@ -38,7 +41,12 @@ public final class JokerRegistry {
     private JokerRegistry() {
     }
 
-    /** 注册（覆盖同名）。 */
+    /**
+     * 注册（覆盖同名）。线程安全（任意线程可调；与主线程的 byKey/allJokers 并发安全）。
+     *
+     * <p>注意：注册的小丑可经 {@link #byKey}/{@link #create} 获取（供第三方自行发放），
+     * 但**不会自动进入商店池/gainRandomJoker**（二者按 ORDERED=原版元数据顺序收录）。
+     */
     public static void register(Joker joker) {
         BY_KEY.put(joker.key(), joker);
     }
