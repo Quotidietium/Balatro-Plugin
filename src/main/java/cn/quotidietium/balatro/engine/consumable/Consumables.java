@@ -59,6 +59,30 @@ public final class Consumables {
         return Result.ok();
     }
 
+    /**
+     * 设置牌的增强，正确处理石头牌转换（对齐真版）。
+     *
+     * <p>真版语义（[Reddit](https://www.reddit.com/r/balatro/comments/1bn9dpi/) +
+     * [Stone cards Wiki](https://balatrowiki.org/w/Stone_cards)）：增强塔罗替换原增强；
+     * 石头牌被转为非 stone 增强时不再是石头，须恢复合法 rank/suit。REF engine.js 此处未恢复
+     * （REF bug：石头牌转其他增强后 rank/suit 仍 0/-1，isStone 按 rank==0 仍判石头但 enh 已非 stone，
+     * HandEval 按 enh!=stone 当普通牌，rank=0/suit=-1 参与判定致混乱）。
+     *
+     * @param card 目标牌
+     * @param enh  新增强（含 STONE）
+     */
+    private static void applyEnhancement(Card card, Data.Enhancement enh) {
+        card.setEnh(enh);
+        if (enh == Data.Enhancement.STONE) {
+            card.setRank(0);
+            card.setSuit(-1);
+        } else if (card.rank() == 0 || card.suit() < 0) {
+            // 从石头转为普通增强：恢复合法底层（无底层记录时用黑桃2，对齐 marble 小丑的石头壳默认）
+            if (card.rank() < 2) card.setRank(2);
+            if (card.suit() < 0) card.setSuit(0);
+        }
+    }
+
     private static List<Card> targets(RunState s, List<Integer> targetIds, boolean inRound, int max, boolean exact) {
         if (!inRound) return null;
         if (targetIds == null) targetIds = List.of();
@@ -114,7 +138,7 @@ public final class Consumables {
                     if (t == null || t.isEmpty()) return Result.err("请选择至多 2 张手牌");
                     Data.Enhancement enh = c.key.equals("magician") ? Data.Enhancement.LUCKY
                             : c.key.equals("empress") ? Data.Enhancement.MULT : Data.Enhancement.BONUS;
-                    for (Card card : t) { card.setEnh(enh); card.setFacedown(false); }
+                    for (Card card : t) { applyEnhancement(card, enh); card.setFacedown(false); }
                     return Result.ok();
                 }
                 case "priestess": {
@@ -142,8 +166,7 @@ public final class Consumables {
                         case "devil" -> Data.Enhancement.GOLD;
                         default -> Data.Enhancement.STONE;
                     };
-                    t.get(0).setEnh(enh);
-                    if (enh == Data.Enhancement.STONE) { t.get(0).setRank(0); t.get(0).setSuit(-1); }
+                    applyEnhancement(t.get(0), enh);
                     t.get(0).setFacedown(false);
                     return Result.ok();
                 }
