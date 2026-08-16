@@ -31,3 +31,4 @@ build/
 /world_the_end/
 /crash-reports/
 .zcode
+benchmark/tmp/
