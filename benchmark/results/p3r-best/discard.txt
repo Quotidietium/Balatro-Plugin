@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p3r1, benchmark\results\p3r2, benchmark\results\p3r3]
+#Sun Aug 16 15:27:02 CST 2026
+allocBytesPerOp.median=800
+label=p3r-best
+nsPerOp.bestOfRuns=391
+nsPerOp.mean=559
+nsPerOp.median=391
+nsPerOp.min=367
+nsPerOp.p95=940
+runs=3
+scenario=discard

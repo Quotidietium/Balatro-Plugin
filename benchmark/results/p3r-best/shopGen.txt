@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p3r1, benchmark\results\p3r2, benchmark\results\p3r3]
+#Sun Aug 16 15:27:02 CST 2026
+allocBytesPerOp.median=13892
+label=p3r-best
+nsPerOp.bestOfRuns=14393
+nsPerOp.mean=14858
+nsPerOp.median=14393
+nsPerOp.min=13841
+nsPerOp.p95=16064
+runs=3
+scenario=shopGen
