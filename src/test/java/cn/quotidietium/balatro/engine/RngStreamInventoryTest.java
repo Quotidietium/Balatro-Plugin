@@ -47,6 +47,12 @@ class RngStreamInventoryTest {
 
     private static final Pattern STREAM_CALL = Pattern.compile("stream\\(\"([^\"]*)\"");
 
+    // P14：一次性流改经分段折叠入口（零字符串物化）——名字仍为 "use:"+... / "pack"+...
+    // 等价性由 RngSegmentedStreamTest + 黄金测试锁定；此处把入口调用同样纳入清点，
+    // 保证新增 streamUse/streamPack 调用点依旧过白名单审计。
+    private static final Pattern STREAM_USE_CALL = Pattern.compile("\\.streamUse\\(");
+    private static final Pattern STREAM_PACK_CALL = Pattern.compile("\\.streamPack\\(");
+
     @Test
     void streamNameInventoryMatchesVettedWhitelist() throws IOException {
         Path root = Path.of("src", "main", "java");
@@ -63,6 +69,8 @@ class RngStreamInventoryTest {
                     found.add(m.group(1));
                     files.add(p.toString());
                 }
+                if (STREAM_USE_CALL.matcher(src).find()) found.add("use:");
+                if (STREAM_PACK_CALL.matcher(src).find()) found.add("pack");
             }
         }
         assertTrue(!found.isEmpty(), "应能提取到流名（正则失效防护）");

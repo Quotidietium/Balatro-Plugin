@@ -98,6 +98,76 @@ public final class Rng {
         return new Stream(h);
     }
 
+    // ---- P14 性能：分段折叠（免字符串物化的一次性流）----
+    // FNV-1a 左到右折叠可分段：hash(A+B) ≡ 从 hash(A) 态继续折叠 B。
+    // 一次性流名（内嵌递增序号永不复现）无需进缓存 Map，也无需把名字物化成 String——
+    // 直接从前缀态逐段折叠，与 streamFrom(prefix, 拼接串) 逐位等价。
+
+    /** 折叠一个字符串段。 */
+    static int foldStr(int h, String s) {
+        for (int i = 0; i < s.length(); i++) {
+            h ^= s.charAt(i);
+            h *= 0x01000193;
+        }
+        return h;
+    }
+
+    /** 折叠一个字符。 */
+    static int foldChar(int h, char c) {
+        h ^= c;
+        return h * 0x01000193;
+    }
+
+    /**
+     * 折叠一个 int 的十进制表示（与折叠 {@code Integer.toString(v)} 的字符逐位一致；
+     * 负数先折叠 '-'，用 long 幅度规避 MIN_VALUE 取反溢出）。
+     */
+    static int foldInt(int h, int v) {
+        if (v < 0) {
+            h = foldChar(h, '-');
+            long m = -(long) v;
+            // 位数探测后从高位折起（免字符串/数组）
+            long pow = 1;
+            while (pow * 10 <= m) pow *= 10;
+            while (pow > 0) {
+                // 先取模再转型：商≥2^31 时 (int) 商会溢出为负（MIN_VALUE 末位事故）
+                h = foldChar(h, (char) ('0' + (int) ((m / pow) % 10)));
+                pow /= 10;
+            }
+            return h;
+        }
+        long m = v;
+        long pow = 1;
+        while (pow * 10 <= m) pow *= 10;
+        while (pow > 0) {
+            h = foldChar(h, (char) ('0' + (int) ((m / pow) % 10)));
+            pow /= 10;
+        }
+        return h;
+    }
+
+    /** 建一次性流：从前缀态折叠 {@code "use:"+key+':'+roundCount+':'+seq}（不进缓存）。 */
+    static Stream streamUse(int prefix, String key, int roundCount, int seq) {
+        int h = foldStr(prefix, "use:");
+        h = foldStr(h, key);
+        h = foldChar(h, ':');
+        h = foldInt(h, roundCount);
+        h = foldChar(h, ':');
+        h = foldInt(h, seq);
+        return new Stream(h);
+    }
+
+    /** 建一次性流：从前缀态折叠 {@code "pack"+roundCount+':'+key+':'+seq}（不进缓存）。 */
+    static Stream streamPack(int prefix, int roundCount, String key, int seq) {
+        int h = foldStr(prefix, "pack");
+        h = foldInt(h, roundCount);
+        h = foldChar(h, ':');
+        h = foldStr(h, key);
+        h = foldChar(h, ':');
+        h = foldInt(h, seq);
+        return new Stream(h);
+    }
+
     /** 单条命名随机流（mulberry32）。每次调用 {@link #next()} 推进内部状态。 */
     public static final class Stream {
         private int a;

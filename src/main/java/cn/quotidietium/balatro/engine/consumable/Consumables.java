@@ -9,7 +9,6 @@ import cn.quotidietium.balatro.engine.Phase;
 import cn.quotidietium.balatro.engine.Rng;
 import cn.quotidietium.balatro.engine.RunState;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -45,11 +44,27 @@ public final class Consumables {
             s.lastTarotPlanet = new RunState.TarotPlanet(c.kind, c.key);
         }
         if (c.kind.equals("tarot")) {
-            for (JokerInstance j : new ArrayList<>(s.jokers)) if (!j.debuff) j.def.onUseTarot(s, j);
+            List<JokerInstance> useSnap = s.acquireJokerSnap(); // P14：P10 池化快照补点
+            try {
+                for (int i = 0; i < useSnap.size(); i++) {
+                    JokerInstance j = useSnap.get(i);
+                    if (!j.debuff) j.def.onUseTarot(s, j);
+                }
+            } finally {
+                s.releaseJokerBuffer();
+            }
         }
         if (c.kind.equals("planet")) {
             s.usedPlanets.put(c.key, true);
-            for (JokerInstance j : new ArrayList<>(s.jokers)) if (!j.debuff) j.def.onUsePlanet(s, j);
+            List<JokerInstance> planetSnap = s.acquireJokerSnap(); // P14：P10 池化快照补点
+            try {
+                for (int i = 0; i < planetSnap.size(); i++) {
+                    JokerInstance j = planetSnap.get(i);
+                    if (!j.debuff) j.def.onUsePlanet(s, j);
+                }
+            } finally {
+                s.releaseJokerBuffer();
+            }
         }
         Engine.sortHand(s); // 消耗品可能改写/增删手牌，整理以保持展示顺序（apply 内 stream.pick 已于此之前完成）
         // hex/ankh 等会直接改写小丑列表：重算 flags，避免被毁小丑的标志残留
@@ -80,7 +95,12 @@ public final class Consumables {
         if (targetIds == null) targetIds = List.of();
         if (targetIds.size() > max) return null;
         if (exact && targetIds.size() != max) return null;
-        if (new HashSet<>(targetIds).size() != targetIds.size()) return null;
+        // P14 性能：≤max(≤3) 个 id 的查重改两两比较（原 HashSet 构造逐次装箱分配）
+        for (int i = 0; i < targetIds.size(); i++) {
+            for (int j = i + 1; j < targetIds.size(); j++) {
+                if (targetIds.get(i).intValue() == targetIds.get(j).intValue()) return null;
+            }
+        }
         List<Card> arr = new ArrayList<>();
         for (int id : targetIds) {
             Card card = null;
@@ -103,7 +123,9 @@ public final class Consumables {
             "talisman", "dejavu", "trance", "medium", "aura", "cryptid");
 
     private static Result apply(RunState s, Consumable c, List<Integer> targetIds, boolean inRound) {
-        Rng.Stream st = s.stream("use:" + c.key + ":" + s.roundCount + ":" + (s.useSeq = (s.useSeq) + 1));
+        // P14 性能：一次性流（名字内嵌递增 useSeq 永不复现）分段折叠建流，
+        // 零字符串物化/零缓存插入，与原 stream("use:"+...) 逐位等价（守门测试锁定）。
+        Rng.Stream st = s.streamUse(c.key);
 
         // 需指定手牌目标的消耗品只能在出牌回合使用（提前给出明确提示，避免误导性报错）
         if (!inRound && NEED_ROUND_TARGET.contains(c.key)) {

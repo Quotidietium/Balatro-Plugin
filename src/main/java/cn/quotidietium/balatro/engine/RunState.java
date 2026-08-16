@@ -167,6 +167,20 @@ public final class RunState {
         return streamSource.stream(name);
     }
 
+    /**
+     * P14 性能：消耗品使用流（名字 "use:"+key+":"+roundCount+":"+seq 内嵌递增序号，
+     * 永不复现）——分段折叠建流，零字符串物化/零缓存插入，与
+     * {@code stream("use:"+key+":"+roundCount+":"+seq)} 逐位等价（守门测试锁定）。
+     */
+    public Rng.Stream streamUse(String consumableKey) {
+        return streamSource.streamUse(consumableKey, roundCount, ++useSeq);
+    }
+
+    /** P14 性能：补充包流（同 {@link #streamUse} 的 "pack"+roundCount+":"+key+":"+seq 方案）。 */
+    public Rng.Stream streamPack(String packKey) {
+        return streamSource.streamPack(roundCount, packKey, ++packSeq);
+    }
+
     // ---- 卡牌 id ----
     int nextCardId() {
         return cardIdSeq++;

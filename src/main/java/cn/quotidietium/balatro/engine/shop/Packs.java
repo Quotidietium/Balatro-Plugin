@@ -35,7 +35,7 @@ public final class Packs {
 
     /** 开启补充包（进入 PACK 阶段）。 */
     public static void open(RunState s, Data.Pack packDef) {
-        Rng.Stream st = s.stream("pack" + s.roundCount + ":" + packDef.key + ":" + (s.packSeq = s.packSeq + 1));
+        Rng.Stream st = s.streamPack(packDef.key); // P14：一次性流分段折叠（见 RunState.streamPack）
         Session sess = new Session();
         sess.def = packDef;
         for (int i = 0; i < packDef.size; i++) {
@@ -45,8 +45,16 @@ public final class Packs {
         s.packReturn = s.phase == Phase.PACK ? (s.packReturn != null ? s.packReturn : Phase.SHOP) : s.phase;
         s.pack = sess;
         s.phase = Phase.PACK;
-        // 幻觉小丑
-        for (JokerInstance j : new ArrayList<>(s.jokers)) if (!j.debuff) j.def.onPackOpen(s, j);
+        // 幻觉小丑（P14：P10 池化快照补点）
+        List<JokerInstance> openSnap = s.acquireJokerSnap();
+        try {
+            for (int i = 0; i < openSnap.size(); i++) {
+                JokerInstance j = openSnap.get(i);
+                if (!j.debuff) j.def.onPackOpen(s, j);
+            }
+        } finally {
+            s.releaseJokerBuffer();
+        }
     }
 
     private static PackCard genPackCard(RunState s, Rng.Stream st, Data.PackType type) {
@@ -154,7 +162,15 @@ public final class Packs {
         s.pack = null;
         s.phase = s.packReturn != null ? s.packReturn : Phase.SHOP;
         s.packReturn = null;
-        for (JokerInstance j : new ArrayList<>(s.jokers)) if (!j.debuff) j.def.onPackSkip(s, j);
+        List<JokerInstance> skipSnap = s.acquireJokerSnap(); // P14：P10 池化快照补点
+        try {
+            for (int i = 0; i < skipSnap.size(); i++) {
+                JokerInstance j = skipSnap.get(i);
+                if (!j.debuff) j.def.onPackSkip(s, j);
+            }
+        } finally {
+            s.releaseJokerBuffer();
+        }
         s.msg("跳过了补充包");
         return true;
     }

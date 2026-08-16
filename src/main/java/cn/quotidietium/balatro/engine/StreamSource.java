@@ -39,6 +39,22 @@ public final class StreamSource {
         return st;
     }
 
+    /**
+     * P14 性能：一次性流（名字内嵌递增序号，永不复现）——分段折叠直接建流，
+     * **零字符串物化、零缓存插入**（原实现每次拼接 String + HashMap 插入，且长局下
+     * 缓存 Map 无界增长）。与 {@code stream("use:"+key+":"+roundCount+":"+seq)}
+     * 逐位等价（FNV-1a 分段折叠，等价性由守门测试锁定）；跳过缓存对可观察行为
+     * 无影响：同名二次取流在本命名方案下不可能（seq 严格递增），缓存副本永不再读。
+     */
+    public Rng.Stream streamUse(String key, int roundCount, int seq) {
+        return Rng.streamUse(seedPrefix, key, roundCount, seq);
+    }
+
+    /** 同 {@link #streamUse}（"pack"+roundCount+":"+key+":"+seq 命名方案）。 */
+    public Rng.Stream streamPack(int roundCount, String key, int seq) {
+        return Rng.streamPack(seedPrefix, roundCount, key, seq);
+    }
+
     /** 兼容保留：种子串（供调试/展示）。 */
     @Override
     public String toString() {
