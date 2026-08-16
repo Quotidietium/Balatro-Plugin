@@ -81,6 +81,21 @@ class MultiSessionInterleaveTest {
         sb.append("|H:");
         for (Card c : s.hand) sb.append(c.id()).append(':').append(c.rank()).append(c.suit())
                 .append(c.enh()).append(c.seal()).append(',');
+        // R160 oracle 完备性加固：原摘要缺 vouchers/tags/consumables/牌堆序/进度面——
+        // 若静态污染只落在这类字段上，旧摘要会漏检。全部补入（顺序敏感，逐 id 序列）。
+        sb.append("|V:").append(s.vouchers);
+        sb.append("|T:").append(s.tags);
+        sb.append("|C:");
+        for (var c : s.consumables) sb.append(c.kind).append(':').append(c.key).append(':').append(c.edition).append(',');
+        sb.append("|D:");
+        for (Card c : s.drawPile) sb.append(c.id()).append(',');
+        sb.append("|X:");
+        for (Card c : s.discardPile) sb.append(c.id()).append(',');
+        sb.append("|P:").append(new java.util.TreeSet<>(s.playedThisAnte));
+        sb.append("|PC:").append(s.handPlayedCount);
+        sb.append("|UP:").append(s.usedPlanets);
+        sb.append("|B:").append(s.bossQueue).append('/').append(s.blindType);
+        sb.append("|NS:").append(s.nextShop);
         sb.append("|M:").append(String.join("␟", s.drainMessages()));
         return sb.toString();
     }
