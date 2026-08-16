@@ -48,4 +48,24 @@ class BalatroHelpCommandTest {
         assertTrue(BalatroHelp.hasCommandHelp("PLAY"));
         assertTrue(BalatroHelp.hasCommandHelp("Help"));
     }
+
+    /**
+     * R147：分页帮助的内容覆盖锁——全部 15 牌组 key 与 20 挑战 key 必须出现在分页
+     * 帮助中。本轮曾发现 5 处挑战速记停留在 R123 真版对齐前的旧措辞（巨石阵「全石头
+     * 牌」/点火升空「$0」/五张抽牌「必出5张」/金针「奖励×3」/残酷「减半」——与实现
+     * 的 mods 全都不符）；此类漂移的结构性根源是「新增/改动内容后帮助页无覆盖检查」。
+     */
+    @Test
+    void paginatedHelpCoversAllDeckAndChallengeKeys() {
+        StringBuilder all = new StringBuilder();
+        for (int p = 1; p <= BalatroHelp.totalPages(); p++) {
+            for (String line : BalatroHelp.linesFor(p)) all.append(line).append('\n');
+        }
+        for (var d : cn.quotidietium.balatro.engine.Data.DECKS) {
+            assertTrue(all.indexOf(d.key()) >= 0, "分页帮助应覆盖牌组 " + d.key());
+        }
+        for (var c : cn.quotidietium.balatro.engine.Data.CHALLENGES) {
+            assertTrue(all.indexOf(c.key()) >= 0, "分页帮助应覆盖挑战 " + c.key());
+        }
+    }
 }

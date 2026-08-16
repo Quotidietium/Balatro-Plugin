@@ -49,9 +49,9 @@ final class BalatroHelp {
         add("挑战模式（共 20 · 下）", new String[]{
                 "§etypecast§f刻板印象(底注4全永恒槽0) §einflation§f通货膨胀(每购+价)",
                 "§ebram§f布拉姆扑克(永恒吸血鬼) §efragile§f易碎品(全玻璃/双6！)",
-                "§emonolith§f巨石阵(全石头牌) §eblastoff§f点火升空(开局火箭/$0)",
-                "§efivecard§f五张抽牌(必出5张) §egolden§f金针(1出牌/奖励×3)",
-                "§ecruelty§f残酷(小大盲奖励减半) §ejokerless§f无丑之地(无法获得小丑)"
+                "§emonolith§f巨石阵(永恒方尖碑+负片大理石) §eblastoff§f点火升空(2出2弃4槽/永恒星座火箭)",
+                "§efivecard§f五张抽牌(手牌上限5/7小丑槽) §egolden§f金针(1出6弃/弃牌$1)",
+                "§ecruelty§f残酷(小大盲无奖励金/仅3槽) §ejokerless§f无丑之地(无法获得小丑)"
         });
         add("出牌回合命令", new String[]{
                 "§e/balatro status§f   查看当前局面与手牌",
@@ -202,8 +202,9 @@ final class BalatroHelp {
                 "购买商店第 N 个补充包，购买后进入补充包选择。"
         });
         cmd("buyvoucher", new String[]{"voucher"}, "购买优惠券", new String[]{
-                "§e/balatro buyvoucher",
-                "购买商店当前陈列的优惠券（若有）。"
+                "§e/balatro buyvoucher [券序号]",
+                "购买商店陈列的优惠券；单张时可省略序号，多张时需指定序号。",
+                "（优惠券标签可给下个商店叠加额外券。）"
         });
         cmd("reroll", new String[]{}, "重掷商店", new String[]{
                 "§e/balatro reroll",
