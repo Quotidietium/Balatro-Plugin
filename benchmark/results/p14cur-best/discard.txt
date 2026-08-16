@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p14cur1, benchmark\results\p14cur2, benchmark\results\p14cur3]
+#Sun Aug 16 19:24:49 CST 2026
+allocBytesPerOp.median=446
+label=p14cur-best
+nsPerOp.bestOfRuns=289
+nsPerOp.mean=345
+nsPerOp.median=289
+nsPerOp.min=279
+nsPerOp.p95=460
+runs=3
+scenario=discard
