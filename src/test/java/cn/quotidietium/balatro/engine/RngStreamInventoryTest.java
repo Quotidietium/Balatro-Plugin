@@ -62,18 +62,28 @@ class RngStreamInventoryTest {
 
         Set<String> found = new HashSet<>();
         Set<String> files = new HashSet<>();
+        int useCallers = 0, packCallers = 0;
+        java.util.Map<String, Integer> roundNames = new java.util.HashMap<>();
         try (Stream<Path> walk = Files.walk(root)) {
             for (Path p : walk.filter(f -> f.toString().endsWith(".java")).toList()) {
+                String name = p.getFileName().toString();
+                // 定义侧转发（StreamSource/RunState）不计调用点
+                boolean definitionSide = "StreamSource.java".equals(name) || "RunState.java".equals(name);
                 String src = Files.readString(p, StandardCharsets.UTF_8);
                 Matcher m = STREAM_CALL.matcher(src);
                 while (m.find()) {
                     found.add(m.group(1));
                     files.add(p.toString());
                 }
-                if (STREAM_USE_CALL.matcher(src).find()) found.add("use:");
-                if (STREAM_PACK_CALL.matcher(src).find()) found.add("pack");
-                Matcher mr = STREAM_ROUND_CALL.matcher(src);
-                while (mr.find()) found.add(mr.group(1));
+                if (!definitionSide) {
+                    if (STREAM_USE_CALL.matcher(src).find()) { found.add("use:"); useCallers++; }
+                    if (STREAM_PACK_CALL.matcher(src).find()) { found.add("pack"); packCallers++; }
+                    Matcher mr = STREAM_ROUND_CALL.matcher(src);
+                    while (mr.find()) {
+                        found.add(mr.group(1));
+                        roundNames.merge(mr.group(1), 1, Integer::sum);
+                    }
+                }
             }
         }
         assertTrue(!found.isEmpty(), "应能提取到流名（正则失效防护）");
@@ -87,5 +97,14 @@ class RngStreamInventoryTest {
                 "出现未对账的新流调用（须对照 REF 审核或走有意分歧流程并更新白名单+审计记录）: " + unexpected);
         assertEquals(Set.of(), missing,
                 "白名单中的流名未在源码找到（被删除/改名？须同步更新白名单与审计记录）: " + missing);
+
+        // R146 计数锁：分段入口的**调用点**精确计数——白名单只锁名字集合，锁不住
+        // 「同名新增调用点」造成的双重流消耗（种子复现无声破坏）。当前对账基线：
+        // streamUse 仅 Consumables.apply 1 处；streamPack 仅 Packs.open 1 处；
+        // streamRound 恰 2 处（Engine 洗牌 shuffle / Shop 开店 shopgen）。
+        assertEquals(1, useCallers, "streamUse 调用点数（新增=潜在双重消耗，须对账 REF）");
+        assertEquals(1, packCallers, "streamPack 调用点数（新增=潜在双重消耗，须对账 REF）");
+        assertEquals(java.util.Map.of("shuffle", 1, "shopgen", 1), roundNames,
+                "streamRound 调用点与名字多重集（新增=潜在双重消耗，须对账 REF）");
     }
 }
