@@ -6,6 +6,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -40,10 +42,16 @@ final class GuiItems {
         return item(material, Component.text(name, color), lore);
     }
 
-    /** 选中态：附魔光效（1.20.5+ 数据驱动光效覆盖，无需伪附魔）。 */
+    /**
+     * 选中态：附魔光效。用「附魔 + HIDE_ENCHANTS」经典伪光效而非 1.20.5+ 的
+     * {@code setEnchantmentGlintOverride}（最低支持 1.19.4，见 note/tasks/lower-mc-version.md）。
+     * 选 SILK_TOUCH 因其常量名在 1.19.4（枚举）与 1.20.5+（接口字段）同名，跨版本字段引用安全；
+     * HIDE_ENCHANTS 只藏提示不藏光效，GUI 物品本就不可取出。
+     */
     static ItemStack glint(ItemStack it) {
         ItemMeta meta = it.getItemMeta();
-        meta.setEnchantmentGlintOverride(true);
+        meta.addEnchant(Enchantment.SILK_TOUCH, 1, true);
+        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         it.setItemMeta(meta);
         return it;
     }
