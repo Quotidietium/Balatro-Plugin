@@ -1,7 +1,7 @@
 # benchmark — 性能基准子项目
 
 零外部依赖（纯 JDK + 引擎主源集）。所有场景由**固定种子**驱动、每批工作量恒定；
-引擎优化只要行为不变（458 测试锁定种子复现），前后数字可直接对比。
+引擎优化只要行为不变（全套测试锁定种子复现），前后数字可直接对比。
 
 ## 场景
 
@@ -13,8 +13,13 @@
 | `playHand` | Engine.playHand 计分管线（5 小丑钩子负载） |
 | `discard` | Engine.discard 弃牌管线 |
 | `roundCycle` | createRun + 整回合打到商店 |
+| `createRun` | Engine.createRun 构局路径（P4 新增） |
 | `shopGen` | 商店生成 + 两次重掷 |
 | `fullRun` | 整局模拟（含商店买小丑，与 E2E 测试同口径） |
+| `useConsumable` | Consumables.use 消耗品使用管线（P14 新增：magician/strength/mercury 轮换） |
+| `packOpen` | Packs.open+pick/skip 补充包管线（P14 新增：秘术包开/选/跳） |
+
+
 
 ## 用法
 
