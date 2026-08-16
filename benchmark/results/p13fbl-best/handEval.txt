@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p13fbl1, benchmark\results\p13fbl2, benchmark\results\p13fbl3]
+#Sun Aug 16 19:09:07 CST 2026
+allocBytesPerOp.median=231
+label=p13fbl-best
+nsPerOp.bestOfRuns=88
+nsPerOp.mean=88
+nsPerOp.median=88
+nsPerOp.min=80
+nsPerOp.p95=100
+runs=3
+scenario=handEval

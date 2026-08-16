@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p13fbl1, benchmark\results\p13fbl2, benchmark\results\p13fbl3]
+#Sun Aug 16 19:09:07 CST 2026
+allocBytesPerOp.median=0
+label=p13fbl-best
+nsPerOp.bestOfRuns=2
+nsPerOp.mean=2
+nsPerOp.median=2
+nsPerOp.min=2
+nsPerOp.p95=2
+runs=3
+scenario=streamLookup

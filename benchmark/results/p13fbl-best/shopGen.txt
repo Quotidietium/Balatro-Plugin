@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p13fbl1, benchmark\results\p13fbl2, benchmark\results\p13fbl3]
+#Sun Aug 16 19:09:07 CST 2026
+allocBytesPerOp.median=7913
+label=p13fbl-best
+nsPerOp.bestOfRuns=4022
+nsPerOp.mean=5841
+nsPerOp.median=4022
+nsPerOp.min=3682
+nsPerOp.p95=8443
+runs=3
+scenario=shopGen

@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p13qbl1, benchmark\results\p13qbl2, benchmark\results\p13qbl3]
+#Sun Aug 16 19:07:19 CST 2026
+allocBytesPerOp.median=9845
+label=p13qbl-best
+nsPerOp.bestOfRuns=5320
+nsPerOp.mean=5375
+nsPerOp.median=5320
+nsPerOp.min=5172
+nsPerOp.p95=5687
+runs=3
+scenario=playHand
