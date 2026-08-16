@@ -39,6 +39,24 @@
   Java 17 字节码在 Java 21 服务端照常加载运行，上限端不受影响）。
 - Papo 感知：代码本就未调用 `ServerBuildInfo.papoVersion()`，无兼容负担。
 
-## 结果
+## 结果（2026-08-16 完成，发版 v0.4.40）
 
-（完成后回填：变更清单 / 验证记录 / 版本号）
+- **变更清单**（4 文件）：
+  1. `build.gradle.kts`：paper-api `1.21.11` → `1.19.4-R0.1-SNAPSHOT`；`--release 21` → `17`；版本 0.4.40。
+  2. `plugin.yml`：`api-version: '1.21.11'` → `'1.19'`。
+  3. `GuiItems.glint()`：`setEnchantmentGlintOverride`（1.20.5+ API，编译期清点时唯一超出 1.19.4 的调用）
+     → `SILK_TOUCH` 附魔 + `HIDE_ENCHANTS` 伪光效（1.13~1.21 通用，视觉等价；SILK_TOUCH 常量名
+     在 1.19.4 枚举与 1.20.5+ 接口字段同名，跨版本字段引用安全）。
+  4. `PluginYmlConsistencyTest`：api-version 锁同步为 `'1.19'`。
+- **验证**：
+  - `./gradlew build`：**458 测试 0 失败 0 错误**（与 0.4.39 持平）；产物字节码 major 61（Java 17）。
+  - 上限端无头启动（Papo bundler 1.21.11，Java 21）：插件经 Paper PluginRemapper 重映射
+    （spigot-mapped 产物 → mojmap 运行时的标准兼容机制，218ms）后加载/启用零异常，Done 15.2s。
+  - 下限端无头启动（Paper 1.19.4 build 550）：直接加载/启用零异常，Done 6.1s。
+  - 两端均用最终 0.4.40 jar 复验（验证记录见 `note/release/0.4.40.md`）。
+- **环境备注**：
+  - Paper 1.19.4 paperclip 首跑需从 Mojang CDN 下载原版 jar，本机 Java TLS 过不了（网络拦截），
+    已用 curl 从 piston-data 预取放入 `cache/mojang_1.19.4.jar` 绕过。
+  - 下限端服务端在 Java 21 上启动（本机无 Java 17）；17 字节码在 17+ JVM 均可加载，不构成风险。
+  - 会话中 `versions/1.21.11/` 下的 7 个 Papo/构建 jar 疑似被外部进程清除（本会话命令未触碰该目录），
+    上限端验证改用 `REF/Papo/paper-server/build/libs/paper-bundler-1.21.11-*.jar`，已向用户报告。

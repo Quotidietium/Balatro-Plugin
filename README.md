@@ -4,12 +4,12 @@
 
 ## 环境要求
 
-- **Minecraft 1.21.11**（Paper 或 Papo 服务端）
-- **Java 21**
+- **Minecraft 1.19.4 及以上**（Paper / Papo 等 Paper 系服务端）
+- **Java 17 及以上**（1.20.5+ 服务端需 Java 21，由服务端自身要求决定）
 
 ## 安装
 
-1. 将 `balatro-0.4.20.jar` 放入服务端的 `plugins/` 目录。
+1. 将 `balatro-0.4.40.jar` 放入服务端的 `plugins/` 目录。
 2. 重启服务器。
 
 ## 开始一局
