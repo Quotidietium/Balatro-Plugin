@@ -32,3 +32,5 @@ build/
 /crash-reports/
 .zcode
 benchmark/tmp/
+benchmark/results/jfrprof/
+benchmark/results/p13spot/
