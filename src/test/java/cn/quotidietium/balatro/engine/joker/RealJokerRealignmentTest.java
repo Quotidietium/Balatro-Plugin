@@ -147,7 +147,10 @@ class RealJokerRealignmentTest {
         boolean freePlanet = false, freeCelestial = false;
         for (int shop = 0; shop < 40 && !(freePlanet && freeCelestial); shop++) {
             RunState s = round("RJA" + shop);
-            s.vouchers.add("astronomer");
+            // R142 修正：天文学家是**小丑**，效果经 flags.freePlanets 生效——原测试把 key
+            // 注入 vouchers 集合迎合当时的坏实现（误查券集合，效果实际死亡），属与实现
+            // 同源的虚假锁定（R135 教训再现）。按生产语义改为持有该小丑。
+            s.gainJoker("astronomer", null);
             s.roundScore = s.blindTarget;
             Engine.playHand(s, List.of(s.hand.get(0).id()));
             for (var c : s.shop.cards) {

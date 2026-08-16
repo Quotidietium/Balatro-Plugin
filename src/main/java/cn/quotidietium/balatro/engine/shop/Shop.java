@@ -170,8 +170,11 @@ public final class Shop {
                 s.nextShop.remove("etherealPack");
             }
             // R130 真版：天文学家使天体包免费（"All Planet cards and Celestial Packs are free"）
+            // R130 真版：天文学家（小丑）使天体包免费——经 flags.freePlanets（R142 修复：
+            // 原误查 vouchers.contains("astronomer")，券集合永远不含该小丑 key，效果死亡）
             boolean free = s.nextShop.get("coupon") != null
-                    || (p.type == Data.PackType.CELESTIAL && s.vouchers.contains("astronomer"));
+                    || (p.type == Data.PackType.CELESTIAL && s.flags != null
+                            && Boolean.TRUE.equals(s.flags.get("freePlanets")));
             PackItem pi = new PackItem();
             pi.pack = p; pi.name = p.name; pi.desc = p.size + " 张选 " + p.choose + " 张";
             pi.price = free ? 0 : shopPrice(s, p.cost);
@@ -322,7 +325,7 @@ public final class Shop {
                 Data.Planet p = st.pick(Data.PLANETS);
                 boolean free = s.nextShop.get("freePlanet") != null
                         || (s.flags != null && Boolean.TRUE.equals(s.flags.get("freePlanets")))
-                        || s.vouchers.contains("astronomer"); // R130 真版：天文学家使星球牌免费
+                        || s.vouchers.contains("astronomer"); // 保留兼容：早期版本若经券注入同名 key（当前无来源，见 R142）
                 return item("planet", p.key, p.name, p.desc, free ? 0 : shopPrice(s, 3));
             }
             case 4: {
