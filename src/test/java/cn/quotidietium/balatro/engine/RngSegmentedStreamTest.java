@@ -83,6 +83,24 @@ class RngSegmentedStreamTest {
         }
     }
 
+    /** P15：每回合一次性流（prefix+roundCount，如 shuffle/shopgen）与拼接路径逐位一致。 */
+    @Test
+    void streamRoundSegmentedEquivalence() {
+        String[] prefixes = {"shuffle", "shopgen"};
+        int[] rounds = {0, 1, 2, 9, 10, 123, 99999};
+        for (String seed : new String[]{"SEGA", "RND", "42"}) {
+            int prefix = Rng.prefixHash(seed);
+            for (String rp : prefixes) {
+                for (int rc : rounds) {
+                    assertStreamsEqual(
+                            Rng.streamRound(prefix, rp, rc),
+                            Rng.makeStream(seed, rp + rc),
+                            16, seed + "/" + rp + rc);
+                }
+            }
+        }
+    }
+
     /** RunState.streamUse/streamPack 与旧拼接路径（含序号递增副作用）逐位一致。 */
     @Test
     void runStateOneShotStreamsMatchLegacyConcat() {

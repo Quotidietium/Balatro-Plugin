@@ -469,7 +469,7 @@ public final class Engine {
         s.drawPile.addAll(s.fullDeck);
         s.discardPile.clear();
         if (s.discardPile instanceof ArrayList<Card> dcp) dcp.ensureCapacity(s.fullDeck.size());
-        s.stream("shuffle" + s.roundCount).shuffle(s.drawPile);
+        s.streamRound("shuffle").shuffle(s.drawPile); // P15：每回合一次性流（分段折叠，零物化/零缓存）
         s.hand.clear();
         for (int i = 0; i < s.handSizeRound; i++) drawOne(s, i == 0 && "house".equals(bk));
 

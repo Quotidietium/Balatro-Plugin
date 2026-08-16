@@ -181,6 +181,11 @@ public final class RunState {
         return streamSource.streamPack(roundCount, packKey, ++packSeq);
     }
 
+    /** P15 性能：每回合一次性流（prefix+roundCount，如 shuffle/shopgen——回合数递增永不复现）。 */
+    public Rng.Stream streamRound(String roundPrefix) {
+        return streamSource.streamRound(roundPrefix, roundCount);
+    }
+
     // ---- 卡牌 id ----
     int nextCardId() {
         return cardIdSeq++;

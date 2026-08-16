@@ -155,7 +155,7 @@ public final class Shop {
     }
 
     private static void genShop(RunState s) {
-        Rng.Stream st = s.stream("shopgen" + s.roundCount);
+        Rng.Stream st = s.streamRound("shopgen"); // P15：每回合一次性流（分段折叠，零物化/零缓存）
         List<CardItem> cards = genShopCards(s);
 
         // 补充包 2 个

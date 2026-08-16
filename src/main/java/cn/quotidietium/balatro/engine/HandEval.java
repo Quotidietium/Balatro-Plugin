@@ -1,7 +1,6 @@
 package cn.quotidietium.balatro.engine;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +21,25 @@ public final class HandEval {
 
     private HandEval() {
     }
+
+    // ---- P15 性能：原语草稿区（ThreadLocal 单层）----
+    // cnt[15]/present[15]/arr[15]/window[5] 为纯原语数组（无引用写屏障），每次调用
+    // 全量重写（必然缓存热），符合 P10「必然存活的大缓冲池化成立」判据——区别于
+    // 失败的小列表/引用缓冲池化（P11 商店池 +4%）。安全性：evaluate 全程不回调任何
+    // 钩子（无重入），草稿区在返回后即死；ThreadLocal 隔离理论上的异步第三方调用。
+    // suited Card[n] 与 scoring/contains/Result 会逃逸，保持新鲜分配。
+    private static final class Scratch {
+        final int[] cnt = new int[15];
+        final boolean[] present = new boolean[15];
+        final int[] arr = new int[15];
+        // 按 len 分开持有：消费方（ROYAL 检查/inStraight）按数组全长迭代，
+        // 固定 5 长数组在四指(len=4)窗口下第 5 位是脏值（P15 事故：残留 14 使异花 A
+        // 误判入顺计分——独立 JVM 首调用 0 残留又表现为 SFLUSH，两态均可复现）。
+        final int[] window4 = new int[4];
+        final int[] window5 = new int[5];
+    }
+
+    private static final ThreadLocal<Scratch> SCRATCH = ThreadLocal.withInitial(Scratch::new);
 
     public static final class Result {
         public final Data.HandType type;
@@ -63,8 +81,10 @@ public final class HandEval {
             if (!c.isEnh(Data.Enhancement.STONE)) suited[m++] = c; // P13：位段谓词（无解码数组）
         }
 
-        // 点数计数（rank 2..14；石头已排除，wild 保留原 rank）
-        int[] cnt = new int[15];
+        // 点数计数（rank 2..14；石头已排除，wild 保留原 rank）——P15：草稿区（用前清零）
+        Scratch sc = SCRATCH.get();
+        int[] cnt = sc.cnt;
+        java.util.Arrays.fill(cnt, 0);
         for (int i = 0; i < m; i++) cnt[suited[i].rank()]++;
         // 前两大计数（降序），对应原 counts.sort(reverseOrder()) 的 c0/c1
         int c0 = 0, c1 = 0;
@@ -86,7 +106,7 @@ public final class HandEval {
 
         // 顺子判定（四指：4 连续即可，即使打了 5 张）
         int straightLen = fourFingers ? 4 : 5;
-        int[] straightWin = straightWindow(suited, m, straightLen, shortcut);
+        int[] straightWin = straightWindow(sc, suited, m, straightLen, shortcut); // P15：草稿区
         boolean hasStraight = straightWin != null;
 
         // 同花顺/皇家判定：hasStraight && hasFlush（独立判定，对齐真版 Four Fingers 行为：
@@ -200,20 +220,23 @@ public final class HandEval {
 
     /** 返回构成顺子的窗口点数（升序，A 低时含 1），无顺子返回 null。
      *  P3：distinct 点数用 boolean[15] 收集后按 1..14 升序展开——与原 TreeSet 的
-     *  去重+升序语义一致（A(14) 额外映射到 1）。 */
-    private static int[] straightWindow(Card[] suited, int m, int len, boolean shortcut) {
+     *  去重+升序语义一致（A(14) 额外映射到 1）。
+     *  P15：present/arr/window 改写入 ThreadLocal 草稿区（原语数组零分配）；返回的
+     *  window 数组由草稿区持有，仅在 evaluate 帧内使用（无重入，返回后即死）。 */
+    private static int[] straightWindow(Scratch sc, Card[] suited, int m, int len, boolean shortcut) {
         if (m < len) return null;
-        boolean[] present = new boolean[15];
+        boolean[] present = sc.present;
+        java.util.Arrays.fill(present, false);
         for (int i = 0; i < m; i++) {
             present[suited[i].rank()] = true;
             if (suited[i].rank() == 14) present[1] = true; // A 可低
         }
         int d = 0;
         for (int r = 1; r <= 14; r++) if (present[r]) d++;
-        int[] arr = new int[d];
+        int[] arr = sc.arr;
         for (int r = 1, k = 0; r <= 14; r++) if (present[r]) arr[k++] = r; // 升序
         int maxGap = shortcut ? 2 : 1;
-        for (int i = 0; i + len <= arr.length; i++) {
+        for (int i = 0; i + len <= d; i++) {
             boolean ok = true;
             for (int j = i + 1; j < i + len; j++) {
                 int dd = arr[j] - arr[j - 1];
@@ -221,7 +244,9 @@ public final class HandEval {
             }
             int span = arr[i + len - 1] - arr[i];
             if (ok && span <= 4 * maxGap && span >= len - 1) {
-                return Arrays.copyOfRange(arr, i, i + len);
+                int[] w = len == 4 ? sc.window4 : sc.window5;
+                System.arraycopy(arr, i, w, 0, len);
+                return w;
             }
         }
         return null;

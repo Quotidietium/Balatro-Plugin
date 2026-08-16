@@ -50,6 +50,12 @@ public final class StreamSource {
         return Rng.streamUse(seedPrefix, key, roundCount, seq);
     }
 
+    /** P15 性能：每回合一次性流（"shuffle"+roundCount / "shopgen"+roundCount 等内嵌递增
+     *  回合数，永不复现）——分段折叠建流，与 {@code stream(prefix+roundCount)} 逐位等价。 */
+    public Rng.Stream streamRound(String roundPrefix, int roundCount) {
+        return Rng.streamRound(seedPrefix, roundPrefix, roundCount);
+    }
+
     /** 同 {@link #streamUse}（"pack"+roundCount+":"+key+":"+seq 命名方案）。 */
     public Rng.Stream streamPack(int roundCount, String key, int seq) {
         return Rng.streamPack(seedPrefix, roundCount, key, seq);

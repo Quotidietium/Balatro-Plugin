@@ -157,6 +157,13 @@ public final class Rng {
         return new Stream(h);
     }
 
+    /** 建一次性流：从前缀态折叠 {@code prefix+roundCount}（如 "shuffle3"/"shopgen7"，不进缓存）。 */
+    static Stream streamRound(int prefix, String roundPrefix, int roundCount) {
+        int h = foldStr(prefix, roundPrefix);
+        h = foldInt(h, roundCount);
+        return new Stream(h);
+    }
+
     /** 建一次性流：从前缀态折叠 {@code "pack"+roundCount+':'+key+':'+seq}（不进缓存）。 */
     static Stream streamPack(int prefix, int roundCount, String key, int seq) {
         int h = foldStr(prefix, "pack");
