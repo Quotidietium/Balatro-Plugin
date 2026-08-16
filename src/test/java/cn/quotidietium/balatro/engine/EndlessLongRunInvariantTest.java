@@ -150,4 +150,75 @@ class EndlessLongRunInvariantTest {
             }
         }
     }
+
+    /**
+     * R145：R137 新机制的长局不变量——{@code handSizePerm}（通灵板/灵质永久手牌上限）
+     * 与 {@code grosDead}（hex/ankh 销毁格罗米歇尔解锁卡文迪什）。
+     *
+     * <p>本测试的无尽推进中**每回合**使用一张 ouija 并一次 hex（注入消耗品走引擎完整
+     * 使用路径），断言：
+     * <ul>
+     *   <li>handSizePerm 精确等于 -使用次数（唯一写入者是 ouija/ectoplasm，本框架只用 ouija）；</li>
+     *   <li>回合内 handSizeRound 按次递减且下限 1；下回合 applyVouchersPassive 重建后
+     *       {@code handSizeBase == 8 + perm}（红牌组、无券购买、无挑战 → 公约数恰为 8）——
+     *       #68 修复（减量跨回合存活）的长局锁定；</li>
+     *   <li>grosDead 单调不回退；多次 hex 后至少一次销毁格罗米歇尔置位；置位后卡文迪什
+     *       可在商店生成（#67 修复的行为证据）。</li>
+     * </ul>
+     */
+    @Test
+    void endlessOuijaPermAndHexGrosDeadInvariants() {
+        RunState s = Engine.createRun("red", 0, "ENDLESSR145", null);
+        fastForwardToEndless(s);
+        assertTrue(Engine.continueEndless(s));
+        int expectPerm = 0;
+        boolean prevGros = s.grosDead;
+        boolean sawGrosDead = false;
+        int baseBeforeUse = 0;
+        for (int i = 0; i < 24; i++) { // 8 个无尽 ante
+            if (s.phase != Phase.BLIND_SELECT) break;
+            Engine.selectBlind(s, Data.BlindType.byKey(s.nextBlind), false);
+            assertEquals(Phase.ROUND, s.phase, "i=" + i);
+            assertEquals(8 + expectPerm, s.handSizeBase,
+                    "重建后 handSizeBase == 8 + perm（perm 跨回合存活，重建发生于本次 selectBlind）i=" + i);
+            assertEquals(Math.max(1, 8 + expectPerm), s.handSizeRound, "回合起点手牌上限（重建后含 perm）");
+            baseBeforeUse = s.handSizeBase;
+
+            // 每回合一张 ouija：perm 精确递减、回合内即时生效、下限 1。
+            // 只用 3 次（上限保 5）：通灵者要求恰 5 张出牌，上限 <5 会使该 Boss 局面
+            // 不可推进——真版同样如此（非引擎缺陷），测试脚本须避开自造死局。
+            if (expectPerm > -3) {
+                s.consumables.clear();
+                s.consumables.add(new cn.quotidietium.balatro.engine.Consumable("spectral", "ouija"));
+                assertTrue(cn.quotidietium.balatro.engine.consumable.Consumables.use(s, 0, List.of()).ok, "ouija 应可使用");
+                expectPerm--;
+                assertEquals(expectPerm, s.handSizePerm, "perm 精确等于 -ouija 次数 i=" + i);
+                assertEquals(Math.max(1, baseBeforeUse - 1), s.handSizeRound, "回合内即时递减（下限 1）");
+            }
+
+            // 每回合一次 hex（带 grossmichel+cavendish 两小丑）：grosDead 单调、可置位
+            s.jokers.clear();
+            assertTrue(s.gainJoker("grossmichel", null) && s.gainJoker("cavendish", null), "hex 目标小丑入列");
+            s.consumables.clear();
+            s.consumables.add(new cn.quotidietium.balatro.engine.Consumable("spectral", "hex"));
+            assertTrue(cn.quotidietium.balatro.engine.consumable.Consumables.use(s, 0, List.of()).ok, "hex 应可使用");
+            assertTrue(!prevGros || s.grosDead, "grosDead 单调不回退 i=" + i);
+            if (s.grosDead) { sawGrosDead = true; prevGros = true; }
+
+            // 正常清盲推进（下一轮循环顶的 selectBlind→startRound 会重建 base，彼处断言 perm 存活）
+            assertTrue(clearCurrentBlind(s), "无尽盲注应可推进 i=" + i);
+            assertTrue(s.handSizeRound >= 1);
+        }
+        assertTrue(sawGrosDead, "24 次 hex（每次 2 选 1 保留）应至少一次销毁格罗米歇尔");
+
+        // grosDead 置位后卡文迪什可生成（清空持有避免去重过滤，多代强制桶抽取）
+        s.jokers.clear();
+        s.grosDead = true;
+        boolean cavendishAppeared = false;
+        for (int g = 0; g < 600 && !cavendishAppeared; g++) {
+            var item = cn.quotidietium.balatro.engine.shop.Shop.makeJokerItem(s, 0, null); // 普通桶（cavendish 稀有度 0）
+            if (item.joker != null && item.joker.def.key().equals("cavendish")) cavendishAppeared = true;
+        }
+        assertTrue(cavendishAppeared, "grosDead 置位后卡文迪什应可生成（#67 行为证据）");
+    }
 }
