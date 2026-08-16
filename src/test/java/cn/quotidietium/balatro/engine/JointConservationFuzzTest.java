@@ -121,6 +121,19 @@ class JointConservationFuzzTest {
 
             // —— 商店：钱-槽-卡三维联动 ——
             if (s.phase == Phase.SHOP) {
+                // R189：补 pending 源② 覆盖——买一张商店 playing 牌（只入牌组不入三堆，
+                // 与选包牌同为「已入组未发」，入 pendingPicked 清单精确跟踪）
+                for (int ci = 0; ci < s.shop.cards.size(); ci++) {
+                    var c = s.shop.cards.get(ci);
+                    if (!c.sold && "playing".equals(c.kind) && s.money >= c.price) {
+                        long mb = s.money;
+                        assertTrue(cn.quotidietium.balatro.engine.shop.Shop.buyCard(s, ci), "买游戏牌应成功");
+                        assertMoneyDelta(mb, s, -c.price, "买游戏牌精确扣款");
+                        pendingPicked.add(c.card.id());
+                        assertCardsWithPending(s, pendingPicked, "商店买游戏牌");
+                        break;
+                    }
+                }
                 long m1 = s.money;
                 long expectReroll = 5 + s.shop.rerollCount;
                 assertEquals(expectReroll, cn.quotidietium.balatro.engine.shop.Shop.reroll(s));
