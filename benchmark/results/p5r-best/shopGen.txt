@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p5r1, benchmark\results\p5r2, benchmark\results\p5r3]
+#Sun Aug 16 15:41:58 CST 2026
+allocBytesPerOp.median=13073
+label=p5r-best
+nsPerOp.bestOfRuns=12896
+nsPerOp.mean=13467
+nsPerOp.median=12896
+nsPerOp.min=12667
+nsPerOp.p95=14586
+runs=3
+scenario=shopGen

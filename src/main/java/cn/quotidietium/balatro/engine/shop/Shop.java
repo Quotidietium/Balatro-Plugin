@@ -229,7 +229,7 @@ public final class Shop {
             case 0: return makeJokerItem(s, null, null);
             case 1: {
                 List<Data.Tarot> tarotPool = new ArrayList<>();
-                for (Data.Tarot t0 : Data.Tarot.values()) {
+                for (Data.Tarot t0 : Data.TAROTS) {
                     if (!s.mods.bannedTarots.contains(t0.key)) tarotPool.add(t0); // R123 真版禁入
                 }
                 Data.Tarot t = tarotPool.isEmpty() ? null : st.pick(tarotPool);
@@ -247,7 +247,7 @@ public final class Shop {
             }
             case 4: {
                 List<Data.Spectral> spPool = new ArrayList<>();
-                for (Data.Spectral s0 : Data.Spectral.values()) {
+                for (Data.Spectral s0 : Data.SPECTRALS) {
                     if (s.mods.bannedSpectrals.contains(s0.key)) continue; // R123 真版禁入
                     if (Data.SPECIAL_SPECTRALS.contains(s0.key)) continue; // R128 真版：商店排除灵魂/黑洞
                     spPool.add(s0);

@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p5r1, benchmark\results\p5r2, benchmark\results\p5r3]
+#Sun Aug 16 15:41:58 CST 2026
+allocBytesPerOp.median=5854
+label=p5r-best
+nsPerOp.bestOfRuns=1030
+nsPerOp.mean=1027
+nsPerOp.median=1030
+nsPerOp.min=935
+nsPerOp.p95=1076
+runs=3
+scenario=createRun

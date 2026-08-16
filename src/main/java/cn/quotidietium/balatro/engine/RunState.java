@@ -1,6 +1,7 @@
 package cn.quotidietium.balatro.engine;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -58,7 +59,9 @@ public final class RunState {
     public List<Card> discardPile = new ArrayList<>();
 
     // ---- 牌型升级/统计 ----
-    public final Map<Data.HandType, Integer> handLevels = new LinkedHashMap<>();
+    /** P5 性能：EnumMap（迭代序=枚举声明序，与原 LinkedHashMap 构造插入序一致）。 */
+    public final Map<Data.HandType, Integer> handLevels = new EnumMap<>(Data.HandType.class);
+    /** 保持 LinkedHashMap：mostPlayedType 的平局裁决依赖「首次打出顺序」的插入序（语义红线）。 */
     public final Map<Data.HandType, Integer> handPlayedCount = new LinkedHashMap<>();
     public final Map<String, Boolean> usedPlanets = new HashMap<>(); // 卫星小丑用（0.2.0 起记录）
 
@@ -308,7 +311,7 @@ public final class RunState {
         switch (kind) {
             case "tarot" -> {
                 List<Data.Tarot> pool = new ArrayList<>();
-                for (Data.Tarot t : Data.Tarot.values()) {
+                for (Data.Tarot t : Data.TAROTS) {
                     if (!mods.bannedTarots.contains(t.key)) pool.add(t);
                 }
                 Data.Tarot t = pool.isEmpty() ? null : stream("consumable").pick(pool);
@@ -320,7 +323,7 @@ public final class RunState {
             }
             default -> {
                 List<Data.Spectral> pool = new ArrayList<>();
-                for (Data.Spectral sp0 : Data.Spectral.values()) {
+                for (Data.Spectral sp0 : Data.SPECTRALS) {
                     if (mods.bannedSpectrals.contains(sp0.key)) continue;
                     if (Data.SPECIAL_SPECTRALS.contains(sp0.key)) continue; // R128 真版：产出池排除灵魂/黑洞
                     pool.add(sp0);

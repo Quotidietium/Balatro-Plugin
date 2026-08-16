@@ -352,7 +352,10 @@ public final class Engine {
         Map<String, Object> f = new HashMap<>();
         for (JokerInstance j : s.jokers) {
             if (j.debuff) continue;
-            Map<String, Object> fl = j.def.flags() != null ? j.def.flags() : j.def.flagsFn(s, j);
+            // P5 性能：flags() 只调一次（原实现判空+取值各调一次——BasicJoker 的
+            // flags() 每次调用都新建 Map.of，双调即双倍分配）
+            Map<String, Object> fl = j.def.flags();
+            if (fl == null) fl = j.def.flagsFn(s, j);
             if (fl != null) {
                 for (Map.Entry<String, Object> e : fl.entrySet()) {
                     Object v = e.getValue();
@@ -429,7 +432,10 @@ public final class Engine {
         // 本插件修正此行为。pillar 的 debuff 在 drawOne 时基于 playedThisAnte 重新施加，清除后仍正确。
         // 不消耗 stream，不影响种子复现。
         for (Card c : s.fullDeck) { c.setDebuff(false); c.setFacedown(false); }
-        s.drawPile = new ArrayList<>(s.fullDeck);
+        // P5 性能：复用 drawPile 现有容量（clear+addAll 替代 new ArrayList 拷贝）——
+        // 第二回合起零扩容分配；内容语义与「新列表装 fullDeck 再洗牌」完全一致
+        s.drawPile.clear();
+        s.drawPile.addAll(s.fullDeck);
         s.stream("shuffle" + s.roundCount).shuffle(s.drawPile);
         s.hand.clear();
         s.discardPile.clear();
