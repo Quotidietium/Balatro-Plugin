@@ -36,3 +36,7 @@ benchmark/results/jfrprof/
 benchmark/results/p13spot/
 benchmark/results/p14smoke/
 benchmark/results/p14smoke2/
+benchmark/results/p15i*/
+benchmark/results/p15j*/
+benchmark/results/p15jfr/
+benchmark/results/p15smoke/
