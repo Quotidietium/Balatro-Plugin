@@ -69,9 +69,12 @@ public final class RoundBoard {
     private static final int MAX_SELECT = 5;
 
     // ---- 其余命中盒（点击检测用，与视觉尺寸解耦；可独立调大以保证好点） ----
+    // R150：全库不变量「命中盒宽 ≤ 行内间距」——商店牌行内间距 1.15，原 0.6×2=1.2 违反
+    // （相邻盒重叠 0.05，是唯一违规行；其余行均 ≤ 或相切）。对齐至 1.15 与间距相切
+    // （与补充包行 1.6=1.6 同款处理），纯命中盒调整零视觉影响。
     private static final double BTN_HW = 0.55;
     private static final double BTN_HH = 0.24;
-    private static final double SHOPCARD_HW = 0.6;
+    private static final double SHOPCARD_HW = 0.575;
     private static final double SHOPCARD_HH = 0.4;
     private static final double PACK_HW = 0.8;
     private static final double PACK_HH = 0.35;
