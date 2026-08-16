@@ -1,11 +1,11 @@
 #best-of-3 aggregated from [benchmark\results\br1, benchmark\results\br2, benchmark\results\br3]
-#Sun Aug 16 15:45:30 CST 2026
-allocBytesPerOp.median=1314
+#Sun Aug 16 15:51:25 CST 2026
+allocBytesPerOp.median=1497
 label=br-best
-nsPerOp.bestOfRuns=281
-nsPerOp.mean=282
-nsPerOp.median=281
-nsPerOp.min=274
-nsPerOp.p95=290
+nsPerOp.bestOfRuns=288
+nsPerOp.mean=289
+nsPerOp.median=288
+nsPerOp.min=283
+nsPerOp.p95=299
 runs=3
 scenario=handEval

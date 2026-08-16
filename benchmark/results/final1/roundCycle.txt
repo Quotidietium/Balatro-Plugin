@@ -1,0 +1,13 @@
+#Balatro benchmark result \u2014 2026-08-16T15:50:33.588234700
+#Sun Aug 16 15:50:33 CST 2026
+allocBytesPerOp.median=229437
+blackholeSink=248345805051995338
+iterations=9
+label=final1
+nsPerOp.mean=151392
+nsPerOp.median=149099
+nsPerOp.min=144310
+nsPerOp.p95=163850
+opsPerBatch=400
+scenario=roundCycle
+warmup=3
