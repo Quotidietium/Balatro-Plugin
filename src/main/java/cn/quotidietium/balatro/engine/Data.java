@@ -58,13 +58,17 @@ public final class Data {
         }
 
         private static final Map<String, Suit> BY_KEY = new HashMap<>();
+        /** P6 性能：byIndex 原为 values() 线性扫（每次克隆数组）——渲染/消息路径高频。 */
+        private static final Suit[] BY_INDEX = values();
         static {
-            for (Suit s : values()) BY_KEY.put(s.key, s);
+            for (Suit s : BY_INDEX) BY_KEY.put(s.key, s);
         }
 
         public static Suit byIndex(int index) {
-            for (Suit s : values()) if (s.index == index) return s;
-            throw new IllegalArgumentException("suit index out of range: " + index);
+            if (index < 0 || index >= BY_INDEX.length) {
+                throw new IllegalArgumentException("suit index out of range: " + index);
+            }
+            return BY_INDEX[index];
         }
 
         public static Suit byKey(String key) {
@@ -412,11 +416,13 @@ public final class Data {
         Planet(String k, String n, HandType h, String d) { key = k; name = n; hand = h; desc = d; }
         private static final Map<String, Planet> BY_KEY = new HashMap<>();
         static { for (Planet p : values()) BY_KEY.put(p.key, p); }
+        /** P6 性能：按牌型查星球（蓝蜡封/望远镜路径）——原线性扫。 */
+        private static final Map<HandType, Planet> BY_HAND = new HashMap<>();
+        static { for (Planet p : values()) BY_HAND.put(p.hand, p); }
         public static Planet byKey(String k) { Planet p = BY_KEY.get(k); if (p == null) throw new IllegalArgumentException("unknown planet: " + k); return p; }
         /** 按所升级的牌型查星球牌（无则 null）。蓝蜡封用。 */
         public static Planet byHand(HandType h) {
-            for (Planet p : values()) if (p.hand == h) return p;
-            return null;
+            return BY_HAND.get(h);
         }
     }
 
@@ -474,9 +480,12 @@ public final class Data {
             new Pack("buffoon3", PackType.BUFFOON, "巨型小丑包", 4, 2, 8),
             new Pack("spectral1", PackType.SPECTRAL, "幻灵包", 2, 1, 4)
     );
+    private static final Map<String, Pack> PACK_BY_KEY = new HashMap<>();
+    static { for (Pack p : PACKS) PACK_BY_KEY.put(p.key, p); }
     public static Pack packByKey(String key) {
-        for (Pack p : PACKS) if (p.key.equals(key)) return p;
-        throw new IllegalArgumentException("unknown pack: " + key);
+        Pack p = PACK_BY_KEY.get(key);
+        if (p == null) throw new IllegalArgumentException("unknown pack: " + key);
+        return p;
     }
 
     // ================= 优惠券（32 = 16 对） =================
@@ -524,9 +533,12 @@ public final class Data {
             new Voucher("paintbrush", "油漆刷", "手牌上限 +1", 10, "palette", null),
             new Voucher("palette", "调色板", "手牌上限再 +1", 10, null, "paintbrush")
     );
+    private static final Map<String, Voucher> VOUCHER_BY_KEY = new HashMap<>();
+    static { for (Voucher v : VOUCHERS) VOUCHER_BY_KEY.put(v.key, v); }
     public static Voucher voucherByKey(String key) {
-        for (Voucher v : VOUCHERS) if (v.key.equals(key)) return v;
-        throw new IllegalArgumentException("unknown voucher: " + key);
+        Voucher v = VOUCHER_BY_KEY.get(key);
+        if (v == null) throw new IllegalArgumentException("unknown voucher: " + key);
+        return v;
     }
 
     // ================= 稀有度（4） =================
@@ -563,9 +575,12 @@ public final class Data {
             new Deck("plasma", "等离子牌组", "结算时筹码与倍率先取平均值再相乘；盲注目标分 ×2"),
             new Deck("erratic", "百变牌组", "牌组的点数与花色完全随机")
     );
+    private static final Map<String, Deck> DECK_BY_KEY = new HashMap<>();
+    static { for (Deck d : DECKS) DECK_BY_KEY.put(d.key(), d); }
     public static Deck deckByKey(String key) {
-        for (Deck d : DECKS) if (d.key().equals(key)) return d;
-        throw new IllegalArgumentException("unknown deck: " + key);
+        Deck d = DECK_BY_KEY.get(key);
+        if (d == null) throw new IllegalArgumentException("unknown deck: " + key);
+        return d;
     }
 
     public record Stake(String key, String name, String desc) {}

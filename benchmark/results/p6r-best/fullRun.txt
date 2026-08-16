@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p6r1, benchmark\results\p6r2, benchmark\results\p6r3]
+#Sun Aug 16 15:45:32 CST 2026
+allocBytesPerOp.median=1997516
+label=p6r-best
+nsPerOp.bestOfRuns=874175
+nsPerOp.mean=930904
+nsPerOp.median=874175
+nsPerOp.min=849225
+nsPerOp.p95=1315830
+runs=3
+scenario=fullRun

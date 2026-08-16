@@ -1,11 +1,11 @@
 #best-of-3 aggregated from [benchmark\results\br1, benchmark\results\br2, benchmark\results\br3]
-#Sun Aug 16 15:41:56 CST 2026
-allocBytesPerOp.median=10022296
+#Sun Aug 16 15:45:30 CST 2026
+allocBytesPerOp.median=10178174
 label=br-best
-nsPerOp.bestOfRuns=2337059
-nsPerOp.mean=2471025
-nsPerOp.median=2337059
-nsPerOp.min=2104414
-nsPerOp.p95=3619174
+nsPerOp.bestOfRuns=2241331
+nsPerOp.mean=2395862
+nsPerOp.median=2241331
+nsPerOp.min=2204036
+nsPerOp.p95=3656672
 runs=3
 scenario=fullRun
