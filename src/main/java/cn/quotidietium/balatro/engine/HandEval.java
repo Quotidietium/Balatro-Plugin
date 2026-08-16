@@ -60,7 +60,7 @@ public final class HandEval {
         Card[] suited = new Card[n];
         int m = 0;
         for (Card c : cards) {
-            if (c.enh() != Data.Enhancement.STONE) suited[m++] = c;
+            if (!c.isEnh(Data.Enhancement.STONE)) suited[m++] = c; // P13：位段谓词（无解码数组）
         }
 
         // 点数计数（rank 2..14；石头已排除，wild 保留原 rank）
@@ -163,7 +163,7 @@ public final class HandEval {
         }
         // 石头牌永远计分
         for (Card c : cards) {
-            if (c.enh() == Data.Enhancement.STONE && !scoring.contains(c)) scoring.add(c);
+            if (c.isEnh(Data.Enhancement.STONE) && !scoring.contains(c)) scoring.add(c);
         }
         // 水花：全部计分
         if (splash) {
@@ -190,7 +190,7 @@ public final class HandEval {
     }
 
     private static boolean suitMatch(Card c, int s, boolean smeared) {
-        if (c.enh() == Data.Enhancement.WILD) return true;
+        if (c.isEnh(Data.Enhancement.WILD)) return true;
         if (smeared) {
             if (s == 1 || s == 3) return c.suit() == 1 || c.suit() == 3;
             return c.suit() == 0 || c.suit() == 2;

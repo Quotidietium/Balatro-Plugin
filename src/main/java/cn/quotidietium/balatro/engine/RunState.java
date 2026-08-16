@@ -216,8 +216,8 @@ public final class RunState {
     }
 
     public boolean isSuit(Card c, int s) {
-        if (c.enh() == Data.Enhancement.STONE) return false;
-        if (c.enh() == Data.Enhancement.WILD) return true;
+        if (c.isEnh(Data.Enhancement.STONE)) return false; // P13：位段谓词
+        if (c.isEnh(Data.Enhancement.WILD)) return true;
         if (flags != null && Boolean.TRUE.equals(flags.get("smeared"))) {
             if (s == 1 || s == 3) return c.suit() == 1 || c.suit() == 3;
             return c.suit() == 0 || c.suit() == 2;

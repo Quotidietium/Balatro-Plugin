@@ -96,6 +96,26 @@ public final class Card {
         bits = (bits & ~(SEAL_MASK << SEAL_SHIFT)) | (c << SEAL_SHIFT);
     }
 
+    // ---- P13 性能：热路径快速谓词 ----
+    // `enh() == X` 在位打包后是「shift+mask+数组取+指针比」；热循环（牌型判定过滤/计分
+    // 分支/花色适配）里以本谓词替代为「shift+mask+int 比」——无解码数组访问。
+    // 语义与 `enh() == e` 恒等（编码即 ordinal+1，单射）。
+
+    /** 等价于 {@code enh() == e}（无解码数组访问的热路径谓词）。 */
+    public boolean isEnh(Data.Enhancement e) {
+        return ((bits >> ENH_SHIFT) & ENH_MASK) == e.ordinal() + 1;
+    }
+
+    /** 等价于 {@code edition() == e}（同 {@link #isEnh}）。 */
+    public boolean isEdition(Data.Edition e) {
+        return ((bits >> ED_SHIFT) & ED_MASK) == e.ordinal() + 1;
+    }
+
+    /** 等价于 {@code seal() == s}（同 {@link #isEnh}）。 */
+    public boolean isSeal(Data.Seal s) {
+        return ((bits >> SEAL_SHIFT) & SEAL_MASK) == s.ordinal() + 1;
+    }
+
     public long chipBonus() {
         return chipBonus;
     }
@@ -137,7 +157,9 @@ public final class Card {
      * 仅凭 rank/suit 会漏判（排序/渲染/持有效果都依赖本方法）。
      */
     public boolean isStone() {
-        return enh() == Data.Enhancement.STONE || rank() == 0 || suit() < 0;
+        // P13 性能：单次位段比较（原经 enh() 解码数组）
+        return ((bits >> ENH_SHIFT) & ENH_MASK) == Data.Enhancement.STONE.ordinal() + 1
+                || (bits & RANK_MASK) == 0 || suit() < 0;
     }
 
     /**

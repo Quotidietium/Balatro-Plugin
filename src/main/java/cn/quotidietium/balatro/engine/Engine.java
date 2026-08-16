@@ -514,7 +514,7 @@ public final class Engine {
         if (s.mods.xrayFacedown && s.stream("xray").chance(0.25)) c.setFacedown(true);
         if ("mark".equals(bk) && c.rank() >= 11 && c.rank() <= 13) c.setFacedown(true);
         if ("pillar".equals(bk) && s.playedThisAnte.contains(c.id())) c.setDebuff(true);
-        if (s.bossSuitDebuff != null && c.enh() != Data.Enhancement.STONE && c.suit() == s.bossSuitDebuff) c.setDebuff(true);
+        if (s.bossSuitDebuff != null && !c.isEnh(Data.Enhancement.STONE) && c.suit() == s.bossSuitDebuff) c.setDebuff(true);
         if (s.bossFaceDebuff && isFaceCard(s, c)) c.setDebuff(true);
         if (s.bossLeaf) c.setDebuff(true);
         s.hand.add(c);
@@ -716,7 +716,7 @@ public final class Engine {
                 ctx.scoreIndex = ci;
 
                 int retriggers = 0;
-                if (card.seal() == Data.Seal.RED) retriggers += 1;
+                if (card.isSeal(Data.Seal.RED)) retriggers += 1;
                 for (int ji = 0; ji < activeJokers.size(); ji++) {
                     JokerInstance src = resolveCopy(activeJokers, ji);
                     if (src != null && !activeJokers.get(ji).debuffHand) {
@@ -736,7 +736,7 @@ public final class Engine {
                     }
                 }
                 // 玻璃牌破碎
-                if (card.enh() == Data.Enhancement.GLASS && !card.debuff()) {
+                if (card.isEnh(Data.Enhancement.GLASS) && !card.debuff()) {
                     double p = s.mods.glassDouble ? 0.5 : 0.25;
                     if (s.stream("glass").chance(p)) {
                         card.setBroken(true);
@@ -754,9 +754,9 @@ public final class Engine {
             for (int hi = 0; hi < heldCards.size(); hi++) {
                 Card card = heldCards.get(hi);
                 if (card.debuff()) continue;
-                int heldRepeat = 1 + (mime ? 1 : 0) + (card.seal() == Data.Seal.RED ? 1 : 0);
+                int heldRepeat = 1 + (mime ? 1 : 0) + (card.isSeal(Data.Seal.RED) ? 1 : 0);
                 for (int rep = 0; rep < heldRepeat; rep++) {
-                    if (card.enh() == Data.Enhancement.STEEL) ctx.xMult(1.5);
+                    if (card.isEnh(Data.Enhancement.STEEL)) ctx.xMult(1.5);
                     for (int ji = 0; ji < activeJokers.size(); ji++) {
                         JokerInstance src = resolveCopy(activeJokers, ji);
                         if (src != null && !activeJokers.get(ji).debuffHand) {
@@ -873,7 +873,7 @@ public final class Engine {
                 Card v = st.pick(s.hand);
                 s.hand.remove(v);
                 s.discardPile.add(v);
-                if (v.seal() == Data.Seal.PURPLE && !v.debuff()) {
+                if (v.isSeal(Data.Seal.PURPLE) && !v.debuff()) {
                     Data.Tarot t40 = s.stream("consumable").pick(Data.TAROTS);
                     if (s.addConsumableKey("tarot", t40.key)) s.msg("紫色蜡封：获得 " + t40.name);
                 }
@@ -926,14 +926,14 @@ public final class Engine {
     }
 
     private static void scoreOneCard(RunState s, ScoreContext ctx, Card card) {
-        if (card.enh() == Data.Enhancement.STONE) ctx.addChips(50);
+        if (card.isEnh(Data.Enhancement.STONE)) ctx.addChips(50); // P13：位段谓词
         else ctx.addChips(Data.rankChips(card.rank()));
         ctx.addChips(card.chipBonus());
 
-        if (card.enh() == Data.Enhancement.BONUS) ctx.addChips(30);
-        if (card.enh() == Data.Enhancement.MULT) ctx.addMult(4);
-        if (card.enh() == Data.Enhancement.GLASS) ctx.xMult(2);
-        if (card.enh() == Data.Enhancement.LUCKY) {
+        if (card.isEnh(Data.Enhancement.BONUS)) ctx.addChips(30);
+        if (card.isEnh(Data.Enhancement.MULT)) ctx.addMult(4);
+        if (card.isEnh(Data.Enhancement.GLASS)) ctx.xMult(2);
+        if (card.isEnh(Data.Enhancement.LUCKY)) {
             Rng.Stream st = s.stream("lucky");
             double p5 = 1.0 / 5, p15 = 1.0 / 15;
             if (Boolean.TRUE.equals(s.flags.get("doubleProb"))) { p5 *= 2; p15 *= 2; }
@@ -941,11 +941,11 @@ public final class Engine {
             if (st.chance(p15)) { ctx.dollars(20); triggerLuckyCat(s); }
         }
 
-        if (card.edition() == Data.Edition.FOIL) ctx.addChips(50);
-        if (card.edition() == Data.Edition.HOLO) ctx.addMult(10);
-        if (card.edition() == Data.Edition.POLY) ctx.xMult(1.5);
+        if (card.isEdition(Data.Edition.FOIL)) ctx.addChips(50);
+        if (card.isEdition(Data.Edition.HOLO)) ctx.addMult(10);
+        if (card.isEdition(Data.Edition.POLY)) ctx.xMult(1.5);
 
-        if (card.seal() == Data.Seal.GOLD) ctx.dollars(3);
+        if (card.isSeal(Data.Seal.GOLD)) ctx.dollars(3);
     }
 
     private static void triggerLuckyCat(RunState s) {
@@ -1030,7 +1030,7 @@ public final class Engine {
         for (Card c : cards) {
             c.setFacedown(false);
             // 紫色蜡封 → 塔罗牌（对齐 engine.js discard）
-            if (c.seal() == Data.Seal.PURPLE && !c.debuff()) {
+            if (c.isSeal(Data.Seal.PURPLE) && !c.debuff()) {
                 Data.Tarot t = s.stream("consumable").pick(Data.TAROTS);
                 if (s.addConsumableKey("tarot", t.key)) s.msg("紫色蜡封：获得 " + t.name);
             }
@@ -1101,12 +1101,12 @@ public final class Engine {
         // 黄金牌（手中）
         for (int i = 0; i < s.hand.size(); i++) {
             Card c = s.hand.get(i);
-            if (c.enh() == Data.Enhancement.GOLD && !c.debuff()) gain += 3;
+            if (c.isEnh(Data.Enhancement.GOLD) && !c.debuff()) gain += 3;
         }
         // 蓝色蜡封（手中）→ 对应星球牌（对齐 engine.js endRound）
         for (int i = 0; i < s.hand.size(); i++) {
             Card c = s.hand.get(i);
-            if (c.seal() == Data.Seal.BLUE && !c.debuff()) {
+            if (c.isSeal(Data.Seal.BLUE) && !c.debuff()) {
                 Data.HandType lastType = s.playedTypesThisRound.isEmpty()
                         ? Data.HandType.HIGH : s.playedTypesThisRound.get(s.playedTypesThisRound.size() - 1);
                 Data.Planet p = Data.Planet.byHand(lastType);

@@ -132,4 +132,34 @@ class CardPackingTest {
         assertTrue(c.isFace());
         assertEquals("♦J", c.toString());
     }
+
+    /** P13 快速谓词与 getter 比较恒等（全枚举 × 各域状态组合）。 */
+    @Test
+    void fastPredicatesEquivalentToGetterCompare() {
+        for (Data.Enhancement e : Data.Enhancement.values()) {
+            for (Data.Edition ed : Data.Edition.values()) {
+                for (Data.Seal se : Data.Seal.values()) {
+                    Card c = new Card(7, 9, 2);
+                    c.setEnh(e);
+                    c.setEdition(ed);
+                    c.setSeal(se);
+                    for (Data.Enhancement probe : Data.Enhancement.values()) {
+                        assertEquals(c.enh() == probe, c.isEnh(probe));
+                    }
+                    for (Data.Edition probe : Data.Edition.values()) {
+                        assertEquals(c.edition() == probe, c.isEdition(probe));
+                    }
+                    for (Data.Seal probe : Data.Seal.values()) {
+                        assertEquals(c.seal() == probe, c.isSeal(probe));
+                    }
+                }
+            }
+        }
+        // null 态：任何谓词都为 false（与 enh()==e 同）
+        Card c = new Card(7, 9, 2);
+        assertNull(c.enh());
+        for (Data.Enhancement probe : Data.Enhancement.values()) assertFalse(c.isEnh(probe));
+        for (Data.Edition probe : Data.Edition.values()) assertFalse(c.isEdition(probe));
+        for (Data.Seal probe : Data.Seal.values()) assertFalse(c.isSeal(probe));
+    }
 }
