@@ -41,6 +41,10 @@ public final class Main {
                     compareA = args[++i];
                     compareB = args[++i];
                 }
+                case "--aggregate" -> {
+                    aggregate(Path.of(outDir), args[++i]);
+                    return;
+                }
                 case "--list" -> {
                     for (Scenario sc : Scenarios.all()) {
                         System.out.printf("%-12s %s%n", sc.name(), sc.description());
@@ -74,9 +78,81 @@ public final class Main {
         System.out.println("done. results -> " + base);
     }
 
+    // ================= 聚合（best-of-N） =================
+
+    /**
+     * 把 {@code <prefix>*}（如 r1/r2/r3，不含 *-best）多次运行的同类结果聚合成
+     * {@code <prefix>-best/}：时间类指标取各次运行中位数的**最小值**（抗共享机器的
+     * 后台负载/GC 异步噪声——噪声只会让时间变大，min 最稳）；分配取中位数（本就稳定）。
+     * 对比模式优先读 bestOfRuns 字段。
+     */
+    private static void aggregate(Path out, String prefix) throws IOException {
+        List<Path> dirs = new ArrayList<>();
+        try (var stream = Files.list(out)) {
+            stream.filter(Files::isDirectory)
+                    .filter(d -> {
+                        String n = d.getFileName().toString();
+                        return n.startsWith(prefix) && !n.endsWith("-best");
+                    })
+                    .sorted()
+                    .forEach(dirs::add);
+        }
+        if (dirs.isEmpty()) {
+            System.err.println("没有匹配 " + prefix + "* 的结果目录");
+            System.exit(1);
+        }
+        Path dest = out.resolve(prefix + "-best");
+        Files.createDirectories(dest);
+        // 以第一个目录的场景文件为基准
+        for (Path f : Files.list(dirs.get(0)).sorted().toList()) {
+            String fn = f.getFileName().toString();
+            if (!fn.endsWith(".txt")) continue;
+            long bestMedian = Long.MAX_VALUE;
+            long bestMin = Long.MAX_VALUE;
+            long bestMean = Long.MAX_VALUE;
+            long bestP95 = Long.MAX_VALUE;
+            List<Long> allocs = new ArrayList<>();
+            Properties proto = null;
+            for (Path d : dirs) {
+                Path g = d.resolve(fn);
+                if (!Files.exists(g)) continue;
+                Properties p = load(g);
+                if (proto == null) proto = p;
+                bestMedian = Math.min(bestMedian, Long.parseLong(p.getProperty("nsPerOp.median")));
+                bestMin = Math.min(bestMin, Long.parseLong(p.getProperty("nsPerOp.min")));
+                bestMean = Math.min(bestMean, Long.parseLong(p.getProperty("nsPerOp.mean")));
+                bestP95 = Math.min(bestP95, Long.parseLong(p.getProperty("nsPerOp.p95")));
+                allocs.add(Long.parseLong(p.getProperty("allocBytesPerOp.median")));
+            }
+            allocs.sort(null);
+            Properties merged = new Properties();
+            merged.setProperty("scenario", proto.getProperty("scenario"));
+            merged.setProperty("label", prefix + "-best");
+            merged.setProperty("nsPerOp.bestOfRuns", Long.toString(bestMedian));
+            merged.setProperty("nsPerOp.median", Long.toString(bestMedian));
+            merged.setProperty("nsPerOp.min", Long.toString(bestMin));
+            merged.setProperty("nsPerOp.mean", Long.toString(bestMean));
+            merged.setProperty("nsPerOp.p95", Long.toString(bestP95));
+            merged.setProperty("allocBytesPerOp.median",
+                    Long.toString(allocs.get(allocs.size() / 2)));
+            merged.setProperty("runs", Integer.toString(allocs.size()));
+            try (var w = Files.newOutputStream(dest.resolve(fn))) {
+                merged.store(w, "best-of-" + dirs.size() + " aggregated from " + dirs);
+            }
+            System.out.printf(Locale.ROOT, "%-16s best %,d ns/op (min %,d) alloc %,d B/op%n",
+                    fn, bestMedian, bestMin, allocs.get(allocs.size() / 2));
+        }
+        System.out.println("aggregated -> " + dest);
+    }
+
     // ================= 对比报告 =================
 
     private record Row(String scenario, double baseMedian, double baseAlloc, double curMedian, double curAlloc) {
+    }
+
+    private static double timeOf(Properties p) {
+        String best = p.getProperty("nsPerOp.bestOfRuns");
+        return Double.parseDouble(best != null ? best : p.getProperty("nsPerOp.median", "0"));
     }
 
     private static void printComparison(Path out, String labelA, String labelB) throws IOException {
@@ -98,9 +174,9 @@ public final class Main {
             Properties pb = load(fb);
             rows.add(new Row(
                     pa.getProperty("scenario", fa.getFileName().toString()),
-                    Double.parseDouble(pa.getProperty("nsPerOp.median", "0")),
+                    timeOf(pa),
                     Double.parseDouble(pa.getProperty("allocBytesPerOp.median", "0")),
-                    Double.parseDouble(pb.getProperty("nsPerOp.median", "0")),
+                    timeOf(pb),
                     Double.parseDouble(pb.getProperty("allocBytesPerOp.median", "0"))));
         }
         System.out.printf("# 基准对比：%s → %s（ns/op 中位数，越小越好）%n%n", labelA, labelB);

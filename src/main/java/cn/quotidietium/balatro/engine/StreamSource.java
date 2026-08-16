@@ -19,8 +19,17 @@ public final class StreamSource {
         this.runSeed = runSeed;
     }
 
-    /** 取（必要时创建并缓存）指定名称的随机流。 */
+    /** 取（必要时创建并缓存）指定名称的随机流。
+     *
+     * <p>P2 性能：原实现 computeIfAbsent(name, lambda) 每次调用都新分配一个捕获
+     * {@code runSeed} 的 lambda 实例（实测 16 B/op）。改为 get/缺省创建/put——
+     * 命中路径零分配。RunState 为单玩家单线程访问，无需并发原语，语义不变。 */
     public Rng.Stream stream(String name) {
-        return streams.computeIfAbsent(name, n -> Rng.makeStream(runSeed, n));
+        Rng.Stream st = streams.get(name);
+        if (st == null) {
+            st = Rng.makeStream(runSeed, name);
+            streams.put(name, st);
+        }
+        return st;
     }
 }

@@ -25,12 +25,23 @@ public final class Rng {
     /** 字符串 → 32 位哈希（FNV-1a 变体）。返回 int，位模式同 JS 的无符号 32 位结果。 */
     public static int seedHash(String s) {
         int h = 0x811C9DC5; // 2166136261（位模式；最高位为 1，Java 中为负数，但位模式一致）
-        String str = String.valueOf(s);
-        for (int i = 0; i < str.length(); i++) {
-            h ^= str.charAt(i);
+        for (int i = 0; i < s.length(); i++) {
+            h ^= s.charAt(i);
             h *= 0x01000193; // 16777619
         }
         return h;
+    }
+
+    /** 生成 8 位随机种子字符串的字母表（仅当用户留空种子时使用一次；不属于可复现流）。 */
+    private static final String SEED_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+    /** 生成 8 位随机种子字符串（仅当用户留空种子时使用一次；不属于可复现流）。 */
+    public static String randomSeedString() {
+        StringBuilder sb = new StringBuilder(8);
+        for (int i = 0; i < 8; i++) {
+            sb.append(SEED_CHARS.charAt(ThreadLocalRandom.current().nextInt(SEED_CHARS.length())));
+        }
+        return sb.toString();
     }
 
     /** 种子最大长度（防止超长用户输入进入 RNG/统计文件/聊天）。 */
@@ -52,16 +63,6 @@ public final class Rng {
             if (!ok) return false;
         }
         return true;
-    }
-
-    /** 生成 8 位随机种子字符串（仅当用户留空种子时使用一次；不属于可复现流）。 */
-    public static String randomSeedString() {
-        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        StringBuilder sb = new StringBuilder(8);
-        for (int i = 0; i < 8; i++) {
-            sb.append(chars.charAt(ThreadLocalRandom.current().nextInt(chars.length())));
-        }
-        return sb.toString();
     }
 
     /** 创建一个命名随机流（对应 JS 的 {@code makeStream(runSeed, stream)}）。 */
@@ -86,9 +87,11 @@ public final class Rng {
             return Integer.toUnsignedLong(t ^ (t >>> 14)) / 4294967296.0;
         }
 
-        /** [min,max] 整数（含两端）。 */
+        /** [min,max] 整数（含两端）。
+         * P2 性能：{@code (int) Math.floor(x)} 与 {@code (int) x} 在 x≥0 且非 NaN 时逐位等价
+         * （截断即向下取整）；next()∈[0,1) 保证 x≥0，行为不变。 */
         public int range(int min, int max) {
-            return min + (int) Math.floor(next() * (max - min + 1));
+            return min + (int) (next() * (max - min + 1));
         }
 
         /** 从列表中等概率取一个元素；空列表返回 null。 */
@@ -96,7 +99,7 @@ public final class Rng {
             if (arr == null || arr.isEmpty()) {
                 return null;
             }
-            return arr.get((int) Math.floor(next() * arr.size()));
+            return arr.get((int) (next() * arr.size()));
         }
 
         /** 以 p 概率返回 true（p 为 0..1）。 */
@@ -110,7 +113,7 @@ public final class Rng {
                 return null;
             }
             for (int i = arr.size() - 1; i > 0; i--) {
-                int j = (int) Math.floor(next() * (i + 1));
+                int j = (int) (next() * (i + 1));
                 T tmp = arr.get(i);
                 arr.set(i, arr.get(j));
                 arr.set(j, tmp);
