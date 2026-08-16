@@ -181,29 +181,25 @@ public final class Shop {
         // 优惠券：基础一张 + voucher 标签每叠加一次追加一张额外券（对齐真版
         // "Adds a Voucher to the next Shop. Can be stacked" — balatrowiki.org/w/Voucher_Tag）。
         // REF 原版网页未实现 extraVoucher 消费（只置位），此处按真版补齐。
+        // P12 负结果（已回退）：券池两趟虚拟抽取省 ~184B/店但时间净回归（同 makeJokerItem 结论）。
         List<VoucherItem> vouchers = new ArrayList<>(2);
-        // P12 性能：券池两趟虚拟抽取（原 avail 物化 ArrayList(32)≈184B/店）。
-        // 等价性：过滤序（已拥有/requires 未满足/禁入）同序；已取券按引用排除与
-        // 原 pick 后 remove(v) 的剩余池序一致；池空提前终止（无流消耗），
-        // 每张券恰一次 next() 的 `(int)(next()*n)` 与 pick 逐位相同。
+        List<Data.Voucher> avail = new ArrayList<>(Data.VOUCHERS.size());
+        for (Data.Voucher v : Data.VOUCHERS) {
+            if (s.vouchers.contains(v.key)) continue;
+            if (v.requires != null && !s.vouchers.contains(v.requires)) continue;
+            // 禁入券（真版煎蛋卷：种子基金/摇钱树不进券池）——R108 对齐真版
+            if (s.mods.bannedVouchers.contains(v.key)) continue;
+            avail.add(v);
+        }
+        // extraVoucher 计数（标签每次叠加 +1；0 表示无额外券）
         int extraVouchers = 0;
         Object ev = s.nextShop.get("extraVoucher");
         if (ev instanceof Number) extraVouchers = ((Number) ev).intValue();
         int totalVouchers = 1 + extraVouchers; // 基础 1 张 + 额外
-        Data.Voucher[] picked = new Data.Voucher[totalVouchers];
-        for (int vi = 0; vi < totalVouchers; vi++) {
-            int n = 0;
-            for (int i = 0; i < Data.VOUCHERS.size(); i++) {
-                if (voucherAvail(s, Data.VOUCHERS.get(i), picked, vi)) n++;
-            }
-            if (n == 0) break; // 剩余可用券不足则少几张（与原 !avail.isEmpty() 同）
-            int idx = (int) (st.next() * n);
-            Data.Voucher v = null;
-            for (int i = 0; i < Data.VOUCHERS.size(); i++) {
-                Data.Voucher cand = Data.VOUCHERS.get(i);
-                if (voucherAvail(s, cand, picked, vi) && idx-- == 0) { v = cand; break; }
-            }
-            picked[vi] = v;
+        // 每张券从剩余 avail 中随机取一张并移除（不重复），avail 不足则少几张
+        for (int vi = 0; vi < totalVouchers && !avail.isEmpty(); vi++) {
+            Data.Voucher v = st.pick(avail);
+            avail.remove(v); // 同一商店内券不重复
             VoucherItem item = new VoucherItem();
             item.voucher = v; item.name = v.name; item.desc = v.desc;
             item.price = shopPrice(s, 10);
@@ -382,20 +378,30 @@ public final class Shop {
             rarity = r < 70 ? 0 : r < 95 ? 1 : 2;
         }
         // P9 性能：按稀有度分桶的静态视图（桶内保持 ORDERED 序，与原逐个筛选的池序一致），
-        // 免去每次全量遍历 150 个小丑的 rarityOf 查找。
-        // P12 性能：两趟**虚拟抽取**替代池物化——原实现每次 `new ArrayList<>(bucket.size())`
-        // （common 桶 ~105 → Object[105]≈490B/次，JFR 实测为商店路径最大剩余分配点）。
-        // 等价性：过滤谓词逐条同序（cavendish/noJokers/禁入/已持有），两趟对同一桶按同序
-        // 计数与取第 n 个匹配，与「物化列表后 pick」选出的元素恒等；pick 算术
-        // `(int)(next()*n)` 与恰一次 next() 逐位一致（流名/次序/消耗不变，种子复现零影响）。
-        // P11 实验（已回退）：暂存缓冲复用方案 +4% 时间回归（小列表复用不敌 TLAB），
-        // 虚拟抽取为纯栈上两趟遍历，无晋升写屏障，不受该结论影响。
+        // 免去每次全量遍历 150 个小丑的 rarityOf 查找；池按桶大小精确预置（单次分配）。
+        // P12 负结果（已回退）：两趟虚拟抽取（计数→取第 n 个匹配）省 490B/次分配，但第二趟
+        // 105 元素过滤 ~0.25μs/次 ×4.2 次/op ≈ +1μs——TLAB 物化 490B 仅 ~50ns，时间净回归
+        // 0.838×（A/B 三对完全分离）。与 P10/P11 同源结论第三次确认：小列表物化/复用/两趟
+        // 皆不敌 TLAB 新鲜分配。详细数据见 note/report/perf/2026-08-16-P12-商店池物化消灭.md。
         List<Joker> bucket = JOKERS_BY_RARITY.get(rarity);
-        Joker def = pickJokerVirtual(s, bucket, st);
-        if (def == null) {
+        List<Joker> pool = new ArrayList<>(bucket.size());
+        for (Joker j : bucket) {
+            if (j.key().equals("cavendish") && !s.grosDead) continue;
+            if (s.mods.noJokers) continue;
+            // 禁入小丑（真版煎蛋卷：经济小丑不进商店池）——R108 对齐真版
+            if (s.mods.bannedJokers.contains(j.key())) continue;
+            if (!Boolean.TRUE.equals(s.flags.get("allowDupes"))) {
+                boolean owned = false;
+                for (JokerInstance o : s.jokers) if (o.def.key().equals(j.key())) { owned = true; break; }
+                if (owned) continue;
+            }
+            pool.add(j);
+        }
+        if (pool.isEmpty()) {
             Data.Tarot t = st.pick(Data.TAROTS); // P9：共享 Data.TAROTS（原 List.of(values()) 每次新建）
             return item("tarot", t.key, t.name, t.desc, shopPrice(s, 3));
         }
+        Joker def = st.pick(pool);
         Data.Edition edition = forceEdition != null ? parseEdition(forceEdition) : null;
         if (edition == null) {
             double chance = hasVoucher(s, "glowup") ? 0.2 : hasVoucher(s, "hone") ? 0.1 : 0.05;
@@ -415,49 +421,6 @@ public final class Shop {
         it.kind = "joker"; it.joker = ji; it.name = JokerRegistry.nameOf(def.key());
         it.desc = def.desc(); it.price = price;
         return it;
-    }
-
-    /** 与原 avail 过滤逐条同序的券可用判定，另按引用排除本店已取券（等价 remove 后剩余池）。 */
-    private static boolean voucherAvail(RunState s, Data.Voucher v, Data.Voucher[] picked, int pickedCount) {
-        for (int i = 0; i < pickedCount; i++) if (picked[i] == v) return false;
-        if (s.vouchers.contains(v.key)) return false;
-        if (v.requires != null && !s.vouchers.contains(v.requires)) return false;
-        if (s.mods.bannedVouchers.contains(v.key)) return false; // 禁入券（R108 对齐真版）
-        return true;
-    }
-
-    /**
-     * P12 性能：商店小丑池的两趟虚拟抽取——与「按原过滤条件物化成列表后 {@code st.pick(pool)}」
-     * 逐位等价（过滤序、池序=桶序、单次 next 的 `(int)(next()*n)` 算术全部一致），
-     * 但零列表分配。空池返回 null（调用方走塔罗兜底，流消耗路径与原实现一致）。
-     */
-    private static Joker pickJokerVirtual(RunState s, List<Joker> bucket, Rng.Stream st) {
-        if (s.mods.noJokers) return null; // 原过滤条件恒排除全部 → 空池（等价短路）
-        boolean cavBlocked = !s.grosDead;
-        boolean allowDupes = Boolean.TRUE.equals(s.flags.get("allowDupes"));
-        int n = 0;
-        for (int i = 0; i < bucket.size(); i++) {
-            if (jokerInPool(s, bucket.get(i), cavBlocked, allowDupes)) n++;
-        }
-        if (n == 0) return null;
-        int idx = (int) (st.next() * n);
-        for (int i = 0; i < bucket.size(); i++) {
-            Joker j = bucket.get(i);
-            if (jokerInPool(s, j, cavBlocked, allowDupes) && idx-- == 0) return j;
-        }
-        return null; // 不可达（next()<1 ⇒ idx≤n-1）
-    }
-
-    /** 与原物化过滤逐条同序的池内判定（cavendish 门槛 → 禁入 → 已持有）。 */
-    private static boolean jokerInPool(RunState s, Joker j, boolean cavBlocked, boolean allowDupes) {
-        if (cavBlocked && j.key().equals("cavendish")) return false;
-        if (s.mods.bannedJokers.contains(j.key())) return false; // 禁入小丑（R108 对齐真版）
-        if (!allowDupes) {
-            for (int i = 0; i < s.jokers.size(); i++) {
-                if (s.jokers.get(i).def.key().equals(j.key())) return false;
-            }
-        }
-        return true;
     }
 
     private static String weightedEdition(Rng.Stream st) {

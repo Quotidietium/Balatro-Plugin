@@ -20,6 +20,9 @@ public final class Engine {
 
     private static final List<Data.Boss> BOSSES = List.of(Data.Boss.values());
 
+    /** P12 性能：numbersToFaces 的随机人头点数池（原每次 List.of(11,12,13) 新建）。 */
+    private static final List<Integer> FACE_RANKS = List.of(11, 12, 13);
+
     /** P8 性能：Boss 抽取池静态化（常规 23 个 / 终结者 5 个）——原实现每底注新建
      *  ArrayList 逐个筛选；池内容仅取决于 showdown，且 pick 只读，可全局共享。 */
     private static final List<Data.Boss> BOSS_POOL_REGULAR;
@@ -142,8 +145,9 @@ public final class Engine {
             }
         }
         if (m.numbersToFaces) {
+            // P12 性能：静态常量替代每次 List.of（挑战牌组逐牌一次）
             for (Card c : deck) {
-                if (c.rank() >= 2 && c.rank() <= 10) c.setRank(stream.pick(List.of(11, 12, 13)));
+                if (c.rank() >= 2 && c.rank() <= 10) c.setRank(stream.pick(FACE_RANKS));
             }
         }
         // R123 真版挑战牌组修饰

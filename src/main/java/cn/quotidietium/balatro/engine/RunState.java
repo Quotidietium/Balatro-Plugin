@@ -492,29 +492,18 @@ public final class RunState {
     public boolean gainRandomJoker(Integer rarity) {
         if (jokerSpace() <= 0) return false;
         Rng.Stream st = stream("randomjoker");
-        // P12 性能：两趟虚拟抽取替代池物化（原 new ArrayList + 150 元素过滤拷贝 ≈700B/次）。
-        // 等价性：原池 = ORDERED 按「稀有度匹配」过滤后 removeIf(禁入)——合并谓词同序同元素；
-        // 空池先 return false（不耗流）；pick 算术 `(int)(next()*n)` 恰一次 next()，逐位一致。
-        List<Joker> ordered = cn.quotidietium.balatro.engine.joker.JokerRegistry.allJokersOrdered();
-        int n = 0;
-        for (int i = 0; i < ordered.size(); i++) {
-            if (randJokerInPool(rarity, ordered.get(i))) n++;
+        // P12 负结果（已回退）：两趟虚拟抽取省 ~700B/次但第二趟 150 元素过滤时间净回归
+        // （与商店池同源结论：物化/复用/两趟皆不敌 TLAB）。人频路径保留物化实现。
+        java.util.List<Joker> pool = new java.util.ArrayList<>();
+        for (Joker j : cn.quotidietium.balatro.engine.joker.JokerRegistry.allJokersOrdered()) {
+            int r = cn.quotidietium.balatro.engine.joker.JokerRegistry.rarityOf(j.key());
+            if (rarity == null ? r < 3 : r == rarity) pool.add(j);
         }
-        if (n == 0) return false;
-        int idx = (int) (st.next() * n);
-        Joker pick = null;
-        for (int i = 0; i < ordered.size(); i++) {
-            Joker j = ordered.get(i);
-            if (randJokerInPool(rarity, j) && idx-- == 0) { pick = j; break; }
-        }
+        // 禁入小丑（真版煎蛋卷：随机获得路径同样不产出经济小丑）——R108 对齐真版
+        pool.removeIf(j -> mods.bannedJokers.contains(j.key()));
+        if (pool.isEmpty()) return false;
+        Joker pick = st.pick(pool);
         return gainJoker(pick.key(), null);
-    }
-
-    /** 与原物化过滤（稀有度匹配 ∧ 非禁入）等价的池内判定。 */
-    private boolean randJokerInPool(Integer rarity, Joker j) {
-        int r = cn.quotidietium.balatro.engine.joker.JokerRegistry.rarityOf(j.key());
-        if (rarity == null ? r >= 3 : r != rarity) return false;
-        return !mods.bannedJokers.contains(j.key()); // 禁入小丑（R108 对齐真版）
     }
 
     /**
