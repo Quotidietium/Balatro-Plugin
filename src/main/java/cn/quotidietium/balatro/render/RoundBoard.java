@@ -33,8 +33,10 @@ import org.joml.Vector3f;
  *
  * <p><b>稳定实体（无闪烁）</b>：状态栏/按钮/各牌区槽位均为持久 TextDisplay，{@link #update}
  * 只原地改写文本/背景/位置/标签，不再 clear+respawn——故选牌、补牌时面板不闪烁。
- * 卡牌实体打 scoreboard tag {@code balatro_card_<id>}，按钮打 {@code balatro_act_*}，
- * 命中检测由 {@code BoardListener} 用 {@code World.rayTraceEntities} 完成。
+ * 命中检测走 {@link org.bukkit.entity.Interaction} 实体（R151 修正注释：原「World.rayTraceEntities」
+ * 为前代架构）：可点击元素由 {@link #placeInteraction} 摆放不可见命中盒，动作编进
+ * {@code balatro_i_<action>} 标签，{@code BoardListener} 经 PlayerInteractEntityEvent 派发。
+ * {@code balatro_card_<id>}/{@code balatro_act_*} 为遗留身份标记（现无消费方，保留无害）。
  *
  * <p><b>卡牌化外观</b>：每张牌以带背景色的色块呈现（点数 + 花色 + 增强/版本/蜡封角标），
  * 选中时改为绿色背景并向上抬起；手牌已由 {@link Engine#sortHand} 整理为点数降序，
