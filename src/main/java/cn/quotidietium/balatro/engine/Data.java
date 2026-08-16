@@ -296,7 +296,8 @@ public final class Data {
         ACORN("acorn", "琥珀橡子", "小丑牌被翻面并打乱顺序"),
         BELL("bell", "翠绿铃", "强制 1 张手牌始终处于选中状态"),
         HEART_BOSS("heart", "绯红之心", "每次出牌随机使 1 张小丑失效"),
-        VESSEL("vessel", "紫罗兰之瓶", "巨大盲注（目标分 ×3）"),
+        // R139：desc 同步 R126 代码真版对齐（6×；原 ×3 为 REF 值——代码已改而 desc 漏改）
+        VESSEL("vessel", "紫罗兰之瓶", "巨大盲注（目标分 ×6）"),
         WATER("water", "水", "本回合没有弃牌次数"),
         MANACLE("manacle", "镣铐", "手牌上限 -1"),
         EYE("eye", "眼睛", "本回合每种牌型只能出一次"),
