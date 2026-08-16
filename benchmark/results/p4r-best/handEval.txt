@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p4r1, benchmark\results\p4r2, benchmark\results\p4r3]
+#Sun Aug 16 15:35:31 CST 2026
+allocBytesPerOp.median=231
+label=p4r-best
+nsPerOp.bestOfRuns=99
+nsPerOp.mean=107
+nsPerOp.median=99
+nsPerOp.min=94
+nsPerOp.p95=161
+runs=3
+scenario=handEval

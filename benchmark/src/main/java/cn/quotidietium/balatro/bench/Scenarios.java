@@ -33,8 +33,27 @@ public final class Scenarios {
         list.add(new DiscardScenario());
         list.add(new RoundCycleScenario());
         list.add(new ShopGenScenario());
+        list.add(new CreateRunScenario());
         list.add(new FullRunScenario());
         return list;
+    }
+
+    /** P4 新增：构局成本单独测量（区分 playHand/roundCycle 场景里摊销的 createRun 部分）。 */
+    private static final class CreateRunScenario implements Scenario {
+        private int k;
+
+        public String name() { return "createRun"; }
+        public String description() { return "Engine.createRun 开局构局成本"; }
+
+        public long runBatch() {
+            long sink = 0;
+            for (int i = 0; i < 6_000; i++) {
+                RunState s = Engine.createRun("red", 0, "BENCHCR" + (k++ & 63));
+                sink += s.fullDeck.size() + s.hand.size();
+            }
+            Blackhole.consume(sink);
+            return 6_000;
+        }
     }
 
     // ================= 随机流核心 =================

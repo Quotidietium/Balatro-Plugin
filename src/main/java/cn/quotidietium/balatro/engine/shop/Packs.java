@@ -53,7 +53,7 @@ public final class Packs {
         PackCard c = new PackCard();
         switch (type) {
             case ARCANA -> {
-                Data.Tarot t = st.pick(List.of(Data.Tarot.values()));
+                Data.Tarot t = st.pick(Data.TAROTS);
                 c.kind = "tarot"; c.key = t.key; c.name = t.name; c.desc = t.desc;
             }
             case CELESTIAL -> {
@@ -63,14 +63,13 @@ public final class Packs {
                     if (most == null) most = Data.HandType.HIGH;
                     for (Data.Planet x : Data.Planet.values()) if (x.hand == most) { p = x; break; }
                 }
-                if (p == null) p = st.pick(List.of(Data.Planet.values()));
+                if (p == null) p = st.pick(Data.PLANETS);
                 c.kind = "planet"; c.key = p.key; c.name = p.name; c.desc = p.desc;
             }
             case STANDARD -> {
                 Card card = s.randomPlayingCard();
                 if (st.chance(0.4)) {
-                    Data.Enhancement[] enhs = Data.Enhancement.values();
-                    card.setEnh(enhs[st.range(0, enhs.length - 1)]);
+                    card.setEnh(Data.ENHANCEMENTS.get(st.range(0, Data.ENHANCEMENTS.size() - 1)));
                 }
                 // 版本均匀 1/3（对齐 REF engine.js:1433 s.pick(["foil","holo","poly"])）；
                 // 此前误用 weightedEdition（50/35/15），分布错误且破坏种子复现。
@@ -79,8 +78,7 @@ public final class Packs {
                     card.setEdition(eds[st.range(0, 2)]);
                 }
                 if (st.chance(0.2)) {
-                    Data.Seal[] seals = Data.Seal.values();
-                    card.setSeal(seals[st.range(0, seals.length - 1)]);
+                    card.setSeal(Data.SEALS.get(st.range(0, Data.SEALS.size() - 1)));
                 }
                 c.kind = "playing"; c.card = card; c.name = s.cardName(card); c.desc = "游戏牌";
             }

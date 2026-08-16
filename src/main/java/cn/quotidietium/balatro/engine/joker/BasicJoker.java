@@ -264,7 +264,7 @@ public enum BasicJoker implements Joker {
         }
         @Override
         public long onRoundEnd(RunState state, JokerInstance self) {
-            self.extra.put("hand", state.stream("todo").pick(List.of(Data.HandType.values())));
+            self.extra.put("hand", state.stream("todo").pick(Data.HAND_TYPES));
             return 0;
         }
     },

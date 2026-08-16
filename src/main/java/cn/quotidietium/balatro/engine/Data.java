@@ -20,6 +20,17 @@ public final class Data {
     private Data() {
     }
 
+    // ================= 枚举缓存列表（P4 性能） =================
+    // values() 每次调用都克隆内部数组，且调用点多接 List.of(...) 再包一层——
+    // 商店/补充包/紫蜡封/消耗品生成等热路径逐次分配。此处一次性缓存为不可变列表
+    // （顺序=枚举声明序，与 values() 一致；不可变避免第三方污染）。
+    public static final java.util.List<HandType> HAND_TYPES = java.util.List.of(HandType.values());
+    public static final java.util.List<Enhancement> ENHANCEMENTS = java.util.List.of(Enhancement.values());
+    public static final java.util.List<Seal> SEALS = java.util.List.of(Seal.values());
+    public static final java.util.List<Tarot> TAROTS = java.util.List.of(Tarot.values());
+    public static final java.util.List<Planet> PLANETS = java.util.List.of(Planet.values());
+    public static final java.util.List<Spectral> SPECTRALS = java.util.List.of(Spectral.values());
+
     // ================= 花色 =================
     // 0 黑桃 1 红桃 2 梅花 3 方块
     public enum Suit {

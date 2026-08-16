@@ -1,7 +1,5 @@
 package cn.quotidietium.balatro.engine;
 
-import java.util.Objects;
-
 /**
  * 一张游戏牌，对应 balatro {@code Engine.makeCard} 产出的对象。
  *
@@ -153,9 +151,10 @@ public final class Card {
         return this.id == c.id;
     }
 
+    /** P4 性能：直接返回 id——原 Objects.hash(id) 每次调用分配 varargs 数组。 */
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return id;
     }
 
     @Override

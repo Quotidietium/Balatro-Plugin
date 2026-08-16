@@ -239,7 +239,7 @@ public final class Shop {
                 return item("tarot", t.key, t.name, t.desc, free ? 0 : shopPrice(s, 3));
             }
             case 2: {
-                Data.Planet p = st.pick(List.of(Data.Planet.values()));
+                Data.Planet p = st.pick(Data.PLANETS);
                 boolean free = s.nextShop.get("freePlanet") != null
                         || (s.flags != null && Boolean.TRUE.equals(s.flags.get("freePlanets")))
                         || s.vouchers.contains("astronomer"); // R130 真版：天文学家使星球牌免费
@@ -261,8 +261,7 @@ public final class Shop {
                 if (hasVoucher(s, "illusion")) {
                     Rng.Stream r = s.stream("illusion");
                     if (r.chance(0.4)) {
-                        Data.Enhancement[] enhs = Data.Enhancement.values();
-                        c.setEnh(enhs[r.range(0, enhs.length - 1)]);
+                        c.setEnh(Data.ENHANCEMENTS.get(r.range(0, Data.ENHANCEMENTS.size() - 1)));
                     }
                     if (r.chance(0.3)) {
                         Data.Edition[] eds = {Data.Edition.FOIL, Data.Edition.HOLO, Data.Edition.POLY};

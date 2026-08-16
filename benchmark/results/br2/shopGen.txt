@@ -1,13 +1,13 @@
-#Balatro benchmark result \u2014 2026-08-16T15:26:12.613260500
-#Sun Aug 16 15:26:12 CST 2026
-allocBytesPerOp.median=14166
-blackholeSink=226717787212265338
+#Balatro benchmark result \u2014 2026-08-16T15:34:40.704443600
+#Sun Aug 16 15:34:40 CST 2026
+allocBytesPerOp.median=14165
+blackholeSink=234806079332265338
 iterations=9
 label=br2
-nsPerOp.mean=14256
-nsPerOp.median=14054
-nsPerOp.min=13839
-nsPerOp.p95=15744
+nsPerOp.mean=21276
+nsPerOp.median=21027
+nsPerOp.min=20122
+nsPerOp.p95=23828
 opsPerBatch=1500
 scenario=shopGen
 warmup=3

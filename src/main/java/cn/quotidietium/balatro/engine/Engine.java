@@ -1,9 +1,7 @@
 package cn.quotidietium.balatro.engine;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -235,7 +233,7 @@ public final class Engine {
                 if (s.money < 0) s.gainMoney(-s.money);
                 else s.gainMoney(Math.min(40, s.money));
             }
-            case "orbital" -> s.levelUpHand(st.pick(List.of(Data.HandType.values())), 3);
+            case "orbital" -> s.levelUpHand(st.pick(Data.HAND_TYPES), 3);
             case "juggle" -> s.nextShop.put("juggle", true);
             default -> { }
         }
@@ -556,23 +554,33 @@ public final class Engine {
         if (s.phase != Phase.ROUND) return PlayResult.err("当前不在回合中");
         if (s.handsLeft <= 0) return PlayResult.err("没有剩余出牌次数");
         if (cardIds == null || cardIds.size() < 1 || cardIds.size() > 5) return PlayResult.err("请选择 1-5 张牌");
-        Set<Integer> uniq = new HashSet<>(cardIds);
-        if (uniq.size() != cardIds.size()) return PlayResult.err("不能重复选择同一张牌");
-
-        List<Card> cards = new ArrayList<>();
-        for (int id : cardIds) {
-            Card c = findInHand(s, id);
-            if (c == null) return PlayResult.err("无效的手牌");
-            cards.add(c);
+        // P4 性能：≤5 个 id 的查重/包含改为 int 数组两两比较——原 HashSet 构造与
+        // List<Integer>.contains 每次装箱（card id 超出 Integer 缓存区间，逐个分配）。
+        int[] ids = new int[cardIds.size()];
+        for (int i = 0; i < ids.length; i++) ids[i] = cardIds.get(i);
+        for (int i = 0; i < ids.length; i++) {
+            for (int j = i + 1; j < ids.length; j++) {
+                if (ids[i] == ids[j]) return PlayResult.err("不能重复选择同一张牌");
+            }
         }
-        // 保持手牌顺序（从左到右结算）
-        cards.sort(Comparator.comparingInt(c -> s.hand.indexOf(c)));
+
+        // 保持手牌顺序（从左到右结算）：按手牌位置单趟选取，等价于原 indexOf 稳定排序
+        List<Card> cards = new ArrayList<>(ids.length);
+        for (Card hc : s.hand) {
+            for (int id : ids) {
+                if (hc.id() == id) {
+                    cards.add(hc);
+                    break;
+                }
+            }
+        }
+        if (cards.size() != ids.length) return PlayResult.err("无效的手牌");
 
         // Boss 出牌限制（psychic/bell；eye/mouth 需先判定牌型，见下）
         String bk = effectBk(s);
         if ("psychic".equals(bk) && cards.size() != 5) return PlayResult.err("通灵者：必须出满 5 张牌");
         if (s.mods.must5 && cards.size() != 5) return PlayResult.err("本局要求必须出满 5 张牌");
-        if ("bell".equals(bk) && s.bellCardId != null && !cardIds.contains(s.bellCardId)) {
+        if ("bell".equals(bk) && s.bellCardId != null && !containsId(ids, s.bellCardId)) {
             return PlayResult.err("翠绿铃：必须包含被强制的牌");
         }
 
@@ -606,7 +614,7 @@ public final class Engine {
         List<Card> scoringCards = evalRes.scoring;
         List<Card> heldCards = new ArrayList<>();
         for (Card c : s.hand) {
-            if (!cardIds.contains(c.id())) heldCards.add(c);
+            if (!containsId(ids, c.id())) heldCards.add(c);
         }
         List<JokerInstance> activeJokers = new ArrayList<>();
         for (JokerInstance j : s.jokers) {
@@ -769,7 +777,9 @@ public final class Engine {
         }
 
         // 移除打出的牌（破碎的玻璃牌从牌组销毁，其余进弃牌堆）
-        s.hand.removeIf(c -> cardIds.contains(c.id()));
+        for (int i = s.hand.size() - 1; i >= 0; i--) {
+            if (containsId(ids, s.hand.get(i).id())) s.hand.remove(i);
+        }
         for (Card c : cards) {
             if (c.isBroken()) s.removeCardFromDeck(c);
             else s.discardPile.add(c);
@@ -796,7 +806,7 @@ public final class Engine {
                 s.hand.remove(v);
                 s.discardPile.add(v);
                 if (v.seal() == Data.Seal.PURPLE && !v.debuff()) {
-                    Data.Tarot t40 = s.stream("consumable").pick(List.of(Data.Tarot.values()));
+                    Data.Tarot t40 = s.stream("consumable").pick(Data.TAROTS);
                     if (s.addConsumableKey("tarot", t40.key)) s.msg("紫色蜡封：获得 " + t40.name);
                 }
                 // R130 真版：被动弃牌同样触发小丑 onDiscard（Green Wiki："whether by the
@@ -913,10 +923,19 @@ public final class Engine {
             s.money -= 1;
         }
         if (cardIds == null || cardIds.size() < 1 || cardIds.size() > 5) return PlayResult.err("请选择 1-5 张牌");
-        if (new HashSet<>(cardIds).size() != cardIds.size()) return PlayResult.err("不能重复选择同一张牌");
+        // P4 性能：int 数组查重（同 playHand，去 HashSet 装箱）
+        int[] ids = new int[cardIds.size()];
+        for (int i = 0; i < ids.length; i++) ids[i] = cardIds.get(i);
+        for (int i = 0; i < ids.length; i++) {
+            for (int j = i + 1; j < ids.length; j++) {
+                if (ids[i] == ids[j]) return PlayResult.err("不能重复选择同一张牌");
+            }
+        }
 
-        List<Card> cards = new ArrayList<>();
-        for (int id : cardIds) {
+        // 注意：cards 保持 cardIds 顺序（与原实现一致）——紫蜡封按此顺序消耗流、
+        // onDiscard 钩子看到此顺序，不得改为手牌顺序（种子复现敏感）。
+        List<Card> cards = new ArrayList<>(ids.length);
+        for (int id : ids) {
             Card c = findInHand(s, id);
             if (c == null) return PlayResult.err("无效的手牌");
             cards.add(c);
@@ -926,12 +945,14 @@ public final class Engine {
         s.discardsUsedThisRound++;
         s.usedDiscardThisRound = true;
 
-        s.hand.removeIf(c -> cardIds.contains(c.id()));
+        for (int i = s.hand.size() - 1; i >= 0; i--) {
+            if (containsId(ids, s.hand.get(i).id())) s.hand.remove(i);
+        }
         for (Card c : cards) {
             c.setFacedown(false);
             // 紫色蜡封 → 塔罗牌（对齐 engine.js discard）
             if (c.seal() == Data.Seal.PURPLE && !c.debuff()) {
-                Data.Tarot t = s.stream("consumable").pick(List.of(Data.Tarot.values()));
+                Data.Tarot t = s.stream("consumable").pick(Data.TAROTS);
                 if (s.addConsumableKey("tarot", t.key)) s.msg("紫色蜡封：获得 " + t.name);
             }
             s.discardPile.add(c);
@@ -1125,6 +1146,12 @@ public final class Engine {
     private static Card findInHand(RunState s, int id) {
         for (Card c : s.hand) if (c.id() == id) return c;
         return null;
+    }
+
+    /** P4 性能：出牌/弃牌的 id 包含检查（≤5 个元素；替代 List&lt;Integer&gt;.contains 的逐次装箱）。 */
+    private static boolean containsId(int[] ids, int v) {
+        for (int id : ids) if (id == v) return true;
+        return false;
     }
 
     private static int intFlag(Map<String, Object> f, String key) {

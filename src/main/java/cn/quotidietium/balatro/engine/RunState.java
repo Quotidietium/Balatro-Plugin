@@ -315,7 +315,7 @@ public final class RunState {
                 if (t != null && addConsumableKey("tarot", t.key)) msg("获得：" + t.name);
             }
             case "planet" -> {
-                Data.Planet p = stream("consumable").pick(List.of(Data.Planet.values()));
+                Data.Planet p = stream("consumable").pick(Data.PLANETS);
                 if (addConsumableKey("planet", p.key)) msg("获得：" + p.name);
             }
             default -> {

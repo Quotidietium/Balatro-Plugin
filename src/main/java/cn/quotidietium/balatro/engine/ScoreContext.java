@@ -92,13 +92,13 @@ public final class ScoreContext {
     public void gainConsumable(String kind) {
         String name = null;
         if ("tarot".equals(kind)) {
-            Data.Tarot t = state.stream("consumable").pick(java.util.List.of(Data.Tarot.values()));
+            Data.Tarot t = state.stream("consumable").pick(Data.TAROTS);
             if (state.addConsumableKey("tarot", t.key)) name = t.name;
         } else if ("planet".equals(kind)) {
-            Data.Planet p = state.stream("consumable").pick(java.util.List.of(Data.Planet.values()));
+            Data.Planet p = state.stream("consumable").pick(Data.PLANETS);
             if (state.addConsumableKey("planet", p.key)) name = p.name;
         } else {
-            Data.Spectral sp = state.stream("consumable").pick(java.util.List.of(Data.Spectral.values()));
+            Data.Spectral sp = state.stream("consumable").pick(Data.SPECTRALS);
             if (state.addConsumableKey("spectral", sp.key)) name = sp.name;
         }
         if (name != null) events.add("获得：" + name);

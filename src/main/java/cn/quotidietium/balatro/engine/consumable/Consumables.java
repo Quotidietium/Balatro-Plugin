@@ -135,7 +135,7 @@ public final class Consumables {
                 }
                 case "priestess": {
                     for (int i = 0; i < 2; i++) {
-                        Data.Planet p = st.pick(List.of(Data.Planet.values()));
+                        Data.Planet p = st.pick(Data.PLANETS);
                         if (!s.addConsumableKey("planet", p.key)) break;
                     }
                     return Result.ok();
@@ -144,7 +144,7 @@ public final class Consumables {
                     // REF 语义：全池抽取（消耗流），抽中 emperor 跳过；R123 扩展：禁入塔罗同样跳过
                     // （标准局无禁入 → 与 REF 取流逐字一致，种子复现不变）
                     for (int i = 0; i < 2; i++) {
-                        Data.Tarot t = st.pick(List.of(Data.Tarot.values()));
+                        Data.Tarot t = st.pick(Data.TAROTS);
                         if (t.key.equals("emperor") || s.mods.bannedTarots.contains(t.key)) continue;
                         if (!s.addConsumableKey("tarot", t.key)) break;
                     }
@@ -236,11 +236,10 @@ public final class Consumables {
                     if (c.key.equals("familiar")) { n = 3; ranks = List.of(11, 12, 13); }
                     else if (c.key.equals("grim")) { n = 2; ranks = List.of(14); }
                     else { n = 4; ranks = List.of(2, 3, 4, 5, 6, 7, 8, 9, 10); }
-                    Data.Enhancement[] enhs = Data.Enhancement.values();
                     for (int i = 0; i < n; i++) {
                         Card card = s.randomPlayingCard();
                         card.setRank(st.pick(ranks));
-                        card.setEnh(enhs[st.range(0, enhs.length - 1)]);
+                        card.setEnh(Data.ENHANCEMENTS.get(st.range(0, Data.ENHANCEMENTS.size() - 1)));
                         s.addCardToDeck(card); // R130：统一入口（触发 onCardAdded）
                         s.hand.add(card);
                     }
