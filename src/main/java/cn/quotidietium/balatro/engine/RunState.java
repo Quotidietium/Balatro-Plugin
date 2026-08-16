@@ -1,6 +1,7 @@
 package cn.quotidietium.balatro.engine;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -81,6 +82,46 @@ public final class RunState {
     public Map<String, Object> flags = new HashMap<>();
     /** P8 性能：computeFlags 双缓冲备用表（见 Engine.computeFlags）。包内私有协作字段。 */
     Map<String, Object> flagsSpare;
+
+    // ---- P10 性能：小丑列表快照的深度分层池 ----
+    // 原实现各钩子分发点 `new ArrayList<>(jokers)`（playHand 每手 2~3 次、discard/endRound/
+    // sellJoker/reroll 等各 1 次，~104B/次）。池化复用后稳态零分配。
+    // 安全性：①深度分层——同时活跃的嵌套快照（如 onPlayHand 钩子内再触发 addCardToDeck
+    // 的 onCardAdded 分发）各占一层，互不覆写；②try/finally 释放，钩子抛异常不泄漏深度；
+    // ③漏调 release 只会使下一层新建缓冲（自愈，无正确性影响）；
+    // ④缓冲内容在 acquire 时重建（clear+addAll），语义与「每次新列表装 jokers」完全一致。
+    private ArrayList<JokerInstance>[] jokerBufferPool = new ArrayList[4];
+    private int jokerBufferDepth;
+
+    /** 取一层缓冲并装入当前 jokers 的拷贝（各钩子分发点快照）。
+     *  引擎协作 API（跨 engine 子包共用）：必须与 {@link #releaseJokerBuffer()} 严格配对
+     *  （建议 try/finally），循环内不得越出配对区持有该列表。 */
+    public ArrayList<JokerInstance> acquireJokerSnap() {
+        ArrayList<JokerInstance> buf = acquireJokerBuffer();
+        buf.addAll(jokers);
+        return buf;
+    }
+
+    /** 取一层**空**缓冲（调用方自行填充，如 playHand 的 activeJokers 过滤列表）。 */
+    @SuppressWarnings("unchecked")
+    ArrayList<JokerInstance> acquireJokerBuffer() {
+        if (jokerBufferDepth >= jokerBufferPool.length) {
+            jokerBufferPool = Arrays.copyOf(jokerBufferPool, jokerBufferPool.length * 2);
+        }
+        ArrayList<JokerInstance> buf = jokerBufferPool[jokerBufferDepth];
+        if (buf == null) {
+            buf = new ArrayList<>(Math.max(4, jokers.size() + 2));
+            jokerBufferPool[jokerBufferDepth] = buf;
+        }
+        jokerBufferDepth++;
+        buf.clear();
+        return buf;
+    }
+
+    /** 归还最近一层缓冲（与 acquire 严格配对，建议 finally 中调用）。 */
+    public void releaseJokerBuffer() {
+        if (jokerBufferDepth > 0) jokerBufferDepth--;
+    }
     public boolean bossDisabled;
     public boolean bossTriggeredThisHand;
     public Integer bossSuitDebuff; // Boss 花色失效（null 或 0-3）
@@ -249,7 +290,15 @@ public final class RunState {
         gainMoney(val);
         msg("出售 " + j.def.displayName() + " +$" + val);
         j.def.onSell(this, j);
-        for (JokerInstance o : new ArrayList<>(jokers)) if (!o.debuff) o.def.onAnySell(this, o);
+        List<JokerInstance> anySellSnap = acquireJokerSnap(); // P10：池化快照
+        try {
+            for (int i = 0; i < anySellSnap.size(); i++) {
+                JokerInstance o = anySellSnap.get(i);
+                if (!o.debuff) o.def.onAnySell(this, o);
+            }
+        } finally {
+            releaseJokerBuffer();
+        }
         if (bossLeaf) {
             bossLeaf = false;
             for (Card c : hand) c.setDebuff(false);
@@ -302,8 +351,14 @@ public final class RunState {
     public void destroyCard(Card c) {
         // 对齐原版 isFaceCard：尊重 allFace 标志（空想性错觉 pareidolia 时所有牌视为人头牌）
         if (isFace(c)) {
-            for (JokerInstance j : new ArrayList<>(jokers)) {
-                if (!j.debuff) j.def.onFaceDestroyed(this, j);
+            List<JokerInstance> faceSnap = acquireJokerSnap(); // P10：池化快照
+            try {
+                for (int i = 0; i < faceSnap.size(); i++) {
+                    JokerInstance j = faceSnap.get(i);
+                    if (!j.debuff) j.def.onFaceDestroyed(this, j);
+                }
+            } finally {
+                releaseJokerBuffer();
             }
         }
         removeCardFromDeck(c);
@@ -446,8 +501,14 @@ public final class RunState {
     /** 把一张牌加入牌组（触发 onCardAdded）。 */
     public void addCardToDeck(Card c) {
         fullDeck.add(c);
-        for (JokerInstance j : new java.util.ArrayList<>(jokers)) {
-            if (!j.debuff) j.def.onCardAdded(this, c, j);
+        List<JokerInstance> addSnap = acquireJokerSnap(); // P10：池化快照
+        try {
+            for (int i = 0; i < addSnap.size(); i++) {
+                JokerInstance j = addSnap.get(i);
+                if (!j.debuff) j.def.onCardAdded(this, c, j);
+            }
+        } finally {
+            releaseJokerBuffer();
         }
     }
 

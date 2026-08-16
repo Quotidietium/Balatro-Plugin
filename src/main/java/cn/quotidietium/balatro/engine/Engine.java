@@ -313,9 +313,14 @@ public final class Engine {
             }
             Data.Tag tag = tagPool.isEmpty() ? null : s.stream("skiptag").pick(tagPool);
             if (tag != null) gainTag(s, tag.key());
-            List<JokerInstance> skipSnap = new ArrayList<>(s.jokers);
-            for (JokerInstance j : skipSnap) {
-                if (!j.debuff && s.jokers.contains(j)) j.def.onSkip(s, j);
+            List<JokerInstance> skipSnap = s.acquireJokerSnap(); // P10：池化快照
+            try {
+                for (int i = 0; i < skipSnap.size(); i++) {
+                    JokerInstance j = skipSnap.get(i);
+                    if (!j.debuff && s.jokers.contains(j)) j.def.onSkip(s, j);
+                }
+            } finally {
+                s.releaseJokerBuffer();
             }
             s.nextBlind = type == Data.BlindType.SMALL ? "big" : "boss";
             return true;
@@ -476,13 +481,18 @@ public final class Engine {
         }
 
         // 小丑回合开始钩子
-        List<JokerInstance> snap = new ArrayList<>(s.jokers);
-        for (JokerInstance j : snap) {
-            if (!j.debuff && s.jokers.contains(j)) {
-                j.def.onBlindSelect(s, j, s.blindType);
-                j.def.onBlindStart(s, j);
-                j.def.onRoundStart(s, j);
+        List<JokerInstance> snap = s.acquireJokerSnap(); // P10：池化快照
+        try {
+            for (int i = 0; i < snap.size(); i++) {
+                JokerInstance j = snap.get(i);
+                if (!j.debuff && s.jokers.contains(j)) {
+                    j.def.onBlindSelect(s, j, s.blindType);
+                    j.def.onBlindStart(s, j);
+                    j.def.onRoundStart(s, j);
+                }
             }
+        } finally {
+            s.releaseJokerBuffer();
         }
         // 整理手牌（bell/hook 等 stream.pick 已发生于此之前，安全）
         sortHand(s);
@@ -544,7 +554,8 @@ public final class Engine {
     }
 
     private static boolean hasChicot(RunState s) {
-        for (JokerInstance j : s.jokers) {
+        for (int i = 0; i < s.jokers.size(); i++) {
+            JokerInstance j = s.jokers.get(i);
             if (j.def.key().equals("chicot") && !j.debuff) return true;
         }
         return false;
@@ -567,7 +578,9 @@ public final class Engine {
         // 重新 pick），保证与 REF 的 stream 消耗完全一致。
         if (!"bell".equals(effectBk(s))) return;
         boolean still = false;
-        for (Card c : s.hand) if (c.id() == s.bellCardId) { still = true; break; }
+        for (int i = 0; i < s.hand.size(); i++) {
+            if (s.hand.get(i).id() == s.bellCardId) { still = true; break; }
+        }
         if (!still) {
             s.bellCardId = !s.hand.isEmpty() ? s.stream("bell").pick(s.hand).id() : null;
         }
@@ -642,118 +655,134 @@ public final class Engine {
 
         List<Card> scoringCards = evalRes.scoring;
         List<Card> heldCards = new ArrayList<>();
-        for (Card c : s.hand) {
+        for (int i = 0; i < s.hand.size(); i++) {
+            Card c = s.hand.get(i);
             if (!containsId(ids, c.id())) heldCards.add(c);
         }
-        List<JokerInstance> activeJokers = new ArrayList<>();
-        for (JokerInstance j : s.jokers) {
-            if (!j.debuff && !j.debuffHand) activeJokers.add(j);
-        }
-
         ScoreContext ctx = new ScoreContext(s, type, chips, mult, cards, heldCards, events);
         ctx.handContainsSet = evalRes.contains; // R130 contains 口径注入
         ctx.scoredCards = evalRes.scoring; // R130 计分牌口径注入
+        // P10 性能：activeJokers 走池化缓冲（深度池，嵌套安全）；计分区结束即归还
+        List<JokerInstance> activeJokers = s.acquireJokerBuffer();
+        try {
+            for (int i = 0; i < s.jokers.size(); i++) {
+                JokerInstance j = s.jokers.get(i);
+                if (!j.debuff && !j.debuffHand) activeJokers.add(j);
+            }
 
-        // 绯红之心：随机禁用一张小丑（本次出牌内）
-        if ("heart".equals(bk) && !activeJokers.isEmpty()) {
-            JokerInstance v = s.stream("heart").pick(activeJokers);
-            v.debuffHand = true;
-            events.add("绯红之心：" + v.def.displayName() + " 本次出牌失效");
-            s.bossTriggeredThisHand = true;
-        }
+            // 绯红之心：随机禁用一张小丑（本次出牌内）
+            if ("heart".equals(bk) && !activeJokers.isEmpty()) {
+                JokerInstance v = s.stream("heart").pick(activeJokers);
+                v.debuffHand = true;
+                events.add("绯红之心：" + v.def.displayName() + " 本次出牌失效");
+                s.bossTriggeredThisHand = true;
+            }
 
-        // R130/R132 真版【计分前】阶段（每手恰一次——R130 曾误插逐卡循环内致 space 每卡掷骰）：
-        // Space 升级当手即生效（Space Wiki："triggered before scoring"）；Obelisk 先重置再计分
-        //（Obelisk Wiki："resets before the hand is scored"），严格唯一最常用才重置（并列安全）。
-        List<JokerInstance> preSnap = new ArrayList<>(s.jokers);
-        for (JokerInstance pj : preSnap) {
-            if (pj.debuff || !s.jokers.contains(pj)) continue;
-            if (pj.def.key().equals("space") && s.stream("space").chance(0.25)) {
-                s.levelUpHand(type, 1);
-                s.msg("太空小丑：「" + type.name + "」升 1 级（计分前）");
-            } else if (pj.def.key().equals("obelisk")) {
-                Data.HandType strict = strictMostPlayed(s);
-                if (strict == type) {
-                    pj.extra.put("x", 0.0);
-                    pj.extra.put("obNoGain", Boolean.TRUE); // R133：重置手不获增量（"consecutive
-                    // ... without playing your most played"——该手不计入连续），onPlayHand 据此跳过
-                    s.msg("方尖碑：重置");
+            // R130/R132 真版【计分前】阶段（每手恰一次——R130 曾误插逐卡循环内致 space 每卡掷骰）：
+            // Space 升级当手即生效（Space Wiki："triggered before scoring"）；Obelisk 先重置再计分
+            //（Obelisk Wiki："resets before the hand is scored"），严格唯一最常用才重置（并列安全）。
+            List<JokerInstance> preSnap = s.acquireJokerSnap(); // P10：池化快照
+            try {
+                for (int i = 0; i < preSnap.size(); i++) {
+                    JokerInstance pj = preSnap.get(i);
+                    if (pj.debuff || !s.jokers.contains(pj)) continue;
+                    if (pj.def.key().equals("space") && s.stream("space").chance(0.25)) {
+                        s.levelUpHand(type, 1);
+                        s.msg("太空小丑：「" + type.name + "」升 1 级（计分前）");
+                    } else if (pj.def.key().equals("obelisk")) {
+                        Data.HandType strict = strictMostPlayed(s);
+                        if (strict == type) {
+                            pj.extra.put("x", 0.0);
+                            pj.extra.put("obNoGain", Boolean.TRUE); // R133：重置手不获增量（"consecutive
+                            // ... without playing your most played"——该手不计入连续），onPlayHand 据此跳过
+                            s.msg("方尖碑：重置");
+                        }
+                    }
+                }
+            } finally {
+                s.releaseJokerBuffer();
+            }
+
+            // 1) 打出牌逐张计分（含重新触发）
+            for (int ci = 0; ci < cards.size(); ci++) {
+                Card card = cards.get(ci);
+                card.setFacedown(false);
+                boolean isScoring = scoringCards.contains(card);
+                if (!isScoring) continue;
+                ctx.scoreIndex = ci;
+
+                int retriggers = 0;
+                if (card.seal() == Data.Seal.RED) retriggers += 1;
+                for (int ji = 0; ji < activeJokers.size(); ji++) {
+                    JokerInstance src = resolveCopy(activeJokers, ji);
+                    if (src != null && !activeJokers.get(ji).debuffHand) {
+                        ctx.joker = src;
+                        retriggers += src.def.retrigger(card, ctx);
+                    }
+                }
+                int times = card.debuff() ? 0 : (1 + retriggers);
+                for (int t = 0; t < times; t++) {
+                    scoreOneCard(s, ctx, card);
+                    for (int ji = 0; ji < activeJokers.size(); ji++) {
+                        JokerInstance src = resolveCopy(activeJokers, ji);
+                        if (src != null && !activeJokers.get(ji).debuffHand) {
+                            ctx.joker = src;
+                            src.def.onScoreCard(ctx, card);
+                        }
+                    }
+                }
+                // 玻璃牌破碎
+                if (card.enh() == Data.Enhancement.GLASS && !card.debuff()) {
+                    double p = s.mods.glassDouble ? 0.5 : 0.25;
+                    if (s.stream("glass").chance(p)) {
+                        card.setBroken(true);
+                        events.add("玻璃牌破碎了");
+                        for (int ji = 0; ji < activeJokers.size(); ji++) {
+                            JokerInstance j = activeJokers.get(ji);
+                            j.def.onGlassBreak(s, j);
+                        }
+                    }
                 }
             }
-        }
 
-        // 1) 打出牌逐张计分（含重新触发）
-        for (int ci = 0; ci < cards.size(); ci++) {
-            Card card = cards.get(ci);
-            card.setFacedown(false);
-            boolean isScoring = scoringCards.contains(card);
-            if (!isScoring) continue;
-            ctx.scoreIndex = ci;
+            // 2) 持有牌效果（钢铁 + onHeld；哑剧重触发 + 红蜡封同样重触发手中效果——R129 真版）
+            boolean mime = Boolean.TRUE.equals(s.flags.get("mimeRetrigger"));
+            for (int hi = 0; hi < heldCards.size(); hi++) {
+                Card card = heldCards.get(hi);
+                if (card.debuff()) continue;
+                int heldRepeat = 1 + (mime ? 1 : 0) + (card.seal() == Data.Seal.RED ? 1 : 0);
+                for (int rep = 0; rep < heldRepeat; rep++) {
+                    if (card.enh() == Data.Enhancement.STEEL) ctx.xMult(1.5);
+                    for (int ji = 0; ji < activeJokers.size(); ji++) {
+                        JokerInstance src = resolveCopy(activeJokers, ji);
+                        if (src != null && !activeJokers.get(ji).debuffHand) {
+                            ctx.joker = src;
+                            src.def.onHeld(ctx, card);
+                        }
+                    }
+                }
+            }
 
-            int retriggers = 0;
-            if (card.seal() == Data.Seal.RED) retriggers += 1;
+            // 3) 独立小丑结算（含蓝图/头脑风暴）
             for (int ji = 0; ji < activeJokers.size(); ji++) {
-                JokerInstance src = resolveCopy(activeJokers, ji);
-                if (src != null && !activeJokers.get(ji).debuffHand) {
-                    ctx.joker = src;
-                    retriggers += src.def.retrigger(card, ctx);
-                }
+                JokerInstance j = activeJokers.get(ji);
+                if (j.debuffHand) continue;
+                applyJokerScore(s, ctx, j, ji, activeJokers);
             }
-            int times = card.debuff() ? 0 : (1 + retriggers);
-            for (int t = 0; t < times; t++) {
-                scoreOneCard(s, ctx, card);
-                for (int ji = 0; ji < activeJokers.size(); ji++) {
-                    JokerInstance src = resolveCopy(activeJokers, ji);
-                    if (src != null && !activeJokers.get(ji).debuffHand) {
-                        ctx.joker = src;
-                        src.def.onScoreCard(ctx, card);
+
+            // 天文台（observatory 优惠券）：消耗品区的星球牌使其对应牌型 ×1.5
+            if (s.vouchers.contains("observatory")) {
+                for (int ci = 0; ci < s.consumables.size(); ci++) {
+                    cn.quotidietium.balatro.engine.Consumable con = s.consumables.get(ci);
+                    if ("planet".equals(con.kind)) {
+                        Data.Planet p = Data.Planet.byKey(con.key);
+                        if (p.hand == type) { ctx.xMult(1.5); events.add("天文台：×1.5"); }
                     }
                 }
             }
-            // 玻璃牌破碎
-            if (card.enh() == Data.Enhancement.GLASS && !card.debuff()) {
-                double p = s.mods.glassDouble ? 0.5 : 0.25;
-                if (s.stream("glass").chance(p)) {
-                    card.setBroken(true);
-                    events.add("玻璃牌破碎了");
-                    for (JokerInstance j : activeJokers) j.def.onGlassBreak(s, j);
-                }
-            }
-        }
 
-        // 2) 持有牌效果（钢铁 + onHeld；哑剧重触发 + 红蜡封同样重触发手中效果——R129 真版）
-        boolean mime = Boolean.TRUE.equals(s.flags.get("mimeRetrigger"));
-        for (Card card : heldCards) {
-            if (card.debuff()) continue;
-            int heldRepeat = 1 + (mime ? 1 : 0) + (card.seal() == Data.Seal.RED ? 1 : 0);
-            for (int rep = 0; rep < heldRepeat; rep++) {
-                if (card.enh() == Data.Enhancement.STEEL) ctx.xMult(1.5);
-                for (int ji = 0; ji < activeJokers.size(); ji++) {
-                    JokerInstance src = resolveCopy(activeJokers, ji);
-                    if (src != null && !activeJokers.get(ji).debuffHand) {
-                        ctx.joker = src;
-                        src.def.onHeld(ctx, card);
-                    }
-                }
-            }
-        }
-
-        // 3) 独立小丑结算（含蓝图/头脑风暴）
-        for (int ji = 0; ji < activeJokers.size(); ji++) {
-            JokerInstance j = activeJokers.get(ji);
-            if (j.debuffHand) continue;
-            applyJokerScore(s, ctx, j, ji, activeJokers);
-        }
-
-        // 天文台（observatory 优惠券）：消耗品区的星球牌使其对应牌型 ×1.5
-        if (s.vouchers.contains("observatory")) {
-            for (int ci = 0; ci < s.consumables.size(); ci++) {
-                cn.quotidietium.balatro.engine.Consumable con = s.consumables.get(ci);
-                if ("planet".equals(con.kind)) {
-                    Data.Planet p = Data.Planet.byKey(con.key);
-                    if (p.hand == type) { ctx.xMult(1.5); events.add("天文台：×1.5"); }
-                }
-            }
+        } finally {
+            s.releaseJokerBuffer();
         }
 
         // 等离子牌组：平衡
@@ -781,12 +810,12 @@ public final class Engine {
         s.statsHandsPlayed++;
         s.handPlayedCount.merge(type, 1, Integer::sum);
         s.playedTypesThisRound.add(type);
-        for (Card c : cards) s.playedThisAnte.add(c.id());
+        for (int i = 0; i < cards.size(); i++) s.playedThisAnte.add(cards.get(i).id());
 
         // 孤注一掷（真版）：计分后的牌失效（R123）——牌入弃牌堆时带 debuff，
         // 换盲注时 startRound 的 fullDeck 全清兜底恢复
         if (s.mods.playedDebuff) {
-            for (Card c : cards) c.setDebuff(true);
+            for (int i = 0; i < cards.size(); i++) cards.get(i).setDebuff(true);
         }
 
         // Boss：公牛（最常用牌型→金钱归零）/牙齿（每牌-$1）/手臂（牌型降级）
@@ -809,22 +838,28 @@ public final class Engine {
         for (int i = s.hand.size() - 1; i >= 0; i--) {
             if (containsId(ids, s.hand.get(i).id())) s.hand.remove(i);
         }
-        for (Card c : cards) {
+        for (int i = 0; i < cards.size(); i++) {
+            Card c = cards.get(i);
             if (c.isBroken()) s.removeCardFromDeck(c);
             else s.discardPile.add(c);
         }
 
         // 小丑 onPlayHand
         PlayHandInfo info = new PlayHandInfo(s, type, cards, scoringCards, evalRes.contains); // R130 contains
-        List<JokerInstance> jokersSnap = new ArrayList<>(s.jokers);
-        for (JokerInstance j : jokersSnap) {
-            if (!j.debuff && !j.debuffHand && s.jokers.contains(j)) {
-                j.def.onPlayHand(s, info, j); // 传触发实例：多副本累积器各自计数（R111）
+        List<JokerInstance> jokersSnap = s.acquireJokerSnap(); // P10：池化快照
+        try {
+            for (int i = 0; i < jokersSnap.size(); i++) {
+                JokerInstance j = jokersSnap.get(i);
+                if (!j.debuff && !j.debuffHand && s.jokers.contains(j)) {
+                    j.def.onPlayHand(s, info, j); // 传触发实例：多副本累积器各自计数（R111）
+                }
             }
+        } finally {
+            s.releaseJokerBuffer();
         }
 
         // 恢复 debuffHand
-        for (JokerInstance j : s.jokers) j.debuffHand = false;
+        for (int i = 0; i < s.jokers.size(); i++) s.jokers.get(i).debuffHand = false;
 
         // Boss：钩子（出牌后随机弃 2 张）——R129 真版：被动弃牌同样触发紫蜡封
         // （Seals Wiki："when discarded (either player or automatic discards)"；REF 漏触发为 REF bug）
@@ -840,13 +875,18 @@ public final class Engine {
                 }
                 // R130 真版：被动弃牌同样触发小丑 onDiscard（Green Wiki："whether by the
                 // player or game mechanics"；对齐 burnt 的首弃守卫/faceless/castle 等同口径）
-                List<JokerInstance> hookSnap = new ArrayList<>(s.jokers);
-                for (JokerInstance hj : hookSnap) {
-                    // R134 真版：Burnt 不被钩子强弃激活（Burnt Wiki："The Hook's forced discards
-                    // won't activate it"）；Green 等其余 onDiscard 照常（R132 已证）
-                    if (!hj.debuff && s.jokers.contains(hj) && !hj.def.key().equals("burnt")) {
-                        hj.def.onDiscard(s, List.of(v), hj);
+                List<JokerInstance> hookSnap = s.acquireJokerSnap(); // P10：池化快照
+                try {
+                    for (int hi = 0; hi < hookSnap.size(); hi++) {
+                        JokerInstance hj = hookSnap.get(hi);
+                        // R134 真版：Burnt 不被钩子强弃激活（Burnt Wiki："The Hook's forced discards
+                        // won't activate it"）；Green 等其余 onDiscard 照常（R132 已证）
+                        if (!hj.debuff && s.jokers.contains(hj) && !hj.def.key().equals("burnt")) {
+                            hj.def.onDiscard(s, List.of(v), hj);
+                        }
                     }
+                } finally {
+                    s.releaseJokerBuffer();
                 }
             }
             events.add("钩子：随机弃掉了 2 张牌");
@@ -866,7 +906,8 @@ public final class Engine {
         if (s.handsLeft <= 0) {
             // 骨头先生免死：得分 ≥ 目标 25% 时销毁自身并判回合通过
             JokerInstance bones = null;
-            for (JokerInstance j : s.jokers) {
+            for (int i = 0; i < s.jokers.size(); i++) {
+                JokerInstance j = s.jokers.get(i);
                 if (j.def.key().equals("bones") && !j.debuff) { bones = j; break; }
             }
             if (bones != null && s.roundScore >= Math.round(s.blindTarget * 0.25)) {
@@ -904,9 +945,14 @@ public final class Engine {
     }
 
     private static void triggerLuckyCat(RunState s) {
-        List<JokerInstance> snap = new ArrayList<>(s.jokers);
-        for (JokerInstance j : snap) {
-            if (!j.debuff) j.def.onLucky(s, j);
+        List<JokerInstance> snap = s.acquireJokerSnap(); // P10：池化快照
+        try {
+            for (int i = 0; i < snap.size(); i++) {
+                JokerInstance j = snap.get(i);
+                if (!j.debuff) j.def.onLucky(s, j);
+            }
+        } finally {
+            s.releaseJokerBuffer();
         }
     }
 
@@ -987,11 +1033,16 @@ public final class Engine {
             s.discardPile.add(c);
         }
 
-        List<JokerInstance> snap = new ArrayList<>(s.jokers);
-        for (JokerInstance j : snap) {
-            if (!j.debuff && s.jokers.contains(j)) {
-                j.def.onDiscard(s, cards, j);
+        List<JokerInstance> snap = s.acquireJokerSnap(); // P10：池化快照
+        try {
+            for (int i = 0; i < snap.size(); i++) {
+                JokerInstance j = snap.get(i);
+                if (!j.debuff && s.jokers.contains(j)) {
+                    j.def.onDiscard(s, cards, j);
+                }
             }
+        } finally {
+            s.releaseJokerBuffer();
         }
 
         drawUpTo(s);
@@ -1044,11 +1095,13 @@ public final class Engine {
         }
 
         // 黄金牌（手中）
-        for (Card c : s.hand) {
+        for (int i = 0; i < s.hand.size(); i++) {
+            Card c = s.hand.get(i);
             if (c.enh() == Data.Enhancement.GOLD && !c.debuff()) gain += 3;
         }
         // 蓝色蜡封（手中）→ 对应星球牌（对齐 engine.js endRound）
-        for (Card c : s.hand) {
+        for (int i = 0; i < s.hand.size(); i++) {
+            Card c = s.hand.get(i);
             if (c.seal() == Data.Seal.BLUE && !c.debuff()) {
                 Data.HandType lastType = s.playedTypesThisRound.isEmpty()
                         ? Data.HandType.HIGH : s.playedTypesThisRound.get(s.playedTypesThisRound.size() - 1);
@@ -1058,15 +1111,21 @@ public final class Engine {
         }
 
         // 小丑回合结束钩子（payout 可能极大——奔月额外利息 = money/5，复利指数增长；饱和累加防环绕）
-        List<JokerInstance> snap = new ArrayList<>(s.jokers);
-        for (JokerInstance j : snap) {
-            if (j.debuff || !s.jokers.contains(j)) continue;
-            long g = j.def.onRoundEnd(s, j);
-            if (g > 0) { gain = RunState.satAdd(gain, g); detail.add(j.def.displayName() + " +$" + g); }
+        List<JokerInstance> snap = s.acquireJokerSnap(); // P10：池化快照
+        try {
+            for (int i = 0; i < snap.size(); i++) {
+                JokerInstance j = snap.get(i);
+                if (j.debuff || !s.jokers.contains(j)) continue;
+                long g = j.def.onRoundEnd(s, j);
+                if (g > 0) { gain = RunState.satAdd(gain, g); detail.add(j.def.displayName() + " +$" + g); }
+            }
+        } finally {
+            s.releaseJokerBuffer();
         }
 
         // 租赁小丑：每回合 -$3（在 money += gain 之前扣）
-        for (JokerInstance j : s.jokers) {
+        for (int i = 0; i < s.jokers.size(); i++) {
+            JokerInstance j = s.jokers.get(i);
             if (j.rental) { s.money -= 3; detail.add("租赁 " + j.def.displayName() + " -$3"); }
         }
         // 易腐小丑：倒计时，归零后失效
@@ -1090,15 +1149,20 @@ public final class Engine {
 
         // 击败 Boss
         if (s.blindType == Data.BlindType.BOSS) {
-            List<JokerInstance> bossSnap = new ArrayList<>(s.jokers);
-            for (JokerInstance j : bossSnap) {
-                if (!j.debuff && s.jokers.contains(j)) j.def.onBossDefeated(s, j);
+            List<JokerInstance> bossSnap = s.acquireJokerSnap(); // P10：池化快照
+            try {
+                for (int i = 0; i < bossSnap.size(); i++) {
+                    JokerInstance j = bossSnap.get(i);
+                    if (!j.debuff && s.jokers.contains(j)) j.def.onBossDefeated(s, j);
+                }
+            } finally {
+                s.releaseJokerBuffer();
             }
             // 浮雕牌组(anaglyph)：每击败一个 Boss 盲注获得一个翻倍标签（对齐 engine.js）
             if ("anaglyph".equals(s.deckKey)) gainTag(s, "double");
             // 刻板印象（真版）：击败第 4 底注 Boss 后全员永恒 + 槽位归零（R123）
             if (s.mods.typecastTrigger && s.ante == 4) {
-                for (JokerInstance j : s.jokers) j.eternal = true;
+                for (int i = 0; i < s.jokers.size(); i++) s.jokers.get(i).eternal = true;
                 s.jokerSlots = 0;
                 s.msg("刻板印象：全体小丑永恒，小丑槽归零");
             }

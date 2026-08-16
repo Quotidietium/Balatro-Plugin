@@ -512,7 +512,16 @@ public final class Shop {
         s.money -= cost;
         shop.rerollCount++;
         shop.cards = genShopCardsPublic(s);
-        for (JokerInstance j : new ArrayList<>(s.jokers)) if (!j.debuff) j.def.onReroll(s, j);
+        // P10 性能：池化快照（RunState 深度池，与 Engine 各分发点同源）
+        List<JokerInstance> rerollSnap = s.acquireJokerSnap();
+        try {
+            for (int i = 0; i < rerollSnap.size(); i++) {
+                JokerInstance j = rerollSnap.get(i);
+                if (!j.debuff) j.def.onReroll(s, j);
+            }
+        } finally {
+            s.releaseJokerBuffer();
+        }
         return cost;
     }
 
