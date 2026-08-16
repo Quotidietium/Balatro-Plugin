@@ -9,23 +9,41 @@ package cn.quotidietium.balatro.engine;
  *
  * <p>rank：2..14（11=J 12=Q 13=K 14=A），石头牌为 0；
  * suit：0..3（黑桃/红桃/梅花/方块），石头牌为 -1。
+ *
+ * <p><b>P13 性能：位打包表示</b>。原 10 字段布局（3 枚举引用 + 2 int + long + 3 boolean）
+ * 每张 ~56B，一副 52 张 ≈ 2.9KB——为构局路径剩余分配的大头。现将可变状态压入单个
+ * {@code int bits}（rank 6b | suit+1 3b | enh ord+1 4b | edition ord+1 3b | seal ord+1 3b |
+ * debuff/facedown/broken 各 1b，共 22b），对象缩至 32B（−~43%），整副牌的遍历
+ * （洗牌/整理/全清 debuff）缓存密度同步提升。全部访问仍经既有 getter/setter，
+ * 公开签名与语义逐字不变；枚举解码走静态 values() 缓存数组（类加载一次）。
+ *
+ * <p><b>域约定</b>（与游戏规则域一致，越界值按位截断存储）：rank ∈ [0,63]、
+ * suit ∈ [-1,6]、枚举为 {@link Data} 三枚举的常量或 null。游戏内所有写入点
+ * （构局/塔罗/幻灵/小丑/Boss）均在此域内（rank 0..14、suit -1..3）。
  */
 public final class Card {
+    // ---- 位布局（LSB 起）----
+    private static final int RANK_MASK = 0x3F;                       // [0,6)  rank
+    private static final int SUIT_SHIFT = 6, SUIT_MASK = 0x7;        // [6,9)  suit+1（石头 -1 → 0）
+    private static final int ENH_SHIFT = 9, ENH_MASK = 0xF;          // [9,13) Enhancement.ordinal()+1（0=null）
+    private static final int ED_SHIFT = 13, ED_MASK = 0x7;           // [13,16) Edition.ordinal()+1
+    private static final int SEAL_SHIFT = 16, SEAL_MASK = 0x7;       // [16,19) Seal.ordinal()+1
+    private static final int F_DEBUFF = 1 << 19;
+    private static final int F_FACEDOWN = 1 << 20;
+    private static final int F_BROKEN = 1 << 21; // 玻璃牌破碎（计分后销毁，从牌组移除）
+
+    /** 枚举解码表（类加载一次；ordinal 即数组下标）。 */
+    private static final Data.Enhancement[] ENH_VALUES = Data.Enhancement.values();
+    private static final Data.Edition[] EDITION_VALUES = Data.Edition.values();
+    private static final Data.Seal[] SEAL_VALUES = Data.Seal.values();
+
     private final int id;
-    private int rank;
-    private int suit;
-    private Data.Enhancement enh;
-    private Data.Edition edition;
-    private Data.Seal seal;
+    private int bits;
     private long chipBonus;
-    private boolean debuff;
-    private boolean facedown;
-    private boolean broken; // 玻璃牌破碎（计分后销毁，从牌组移除）
 
     public Card(int id, int rank, int suit) {
         this.id = id;
-        this.rank = rank;
-        this.suit = suit;
+        this.bits = (rank & RANK_MASK) | ((suit + 1) & SUIT_MASK) << SUIT_SHIFT;
     }
 
     public int id() {
@@ -33,43 +51,49 @@ public final class Card {
     }
 
     public int rank() {
-        return rank;
+        return bits & RANK_MASK;
     }
 
     public void setRank(int rank) {
-        this.rank = rank;
+        bits = (bits & ~RANK_MASK) | (rank & RANK_MASK);
     }
 
     public int suit() {
-        return suit;
+        return ((bits >> SUIT_SHIFT) & SUIT_MASK) - 1;
     }
 
     public void setSuit(int suit) {
-        this.suit = suit;
+        bits = (bits & ~(SUIT_MASK << SUIT_SHIFT)) | (((suit + 1) & SUIT_MASK) << SUIT_SHIFT);
     }
 
     public Data.Enhancement enh() {
-        return enh;
+        int c = (bits >> ENH_SHIFT) & ENH_MASK;
+        return c == 0 ? null : ENH_VALUES[c - 1];
     }
 
     public void setEnh(Data.Enhancement enh) {
-        this.enh = enh;
+        int c = enh == null ? 0 : enh.ordinal() + 1;
+        bits = (bits & ~(ENH_MASK << ENH_SHIFT)) | (c << ENH_SHIFT);
     }
 
     public Data.Edition edition() {
-        return edition;
+        int c = (bits >> ED_SHIFT) & ED_MASK;
+        return c == 0 ? null : EDITION_VALUES[c - 1];
     }
 
     public void setEdition(Data.Edition edition) {
-        this.edition = edition;
+        int c = edition == null ? 0 : edition.ordinal() + 1;
+        bits = (bits & ~(ED_MASK << ED_SHIFT)) | (c << ED_SHIFT);
     }
 
     public Data.Seal seal() {
-        return seal;
+        int c = (bits >> SEAL_SHIFT) & SEAL_MASK;
+        return c == 0 ? null : SEAL_VALUES[c - 1];
     }
 
     public void setSeal(Data.Seal seal) {
-        this.seal = seal;
+        int c = seal == null ? 0 : seal.ordinal() + 1;
+        bits = (bits & ~(SEAL_MASK << SEAL_SHIFT)) | (c << SEAL_SHIFT);
     }
 
     public long chipBonus() {
@@ -81,27 +105,30 @@ public final class Card {
     }
 
     public boolean debuff() {
-        return debuff;
+        return (bits & F_DEBUFF) != 0;
     }
 
     public void setDebuff(boolean debuff) {
-        this.debuff = debuff;
+        if (debuff) bits |= F_DEBUFF;
+        else bits &= ~F_DEBUFF;
     }
 
     public boolean facedown() {
-        return facedown;
+        return (bits & F_FACEDOWN) != 0;
     }
 
     public void setFacedown(boolean facedown) {
-        this.facedown = facedown;
+        if (facedown) bits |= F_FACEDOWN;
+        else bits &= ~F_FACEDOWN;
     }
 
     public boolean isBroken() {
-        return broken;
+        return (bits & F_BROKEN) != 0;
     }
 
     public void setBroken(boolean broken) {
-        this.broken = broken;
+        if (broken) bits |= F_BROKEN;
+        else bits &= ~F_BROKEN;
     }
 
     /**
@@ -110,7 +137,7 @@ public final class Card {
      * 仅凭 rank/suit 会漏判（排序/渲染/持有效果都依赖本方法）。
      */
     public boolean isStone() {
-        return enh == Data.Enhancement.STONE || rank == 0 || suit < 0;
+        return enh() == Data.Enhancement.STONE || rank() == 0 || suit() < 0;
     }
 
     /**
@@ -128,20 +155,21 @@ public final class Card {
      * @param newEnh 新增强（含 STONE 与 null）
      */
     public void applyEnhancement(Data.Enhancement newEnh) {
-        this.enh = newEnh;
+        setEnh(newEnh);
         if (newEnh == Data.Enhancement.STONE) {
-            this.rank = 0;
-            this.suit = -1;
-        } else if (this.rank == 0 || this.suit < 0) {
+            setRank(0);
+            setSuit(-1);
+        } else if (this.rank() == 0 || this.suit() < 0) {
             // 从石头转为普通增强/无增强：恢复合法底层（无底层记录时用黑桃2，对齐 marble 石头壳默认）
-            if (this.rank < 2) this.rank = 2;
-            if (this.suit < 0) this.suit = 0;
+            if (this.rank() < 2) setRank(2);
+            if (this.suit() < 0) setSuit(0);
         }
     }
 
     /** 人头牌 J/Q/K。 */
     public boolean isFace() {
-        return rank >= 11 && rank <= 13;
+        int r = rank();
+        return r >= 11 && r <= 13;
     }
 
     @Override
@@ -160,6 +188,6 @@ public final class Card {
     @Override
     public String toString() {
         if (isStone()) return "石头";
-        return Data.Suit.byIndex(suit).symbol + Data.rankName(rank);
+        return Data.Suit.byIndex(suit()).symbol + Data.rankName(rank());
     }
 }
