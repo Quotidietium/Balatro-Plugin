@@ -324,8 +324,9 @@ public final class RoundBoard {
     private void hide(TextDisplay d) {
         d.text(Component.empty());
         d.setBackgroundColor(TRANSPARENT);
-        // 移除所有可交互标签（card/action/shop/pick），仅保留 balatro_board/balatro_slot 标识；
-        // 这样隐藏（空文本）的实体不再可被射线命中，避免跨阶段误点。
+        // 清掉遗留身份标签（balatro_card_<id>/balatro_act_* 等），仅保留 balatro_board/
+        // balatro_slot 基础标识；命中由 Interaction 实体承载（R159 修正：原文「射线命中」
+        // 为前代机制措辞残留——中英双语注释须双语关键词检索才能查全）。
         d.getScoreboardTags().removeIf(t -> !t.equals("balatro_board") && !t.equals("balatro_slot"));
     }
 

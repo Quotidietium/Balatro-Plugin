@@ -19,7 +19,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  * <ul>
  *   <li>{@code engine/} 纯逻辑（移植 balatro 网页，零 Bukkit 依赖，可单测）；</li>
  *   <li>{@code api/} 预留扩展面（自定义事件 + 服务接口）；</li>
- *   <li>{@code session/} 每玩家会话 + 事件桥；{@code render/} 全息渲染（S8）；{@code listener/} 射线交互（S9）。</li>
+ *   <li>{@code session/} 每玩家会话 + 事件桥；{@code render/} 全息渲染（S8）；{@code listener/} Interaction 实体交互（S9，R159 修正：原「射线交互」为前代机制措辞）。</li>
  * </ul>
  */
 public final class BalatroPlugin extends JavaPlugin {
