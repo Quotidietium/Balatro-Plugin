@@ -42,6 +42,10 @@ public final class RunState {
     public int jokerSlots = 5;
     public int consumableSlots = 2;
     public int handSizeBase = 8;
+    /** 永久手牌上限修正（R137 真版：通灵板/幻灵 ectoplasm 的 -1 为**整局永久**，
+     *  须跨回合存活——applyVouchersPassive 每回合从 8 重建 handSizeBase 会把直接
+     *  写在 base 上的减量抹掉（REF 同 bug），故独立携带、重建后叠加。 */
+    public int handSizePerm;
     public int handsBase = 4;
     public int discardsBase = 3;
     public int interestCap = 5;
@@ -390,16 +394,8 @@ public final class RunState {
     public void gainConsumable(String kind) {
         switch (kind) {
             case "tarot" -> {
-                // P12 性能：无禁入时直接共享 Data.TAROTS（与物化过滤池同内容同序，P9 商店同款）
-                List<Data.Tarot> pool;
-                if (mods.bannedTarots.isEmpty()) {
-                    pool = Data.TAROTS;
-                } else {
-                    pool = new ArrayList<>(Data.TAROTS.size());
-                    for (Data.Tarot t : Data.TAROTS) {
-                        if (!mods.bannedTarots.contains(t.key)) pool.add(t);
-                    }
-                }
+                // R137：池口径抽取为 tarotGrantPool（P12 共享池语义不变，与 ctx 版共用）
+                List<Data.Tarot> pool = tarotGrantPool();
                 Data.Tarot t = pool.isEmpty() ? null : stream("consumable").pick(pool);
                 if (t != null && addConsumableKey("tarot", t.key)) msg("获得：" + t.name);
             }
@@ -408,19 +404,8 @@ public final class RunState {
                 if (addConsumableKey("planet", p.key)) msg("获得：" + p.name);
             }
             default -> {
-                // P12 性能：无禁入时共享静态幻灵产出池（去 SPECIAL 的 SPECTRALS，同序；
-                // 与商店 SHOP_SPECTRAL_POOL 同源的等价池，此处就地构造一次共享常量）
-                List<Data.Spectral> pool;
-                if (mods.bannedSpectrals.isEmpty()) {
-                    pool = SPECTRAL_GRANT_POOL;
-                } else {
-                    pool = new ArrayList<>(Data.SPECTRALS.size());
-                    for (Data.Spectral sp0 : Data.SPECTRALS) {
-                        if (mods.bannedSpectrals.contains(sp0.key)) continue;
-                        if (Data.SPECIAL_SPECTRALS.contains(sp0.key)) continue; // R128 真版：产出池排除灵魂/黑洞
-                        pool.add(sp0);
-                    }
-                }
+                // R137：池口径抽取为 spectralGrantPool（R128 去 SPECIAL + 禁入，与 ctx 版共用）
+                List<Data.Spectral> pool = spectralGrantPool();
                 Data.Spectral sp = pool.isEmpty() ? null : stream("consumable").pick(pool);
                 if (sp != null && addConsumableKey("spectral", sp.key)) msg("获得：" + sp.name);
             }
@@ -436,6 +421,35 @@ public final class RunState {
             if (!Data.SPECIAL_SPECTRALS.contains(sp.key)) pool.add(sp);
         }
         return List.copyOf(pool);
+    }
+
+    /**
+     * 塔罗随机产出池（禁入过滤；R137 抽取为共享口径，供 state/ctx 两条 gainConsumable 复用）。
+     * 空表由调用方跳过抽取（不消耗 consumable 流，与既有行为一致）。
+     */
+    List<Data.Tarot> tarotGrantPool() {
+        if (mods.bannedTarots.isEmpty()) return Data.TAROTS;
+        List<Data.Tarot> pool = new ArrayList<>(Data.TAROTS.size());
+        for (Data.Tarot t : Data.TAROTS) {
+            if (!mods.bannedTarots.contains(t.key)) pool.add(t);
+        }
+        return pool;
+    }
+
+    /**
+     * 幻灵随机产出池（去 SPECIAL【R128 真版：灵魂/黑洞仅幽灵包产出】+ 禁入过滤；
+     * R137 抽取为共享口径，供 state/ctx 两条 gainConsumable 复用——此前 ScoreContext
+     * 版仍用全量 SPECTRALS，公共 API 路径违反 R128 产出规则）。
+     */
+    List<Data.Spectral> spectralGrantPool() {
+        if (mods.bannedSpectrals.isEmpty()) return SPECTRAL_GRANT_POOL;
+        List<Data.Spectral> pool = new ArrayList<>(Data.SPECTRALS.size());
+        for (Data.Spectral sp : Data.SPECTRALS) {
+            if (mods.bannedSpectrals.contains(sp.key)) continue;
+            if (Data.SPECIAL_SPECTRALS.contains(sp.key)) continue;
+            pool.add(sp);
+        }
+        return pool;
     }
 
     /** 把指定消耗品加入消耗品区（槽位满则失败）。 */

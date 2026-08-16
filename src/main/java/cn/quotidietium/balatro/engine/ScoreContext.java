@@ -88,18 +88,29 @@ public final class ScoreContext {
      * 获得随机消耗品（对齐 engine.js ctx.gainConsumable）：
      * 按 kind 从对应池经 {@code consumable} 流随机取；加入成功则记入本手事件。
      * （8 号球等小丑经此发放塔罗牌。）
+     *
+     * <p>R137：池口径与 {@link RunState#gainConsumable} 统一（共享 grantPool 提取）——
+     * 塔罗/幻灵走禁入过滤，幻灵并排除 SPECIAL_SPECTRALS（R128 真版：灵魂/黑洞仅幽灵包
+     * 产出）。此前本方法用全量 SPECTRALS，公共 API 路径（第三方小丑）可绕过 R128 规则。
+     * 池空跳过抽取（不消耗流），与 state 版一致。
      */
     public void gainConsumable(String kind) {
         String name = null;
         if ("tarot".equals(kind)) {
-            Data.Tarot t = state.stream("consumable").pick(Data.TAROTS);
-            if (state.addConsumableKey("tarot", t.key)) name = t.name;
+            java.util.List<Data.Tarot> pool = state.tarotGrantPool();
+            if (!pool.isEmpty()) {
+                Data.Tarot t = state.stream("consumable").pick(pool);
+                if (state.addConsumableKey("tarot", t.key)) name = t.name;
+            }
         } else if ("planet".equals(kind)) {
             Data.Planet p = state.stream("consumable").pick(Data.PLANETS);
             if (state.addConsumableKey("planet", p.key)) name = p.name;
         } else {
-            Data.Spectral sp = state.stream("consumable").pick(Data.SPECTRALS);
-            if (state.addConsumableKey("spectral", sp.key)) name = sp.name;
+            java.util.List<Data.Spectral> pool = state.spectralGrantPool();
+            if (!pool.isEmpty()) {
+                Data.Spectral sp = state.stream("consumable").pick(pool);
+                if (state.addConsumableKey("spectral", sp.key)) name = sp.name;
+            }
         }
         if (name != null) events.add("获得：" + name);
     }

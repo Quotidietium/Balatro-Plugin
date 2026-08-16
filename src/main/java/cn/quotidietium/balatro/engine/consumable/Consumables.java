@@ -297,7 +297,10 @@ public final class Consumables {
                     if (!inRoundHand(s)) return Result.err("需要在回合中使用");
                     int rank = st.range(2, 14);
                     for (Card card : s.hand) if (card.enh() != Data.Enhancement.STONE) card.setRank(rank);
-                    s.handSizeBase -= 1;
+                    // R137 真版：手牌上限 -1 为整局永久（写入 handSizePerm；真版即时生效，
+                    // 当前回合的补牌口径同步下调，下限 1 与 startRound 的 Math.max(1,·) 一致）
+                    s.handSizePerm -= 1;
+                    s.handSizeRound = Math.max(1, s.handSizeRound - 1);
                     return Result.ok();
                 }
                 case "hex": {
@@ -305,7 +308,14 @@ public final class Consumables {
                     for (JokerInstance j : s.jokers) if (!j.eternal) editable.add(j);
                     if (editable.isEmpty()) return Result.err("没有可用的小丑");
                     JokerInstance keep = st.pick(editable);
+                    // R137 真版：任意途径销毁格罗米歇尔都解锁卡文迪什（本处 removeIf 直删
+                    // 绕过 destroyJoker，REF 同 bug 不置 grosDead——被销毁者含之则补置）
+                    boolean grosHit = false;
+                    for (JokerInstance j : s.jokers) {
+                        if (j != keep && !j.eternal && j.def.key().equals("grossmichel")) grosHit = true;
+                    }
                     s.jokers.removeIf(j -> j != keep && !j.eternal);
+                    if (grosHit) s.grosDead = true;
                     // R128 对齐真版（Spectral Wiki："Add Polychrome to a random Joker, destroy all
                     // other Jokers"）——REF 误为 NEGATIVE（R17 逐行对 REF 的经典盲区）。
                     keep.edition = Data.Edition.POLY;
@@ -316,7 +326,13 @@ public final class Consumables {
                     for (JokerInstance j : s.jokers) if (!j.eternal) copyable.add(j);
                     if (copyable.isEmpty()) return Result.err("没有可用的小丑");
                     JokerInstance src = st.pick(copyable);
+                    // R137 真版：同 hex——removeIf 直删须补置 grosDead（详见 hex 注释）
+                    boolean grosHit = false;
+                    for (JokerInstance j : s.jokers) {
+                        if (j != src && !j.eternal && j.def.key().equals("grossmichel")) grosHit = true;
+                    }
                     s.jokers.removeIf(j -> j != src && !j.eternal);
+                    if (grosHit) s.grosDead = true;
                     // R114 对齐真版：贴纸（永恒/易腐/租赁）随复制保留；负片版本不被 ankh 复制
                     // （Ankh Wiki/Steam：Ankh duplicate of a Negative joker loses Negative）
                     Data.Edition ed = src.edition == Data.Edition.NEGATIVE ? null : src.edition;
@@ -351,7 +367,9 @@ public final class Consumables {
                     for (JokerInstance j : s.jokers) if (j.edition == null) editable.add(j);
                     if (editable.isEmpty()) return Result.err("没有可用的小丑");
                     st.pick(editable).edition = Data.Edition.NEGATIVE;
-                    s.handSizeBase -= 1;
+                    // R137 真版：同 ouija——永久手牌上限 -1（跨回合存活 + 当前回合即时生效）
+                    s.handSizePerm -= 1;
+                    s.handSizeRound = Math.max(1, s.handSizeRound - 1);
                     return Result.ok();
                 }
                 default:
