@@ -67,9 +67,9 @@ class JointConservationFuzzTest {
     @Test
     void threeDimensionInvariantsHoldTogether() {
         Random rnd = new Random(20260818L);
-        for (int trial = 0; trial < 30; trial++) {
+        for (int trial = 0; trial < 60; trial++) {
             boolean green = trial % 2 == 1;
-            RunState s = Engine.createRun(green ? "green" : "red", 0, "JOINT" + trial, null);
+            RunState s = Engine.createRun(green ? "green" : "red", 0, "JOINT2-" + trial, null);
             s.consumableSlots = 2;
             List<Integer> pendingPicked = new ArrayList<>(); // 已选未发的包内游戏牌（下回合洗入）
 

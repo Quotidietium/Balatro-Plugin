@@ -140,9 +140,9 @@ class MultiSessionInterleaveTest {
     @Test
     void fiveSessionInterleaveExtended() {
         final int N = 5;
-        final int TICKS = 1000;
+        final int TICKS = 1500;
         String[] decks = {"red", "green", "plasma", "black", "yellow"};
-        String[] seeds = {"MSX1", "MSX2", "MSX3", "MSX4", "MSX5"};
+        String[] seeds = {"MSY1", "MSY2", "MSY3", "MSY4", "MSY5"};
         String challenge = Data.CHALLENGES.get(3).key(); // 与三会话变体不同挑战
 
         RunState[] inter = new RunState[N];
