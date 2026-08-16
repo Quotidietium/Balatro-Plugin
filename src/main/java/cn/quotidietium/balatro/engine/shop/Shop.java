@@ -19,6 +19,48 @@ import java.util.Map;
  */
 public final class Shop {
 
+    // ---- P9 性能：静态共享池（内容只由静态数据决定，pick 只读）----
+    /** 商店包池：PACKS 去掉 SPECTRAL（genShop 原地筛选的产物，顺序=PACKS 声明序）。 */
+    private static final List<Data.Pack> SHOP_PACK_POOL = buildShopPackPool();
+    /** 幻灵商店池：SPECTRALS 去掉 SPECIAL_SPECTRALS（genShopItem case4 无禁入时的等价池）。 */
+    private static final List<Data.Spectral> SHOP_SPECTRAL_POOL = buildShopSpectralPool();
+
+    private static List<Data.Pack> buildShopPackPool() {
+        List<Data.Pack> pool = new ArrayList<>();
+        for (Data.Pack p : Data.PACKS) {
+            if (p.type != Data.PackType.SPECTRAL) pool.add(p);
+        }
+        return List.copyOf(pool);
+    }
+
+    private static List<Data.Spectral> buildShopSpectralPool() {
+        List<Data.Spectral> pool = new ArrayList<>();
+        for (Data.Spectral s0 : Data.SPECTRALS) {
+            if (!Data.SPECIAL_SPECTRALS.contains(s0.key)) pool.add(s0);
+        }
+        return List.copyOf(pool);
+    }
+
+    /** 按稀有度分桶的 ORDERED 视图（桶内保持原版顺序，与原「逐个筛选」产出的池序一致）。 */
+    private static final List<List<Joker>> JOKERS_BY_RARITY = buildJokersByRarity();
+
+    private static List<List<Joker>> buildJokersByRarity() {
+        // 桶大小先数一遍，再精确装桶（每个桶单次分配）
+        int[] counts = new int[4];
+        for (Joker j : JokerRegistry.allJokersOrdered()) {
+            counts[JokerRegistry.rarityOf(j.key())]++;
+        }
+        @SuppressWarnings("unchecked")
+        ArrayList<Joker>[] buckets = new ArrayList[4];
+        for (int r = 0; r < 4; r++) buckets[r] = new ArrayList<>(counts[r]);
+        for (Joker j : JokerRegistry.allJokersOrdered()) {
+            buckets[JokerRegistry.rarityOf(j.key())].add(j);
+        }
+        List<List<Joker>> out = new ArrayList<>(4);
+        for (int r = 0; r < 4; r++) out.add(List.copyOf(buckets[r]));
+        return out;
+    }
+
     private Shop() {
     }
 
@@ -55,10 +97,11 @@ public final class Shop {
     }
 
     public static final class ShopData {
-        public List<CardItem> cards = new ArrayList<>();
-        public List<PackItem> packs = new ArrayList<>();
+        // P9 性能：按典型规模预置（卡位 2~4 / 包 2 / 券 1~2），消除首元素扩容
+        public List<CardItem> cards = new ArrayList<>(4);
+        public List<PackItem> packs = new ArrayList<>(2);
         /** 商店陈列的优惠券列表（可含多张：voucher 标签每叠加一次追加一张额外券）。 */
-        public List<VoucherItem> vouchers = new ArrayList<>();
+        public List<VoucherItem> vouchers = new ArrayList<>(2);
         public int rerollCount;
         public int freeRerolls;
     }
@@ -100,18 +143,26 @@ public final class Shop {
         genShop(s);
     }
 
+    /** 有禁入包（真版煎蛋卷/无丑牌）时的现筛包池（顺序=PACKS 声明序）。 */
+    private static List<Data.Pack> buildBannedFilteredPackPool(RunState s) {
+        List<Data.Pack> pool = new ArrayList<>(Data.PACKS.size());
+        for (Data.Pack p : Data.PACKS) {
+            if (p.type == Data.PackType.SPECTRAL) continue;
+            if (s.mods.bannedPacks.contains(p.key)) continue; // R123 真版禁入包（标准/丑牌包）
+            pool.add(p);
+        }
+        return pool;
+    }
+
     private static void genShop(RunState s) {
         Rng.Stream st = s.stream("shopgen" + s.roundCount);
         List<CardItem> cards = genShopCards(s);
 
         // 补充包 2 个
-        List<PackItem> packs = new ArrayList<>();
-        List<Data.Pack> packPool = new ArrayList<>();
-        for (Data.Pack p : Data.PACKS) {
-            if (p.type == Data.PackType.SPECTRAL) continue;
-            if (s.mods.bannedPacks.contains(p.key)) continue; // R123 真版禁入包（标准/丑牌包）
-            packPool.add(p);
-        }
+        // P9 性能：无禁入包时直接用静态共享池（内容/顺序与原地筛选一致）；有禁入才现筛
+        List<PackItem> packs = new ArrayList<>(2);
+        List<Data.Pack> packPool = s.mods.bannedPacks.isEmpty()
+                ? SHOP_PACK_POOL : buildBannedFilteredPackPool(s);
         for (int i = 0; i < 2; i++) {
             Data.Pack p = st.pick(packPool);
             if (s.nextShop.get("etherealPack") != null) {
@@ -130,8 +181,8 @@ public final class Shop {
         // 优惠券：基础一张 + voucher 标签每叠加一次追加一张额外券（对齐真版
         // "Adds a Voucher to the next Shop. Can be stacked" — balatrowiki.org/w/Voucher_Tag）。
         // REF 原版网页未实现 extraVoucher 消费（只置位），此处按真版补齐。
-        List<VoucherItem> vouchers = new ArrayList<>();
-        List<Data.Voucher> avail = new ArrayList<>();
+        List<VoucherItem> vouchers = new ArrayList<>(2);
+        List<Data.Voucher> avail = new ArrayList<>(Data.VOUCHERS.size());
         for (Data.Voucher v : Data.VOUCHERS) {
             if (s.vouchers.contains(v.key)) continue;
             if (v.requires != null && !s.vouchers.contains(v.requires)) continue;
@@ -178,20 +229,32 @@ public final class Shop {
 
     private static List<CardItem> genShopCards(RunState s) {
         Rng.Stream st = s.stream("shopcards");
-        List<CardItem> items = new ArrayList<>();
+        List<CardItem> items = new ArrayList<>(s.shopSlots);
         int slots = s.shopSlots;
 
-        List<int[]> weights = new ArrayList<>(); // {kindCode, w}
-        // kindCode: 0 joker,1 tarot,2 planet,3 playing,4 spectral
-        weights.add(new int[]{0, 70});
-        weights.add(new int[]{1, hasVoucher(s, "tarott") ? 30 : hasVoucher(s, "tarotm") ? 15 : 8});
-        weights.add(new int[]{2, hasVoucher(s, "planett") ? 30 : hasVoucher(s, "planetm") ? 15 : 8});
-        if (hasVoucher(s, "magictrick")) weights.add(new int[]{3, 8});
-        if (s.mods.spectralInShop || hasVoucher(s, "omen")) weights.add(new int[]{4, 4});
-        if (s.mods.noJokers) weights.removeIf(w -> w[0] == 0);
+        // P9 性能：权重表用两个平置 int 数组承载（原实现每次 new ArrayList + 4~5 个 int[]
+        // 装箱；kindCode: 0 joker,1 tarot,2 planet,3 playing,4 spectral）
+        int[] wkinds = new int[5];
+        int[] wvals = new int[5];
+        int wn = 0;
+        wkinds[wn] = 0; wvals[wn] = 70; wn++;
+        wkinds[wn] = 1; wvals[wn] = hasVoucher(s, "tarott") ? 30 : hasVoucher(s, "tarotm") ? 15 : 8; wn++;
+        wkinds[wn] = 2; wvals[wn] = hasVoucher(s, "planett") ? 30 : hasVoucher(s, "planetm") ? 15 : 8; wn++;
+        if (hasVoucher(s, "magictrick")) { wkinds[wn] = 3; wvals[wn] = 8; wn++; }
+        if (s.mods.spectralInShop || hasVoucher(s, "omen")) { wkinds[wn] = 4; wvals[wn] = 4; wn++; }
+        if (s.mods.noJokers) { // 原地 removeIf(kind==0) 的等价平移
+            for (int i = 0; i < wn; i++) {
+                if (wkinds[i] == 0) {
+                    System.arraycopy(wkinds, i + 1, wkinds, i, wn - 1 - i);
+                    System.arraycopy(wvals, i + 1, wvals, i, wn - 1 - i);
+                    wn--;
+                    break;
+                }
+            }
+        }
 
         for (int i = 0; i < slots; i++) {
-            int kind = weightedPick(st, weights);
+            int kind = weightedPick(st, wkinds, wvals, wn);
             items.add(genShopItem(s, kind, i));
         }
         // 标签保证
@@ -214,13 +277,22 @@ public final class Shop {
         return items;
     }
 
-    private static int weightedPick(Rng.Stream st, List<int[]> weights) {
-        // 复用 Rng.weighted：把 int[] 包装。
-        // 防御：weights 空 / 全权重 ≤0 时 Rng.weighted 返回 null（当前 genShopCards 保证
-        // tarot(8)+planet(8) 总在，不可达；但作为「不信任输入」的最后一道防线）。
-        int[] picked = st.weighted(weights, w -> w[1]);
-        if (picked == null) return 1; // 退化到塔罗（非空、价格正常的稳妥默认）
-        return picked[0];
+    /**
+     * P9 性能：平置数组的加权抽取——与 {@code Rng.Stream.weighted} 的算术逐位一致
+     * （total 按**同序**逐元素 int→double 累加；恰一次 next()；按序减重、r&lt;0 即中），
+     * 仅去掉 List/int[] 装箱与 lambda 分发。
+     * 防御：空表 / 全权重 ≤0 时与原实现同返回塔罗（1）（非空、价格正常的稳妥默认）。
+     */
+    private static int weightedPick(Rng.Stream st, int[] kinds, int[] vals, int n) {
+        double total = 0;
+        for (int i = 0; i < n; i++) total += Math.max(0, vals[i]);
+        if (total <= 0) return 1;
+        double r = st.next() * total;
+        for (int i = 0; i < n; i++) {
+            r -= Math.max(0, vals[i]);
+            if (r < 0) return kinds[i];
+        }
+        return kinds[n - 1];
     }
 
     private static CardItem genShopItem(RunState s, int kindCode, int slotIdx) {
@@ -228,9 +300,16 @@ public final class Shop {
         switch (kindCode) {
             case 0: return makeJokerItem(s, null, null);
             case 1: {
-                List<Data.Tarot> tarotPool = new ArrayList<>();
-                for (Data.Tarot t0 : Data.TAROTS) {
-                    if (!s.mods.bannedTarots.contains(t0.key)) tarotPool.add(t0); // R123 真版禁入
+                // P9 性能：无禁入时塔罗池即 Data.TAROTS 本身（同内容同序），直接共享；
+                // 有禁入（真版易碎品）才现筛
+                List<Data.Tarot> tarotPool;
+                if (s.mods.bannedTarots.isEmpty()) {
+                    tarotPool = Data.TAROTS;
+                } else {
+                    tarotPool = new ArrayList<>(Data.TAROTS.size());
+                    for (Data.Tarot t0 : Data.TAROTS) {
+                        if (!s.mods.bannedTarots.contains(t0.key)) tarotPool.add(t0); // R123 真版禁入
+                    }
                 }
                 Data.Tarot t = tarotPool.isEmpty() ? null : st.pick(tarotPool);
                 if (t == null) return item("tarot", "fool",
@@ -246,11 +325,18 @@ public final class Shop {
                 return item("planet", p.key, p.name, p.desc, free ? 0 : shopPrice(s, 3));
             }
             case 4: {
-                List<Data.Spectral> spPool = new ArrayList<>();
-                for (Data.Spectral s0 : Data.SPECTRALS) {
-                    if (s.mods.bannedSpectrals.contains(s0.key)) continue; // R123 真版禁入
-                    if (Data.SPECIAL_SPECTRALS.contains(s0.key)) continue; // R128 真版：商店排除灵魂/黑洞
-                    spPool.add(s0);
+                // P9 性能：无禁入时用静态幻灵商店池（去 SPECIAL 的 SPECTRALS，同序）；
+                // 有禁入才现筛
+                List<Data.Spectral> spPool;
+                if (s.mods.bannedSpectrals.isEmpty()) {
+                    spPool = SHOP_SPECTRAL_POOL;
+                } else {
+                    spPool = new ArrayList<>(SHOP_SPECTRAL_POOL.size());
+                    for (Data.Spectral s0 : Data.SPECTRALS) {
+                        if (s.mods.bannedSpectrals.contains(s0.key)) continue; // R123 真版禁入
+                        if (Data.SPECIAL_SPECTRALS.contains(s0.key)) continue; // R128 真版：商店排除灵魂/黑洞
+                        spPool.add(s0);
+                    }
                 }
                 Data.Spectral sp = spPool.isEmpty() ? null : st.pick(spPool);
                 if (sp == null) return makeJokerItem(s, null, null);
@@ -290,9 +376,11 @@ public final class Shop {
             double r = st.next() * 100;
             rarity = r < 70 ? 0 : r < 95 ? 1 : 2;
         }
-        List<Joker> pool = new ArrayList<>();
-        for (Joker j : JokerRegistry.allJokersOrdered()) {
-            if (JokerRegistry.rarityOf(j.key()) != rarity) continue;
+        // P9 性能：按稀有度分桶的静态视图（桶内保持 ORDERED 序，与原逐个筛选的池序一致），
+        // 免去每次全量遍历 150 个小丑的 rarityOf 查找；池按桶大小精确预置（单次分配）
+        List<Joker> bucket = JOKERS_BY_RARITY.get(rarity);
+        List<Joker> pool = new ArrayList<>(bucket.size());
+        for (Joker j : bucket) {
             if (j.key().equals("cavendish") && !s.grosDead) continue;
             if (s.mods.noJokers) continue;
             // 禁入小丑（真版煎蛋卷：经济小丑不进商店池）——R108 对齐真版
@@ -305,7 +393,7 @@ public final class Shop {
             pool.add(j);
         }
         if (pool.isEmpty()) {
-            Data.Tarot t = st.pick(List.of(Data.Tarot.values()));
+            Data.Tarot t = st.pick(Data.TAROTS); // P9：共享 Data.TAROTS（原 List.of(values()) 每次新建）
             return item("tarot", t.key, t.name, t.desc, shopPrice(s, 3));
         }
         Joker def = st.pick(pool);
