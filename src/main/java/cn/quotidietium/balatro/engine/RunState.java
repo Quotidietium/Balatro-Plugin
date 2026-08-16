@@ -155,7 +155,9 @@ public final class RunState {
     RunState(String seed) {
         this.seed = seed;
         this.streamSource = new StreamSource(seed);
-        for (Data.HandType h : Data.HandType.values()) {
+        // P11 性能：遍历共享的 HAND_TYPES（List.of 缓存），替代每次 createRun 的
+        // HandType.values()（枚举 values() 每次都新数组）——迭代序同为枚举声明序
+        for (Data.HandType h : Data.HAND_TYPES) {
             handLevels.put(h, 1);
         }
     }

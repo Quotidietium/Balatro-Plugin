@@ -13,23 +13,35 @@ import java.util.Map;
  */
 public final class StreamSource {
     private final String runSeed;
-    private final Map<String, Rng.Stream> streams = new HashMap<>();
+    /** P11 性能：runSeed+"::" 的 FNV-1a 前缀态（每局一次），未命中建流零字符串拼接。 */
+    private final int seedPrefix;
+    /** P11 性能：预置容量——每局流名持续增长（shuffle/shopgen 带回合后缀，~2/回合）。 */
+    private final Map<String, Rng.Stream> streams = new HashMap<>(32);
 
     public StreamSource(String runSeed) {
         this.runSeed = runSeed;
+        this.seedPrefix = Rng.prefixHash(runSeed);
     }
 
     /** 取（必要时创建并缓存）指定名称的随机流。
      *
      * <p>P2 性能：原实现 computeIfAbsent(name, lambda) 每次调用都新分配一个捕获
      * {@code runSeed} 的 lambda 实例（实测 16 B/op）。改为 get/缺省创建/put——
-     * 命中路径零分配。RunState 为单玩家单线程访问，无需并发原语，语义不变。 */
+     * 命中路径零分配。RunState 为单玩家单线程访问，无需并发原语，语义不变。
+     * <p>P11 性能：未命中路径改用前缀哈希增量折叠（与 Rng.makeStream 逐位等价），
+     * 免去 runSeed+"::"+name 的字符串拼接分配。 */
     public Rng.Stream stream(String name) {
         Rng.Stream st = streams.get(name);
         if (st == null) {
-            st = Rng.makeStream(runSeed, name);
+            st = Rng.streamFrom(seedPrefix, name);
             streams.put(name, st);
         }
         return st;
+    }
+
+    /** 兼容保留：种子串（供调试/展示）。 */
+    @Override
+    public String toString() {
+        return runSeed;
     }
 }

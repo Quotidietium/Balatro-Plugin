@@ -70,6 +70,34 @@ public final class Rng {
         return new Stream(seedHash(runSeed + "::" + stream));
     }
 
+    // ---- P11 性能：流创建零字符串化 ----
+    // FNV-1a 是左到右折叠：hash(runSeed + "::" + name) ≡ 先折叠 runSeed 再折叠 "::" 得到
+    // 前缀态，再从该态继续折叠 name。StreamSource 每局预计算一次前缀态，之后每个新流
+    // 的创建只折叠流名——与 makeStream 的拼接哈希**逐位等价**（等价性由
+    // RngGoldenTest.streamFromPrefixEquivalence 逐值断言锁定）。
+
+    /** 折叠 {@code runSeed + "::"} 的 FNV-1a 前缀态（每局一次）。 */
+    static int prefixHash(String runSeed) {
+        int h = 0x811C9DC5;
+        for (int i = 0; i < runSeed.length(); i++) {
+            h ^= runSeed.charAt(i);
+            h *= 0x01000193;
+        }
+        h ^= ':'; h *= 0x01000193;
+        h ^= ':'; h *= 0x01000193;
+        return h;
+    }
+
+    /** 从前缀态折叠流名并建流（与 {@link #makeStream} 逐位等价）。 */
+    static Stream streamFrom(int prefix, String stream) {
+        int h = prefix;
+        for (int i = 0; i < stream.length(); i++) {
+            h ^= stream.charAt(i);
+            h *= 0x01000193;
+        }
+        return new Stream(h);
+    }
+
     /** 单条命名随机流（mulberry32）。每次调用 {@link #next()} 推进内部状态。 */
     public static final class Stream {
         private int a;

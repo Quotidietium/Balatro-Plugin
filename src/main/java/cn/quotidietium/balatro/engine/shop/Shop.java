@@ -377,7 +377,10 @@ public final class Shop {
             rarity = r < 70 ? 0 : r < 95 ? 1 : 2;
         }
         // P9 性能：按稀有度分桶的静态视图（桶内保持 ORDERED 序，与原逐个筛选的池序一致），
-        // 免去每次全量遍历 150 个小丑的 rarityOf 查找；池按桶大小精确预置（单次分配）
+        // 免去每次全量遍历 150 个小丑的 rarityOf 查找；池按桶大小精确预置（单次分配）。
+        // P11 实验（已回退）：曾把池改为 RunState 暂存缓冲复用（分配 −1KB/op），但孤立 A/B
+        // 四对 min 一致 +4%——晋升缓冲的写屏障/缓存冷成本大于 TLAB 新鲜分配，小列表复用
+        // 不敌分配（与 P10 结论同源），按红线以时间回归为准回退。
         List<Joker> bucket = JOKERS_BY_RARITY.get(rarity);
         List<Joker> pool = new ArrayList<>(bucket.size());
         for (Joker j : bucket) {
