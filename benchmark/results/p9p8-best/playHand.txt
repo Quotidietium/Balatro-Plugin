@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p9p8-1, benchmark\results\p9p8-2, benchmark\results\p9p8-3]
+#Sun Aug 16 17:07:31 CST 2026
+allocBytesPerOp.median=11550
+label=p9p8-best
+nsPerOp.bestOfRuns=8630
+nsPerOp.mean=8649
+nsPerOp.median=8630
+nsPerOp.min=8398
+nsPerOp.p95=8950
+runs=3
+scenario=playHand
