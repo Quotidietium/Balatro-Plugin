@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p15bl1, benchmark\results\p15bl2, benchmark\results\p15bl3]
+#Sun Aug 16 19:36:54 CST 2026
+allocBytesPerOp.median=304
+label=p15bl-best
+nsPerOp.bestOfRuns=106
+nsPerOp.mean=111
+nsPerOp.median=106
+nsPerOp.min=102
+nsPerOp.p95=149
+runs=3
+scenario=packOpen

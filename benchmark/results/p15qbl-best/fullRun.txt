@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p15qbl1, benchmark\results\p15qbl2, benchmark\results\p15qbl3]
+#Sun Aug 16 19:34:01 CST 2026
+allocBytesPerOp.median=1988388
+label=p15qbl-best
+nsPerOp.bestOfRuns=1180423
+nsPerOp.mean=1310919
+nsPerOp.median=1180423
+nsPerOp.min=1078196
+nsPerOp.p95=1814406
+runs=3
+scenario=fullRun

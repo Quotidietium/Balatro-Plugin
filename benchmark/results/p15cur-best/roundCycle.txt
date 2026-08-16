@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p15cur1, benchmark\results\p15cur2, benchmark\results\p15cur3]
+#Sun Aug 16 19:36:56 CST 2026
+allocBytesPerOp.median=154385
+label=p15cur-best
+nsPerOp.bestOfRuns=134404
+nsPerOp.mean=147042
+nsPerOp.median=134404
+nsPerOp.min=127198
+nsPerOp.p95=187271
+runs=3
+scenario=roundCycle

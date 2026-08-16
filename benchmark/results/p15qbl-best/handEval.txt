@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p15qbl1, benchmark\results\p15qbl2, benchmark\results\p15qbl3]
+#Sun Aug 16 19:34:01 CST 2026
+allocBytesPerOp.median=231
+label=p15qbl-best
+nsPerOp.bestOfRuns=92
+nsPerOp.mean=93
+nsPerOp.median=92
+nsPerOp.min=87
+nsPerOp.p95=105
+runs=3
+scenario=handEval

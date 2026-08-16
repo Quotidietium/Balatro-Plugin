@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p15qcur1, benchmark\results\p15qcur2, benchmark\results\p15qcur3]
+#Sun Aug 16 19:34:03 CST 2026
+allocBytesPerOp.median=8673
+label=p15qcur-best
+nsPerOp.bestOfRuns=5215
+nsPerOp.mean=5867
+nsPerOp.median=5215
+nsPerOp.min=5098
+nsPerOp.p95=11042
+runs=3
+scenario=playHand
