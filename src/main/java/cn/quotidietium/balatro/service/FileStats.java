@@ -108,6 +108,23 @@ public final class FileStats implements StatsService {
         }
         // 超限则压缩重写，避免文件与下次启动耗时无限增长
         if (oversized) compact();
+        // R140 崩溃撕裂自愈：追加模式下崩溃可停在「内容已写、换行未落」处（append+newLine
+        // 两次写之间的窗口）。该无换行尾行本身可被 decode 拒绝（半行）或恰好整行恢复，
+        // 但**下一次 record 的追加会直接拼接在残行尾部**——残行与首条新记录并成一条脏行，
+        // 两条在下轮加载时双双丢失。检测末字节非 '\n' 即 compact 归一化（每行恢复独立换行）。
+        if (!endsWithNewline()) compact();
+    }
+
+    /** 文件末字节是否为换行（空文件/不可读按无撕裂处理）。 */
+    private boolean endsWithNewline() {
+        try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(file.toFile(), "r")) {
+            long len = raf.length();
+            if (len == 0) return true;
+            raf.seek(len - 1);
+            return raf.read() == '\n';
+        } catch (IOException e) {
+            return true;
+        }
     }
 
     /** 用当前内存记录重写文件（启动时检测到超限后调用一次）。原子写：先写临时文件再 move，
