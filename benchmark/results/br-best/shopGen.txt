@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\br1, benchmark\results\br2, benchmark\results\br3]
+#Sun Aug 16 15:21:13 CST 2026
+allocBytesPerOp.median=14165
+label=br-best
+nsPerOp.bestOfRuns=13812
+nsPerOp.mean=13875
+nsPerOp.median=13812
+nsPerOp.min=13392
+nsPerOp.p95=14736
+runs=3
+scenario=shopGen

@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p2r1, benchmark\results\p2r2, benchmark\results\p2r3]
+#Sun Aug 16 15:21:15 CST 2026
+allocBytesPerOp.median=1128249
+label=p2r-best
+nsPerOp.bestOfRuns=269448
+nsPerOp.mean=274558
+nsPerOp.median=269448
+nsPerOp.min=261573
+nsPerOp.p95=313705
+runs=3
+scenario=roundCycle
