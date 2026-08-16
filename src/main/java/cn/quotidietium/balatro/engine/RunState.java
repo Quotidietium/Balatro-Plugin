@@ -371,9 +371,15 @@ public final class RunState {
     public void gainConsumable(String kind) {
         switch (kind) {
             case "tarot" -> {
-                List<Data.Tarot> pool = new ArrayList<>();
-                for (Data.Tarot t : Data.TAROTS) {
-                    if (!mods.bannedTarots.contains(t.key)) pool.add(t);
+                // P12 性能：无禁入时直接共享 Data.TAROTS（与物化过滤池同内容同序，P9 商店同款）
+                List<Data.Tarot> pool;
+                if (mods.bannedTarots.isEmpty()) {
+                    pool = Data.TAROTS;
+                } else {
+                    pool = new ArrayList<>(Data.TAROTS.size());
+                    for (Data.Tarot t : Data.TAROTS) {
+                        if (!mods.bannedTarots.contains(t.key)) pool.add(t);
+                    }
                 }
                 Data.Tarot t = pool.isEmpty() ? null : stream("consumable").pick(pool);
                 if (t != null && addConsumableKey("tarot", t.key)) msg("获得：" + t.name);
@@ -383,16 +389,34 @@ public final class RunState {
                 if (addConsumableKey("planet", p.key)) msg("获得：" + p.name);
             }
             default -> {
-                List<Data.Spectral> pool = new ArrayList<>();
-                for (Data.Spectral sp0 : Data.SPECTRALS) {
-                    if (mods.bannedSpectrals.contains(sp0.key)) continue;
-                    if (Data.SPECIAL_SPECTRALS.contains(sp0.key)) continue; // R128 真版：产出池排除灵魂/黑洞
-                    pool.add(sp0);
+                // P12 性能：无禁入时共享静态幻灵产出池（去 SPECIAL 的 SPECTRALS，同序；
+                // 与商店 SHOP_SPECTRAL_POOL 同源的等价池，此处就地构造一次共享常量）
+                List<Data.Spectral> pool;
+                if (mods.bannedSpectrals.isEmpty()) {
+                    pool = SPECTRAL_GRANT_POOL;
+                } else {
+                    pool = new ArrayList<>(Data.SPECTRALS.size());
+                    for (Data.Spectral sp0 : Data.SPECTRALS) {
+                        if (mods.bannedSpectrals.contains(sp0.key)) continue;
+                        if (Data.SPECIAL_SPECTRALS.contains(sp0.key)) continue; // R128 真版：产出池排除灵魂/黑洞
+                        pool.add(sp0);
+                    }
                 }
                 Data.Spectral sp = pool.isEmpty() ? null : stream("consumable").pick(pool);
                 if (sp != null && addConsumableKey("spectral", sp.key)) msg("获得：" + sp.name);
             }
         }
+    }
+
+    /** P12 性能：幻灵产出静态池（SPECTRALS 去 SPECIAL，无禁入时与物化过滤池同内容同序）。 */
+    private static final List<Data.Spectral> SPECTRAL_GRANT_POOL = buildSpectralGrantPool();
+
+    private static List<Data.Spectral> buildSpectralGrantPool() {
+        List<Data.Spectral> pool = new ArrayList<>(Data.SPECTRALS.size());
+        for (Data.Spectral sp : Data.SPECTRALS) {
+            if (!Data.SPECIAL_SPECTRALS.contains(sp.key)) pool.add(sp);
+        }
+        return List.copyOf(pool);
     }
 
     /** 把指定消耗品加入消耗品区（槽位满则失败）。 */
@@ -468,16 +492,29 @@ public final class RunState {
     public boolean gainRandomJoker(Integer rarity) {
         if (jokerSpace() <= 0) return false;
         Rng.Stream st = stream("randomjoker");
-        java.util.List<Joker> pool = new java.util.ArrayList<>();
-        for (Joker j : cn.quotidietium.balatro.engine.joker.JokerRegistry.allJokersOrdered()) {
-            int r = cn.quotidietium.balatro.engine.joker.JokerRegistry.rarityOf(j.key());
-            if (rarity == null ? r < 3 : r == rarity) pool.add(j);
+        // P12 性能：两趟虚拟抽取替代池物化（原 new ArrayList + 150 元素过滤拷贝 ≈700B/次）。
+        // 等价性：原池 = ORDERED 按「稀有度匹配」过滤后 removeIf(禁入)——合并谓词同序同元素；
+        // 空池先 return false（不耗流）；pick 算术 `(int)(next()*n)` 恰一次 next()，逐位一致。
+        List<Joker> ordered = cn.quotidietium.balatro.engine.joker.JokerRegistry.allJokersOrdered();
+        int n = 0;
+        for (int i = 0; i < ordered.size(); i++) {
+            if (randJokerInPool(rarity, ordered.get(i))) n++;
         }
-        // 禁入小丑（真版煎蛋卷：随机获得路径同样不产出经济小丑）——R108 对齐真版
-        pool.removeIf(j -> mods.bannedJokers.contains(j.key()));
-        if (pool.isEmpty()) return false;
-        Joker pick = st.pick(pool);
+        if (n == 0) return false;
+        int idx = (int) (st.next() * n);
+        Joker pick = null;
+        for (int i = 0; i < ordered.size(); i++) {
+            Joker j = ordered.get(i);
+            if (randJokerInPool(rarity, j) && idx-- == 0) { pick = j; break; }
+        }
         return gainJoker(pick.key(), null);
+    }
+
+    /** 与原物化过滤（稀有度匹配 ∧ 非禁入）等价的池内判定。 */
+    private boolean randJokerInPool(Integer rarity, Joker j) {
+        int r = cn.quotidietium.balatro.engine.joker.JokerRegistry.rarityOf(j.key());
+        if (rarity == null ? r >= 3 : r != rarity) return false;
+        return !mods.bannedJokers.contains(j.key()); // 禁入小丑（R108 对齐真版）
     }
 
     /**
