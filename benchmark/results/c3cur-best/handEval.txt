@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\c3cur1, benchmark\results\c3cur2, benchmark\results\c3cur3]
+#Sun Aug 16 19:41:15 CST 2026
+allocBytesPerOp.median=140
+label=c3cur-best
+nsPerOp.bestOfRuns=87
+nsPerOp.mean=86
+nsPerOp.median=87
+nsPerOp.min=82
+nsPerOp.p95=94
+runs=3
+scenario=handEval

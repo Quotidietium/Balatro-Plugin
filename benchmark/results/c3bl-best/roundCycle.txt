@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\c3bl1, benchmark\results\c3bl2, benchmark\results\c3bl3]
+#Sun Aug 16 19:41:13 CST 2026
+allocBytesPerOp.median=226304
+label=c3bl-best
+nsPerOp.bestOfRuns=121547
+nsPerOp.mean=124862
+nsPerOp.median=121547
+nsPerOp.min=117935
+nsPerOp.p95=135720
+runs=3
+scenario=roundCycle

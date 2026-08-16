@@ -1,0 +1,11 @@
+#best-of-5 aggregated from [benchmark\results\c3dbl1, benchmark\results\c3dbl2, benchmark\results\c3dbl3, benchmark\results\c3dbl4, benchmark\results\c3dbl5]
+#Sun Aug 16 19:44:09 CST 2026
+allocBytesPerOp.median=4686
+label=c3dbl-best
+nsPerOp.bestOfRuns=511
+nsPerOp.mean=506
+nsPerOp.median=511
+nsPerOp.min=442
+nsPerOp.p95=533
+runs=5
+scenario=createRun

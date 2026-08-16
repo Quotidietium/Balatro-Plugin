@@ -1,0 +1,11 @@
+#best-of-5 aggregated from [benchmark\results\c3dcur1, benchmark\results\c3dcur2, benchmark\results\c3dcur3, benchmark\results\c3dcur4, benchmark\results\c3dcur5]
+#Sun Aug 16 19:44:11 CST 2026
+allocBytesPerOp.median=1353097
+label=c3dcur-best
+nsPerOp.bestOfRuns=784048
+nsPerOp.mean=826544
+nsPerOp.median=784048
+nsPerOp.min=755163
+nsPerOp.p95=1209694
+runs=5
+scenario=fullRun
