@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p12fcur1, benchmark\results\p12fcur2, benchmark\results\p12fcur3]
+#Sun Aug 16 18:55:07 CST 2026
+allocBytesPerOp.median=7913
+label=p12fcur-best
+nsPerOp.bestOfRuns=3997
+nsPerOp.mean=4963
+nsPerOp.median=3997
+nsPerOp.min=3662
+nsPerOp.p95=9914
+runs=3
+scenario=shopGen
