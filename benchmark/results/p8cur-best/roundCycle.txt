@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p8cur1, benchmark\results\p8cur2, benchmark\results\p8cur3]
+#Sun Aug 16 16:57:28 CST 2026
+allocBytesPerOp.median=228426
+label=p8cur-best
+nsPerOp.bestOfRuns=157351
+nsPerOp.mean=160834
+nsPerOp.median=157351
+nsPerOp.min=137484
+nsPerOp.p95=177373
+runs=3
+scenario=roundCycle

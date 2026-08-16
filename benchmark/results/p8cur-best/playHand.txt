@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p8cur1, benchmark\results\p8cur2, benchmark\results\p8cur3]
+#Sun Aug 16 16:57:28 CST 2026
+allocBytesPerOp.median=11518
+label=p8cur-best
+nsPerOp.bestOfRuns=11639
+nsPerOp.mean=12228
+nsPerOp.median=11639
+nsPerOp.min=8929
+nsPerOp.p95=16712
+runs=3
+scenario=playHand

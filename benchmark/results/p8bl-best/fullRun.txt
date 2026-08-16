@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p8bl1, benchmark\results\p8bl2, benchmark\results\p8bl3]
+#Sun Aug 16 16:57:28 CST 2026
+allocBytesPerOp.median=1996673
+label=p8bl-best
+nsPerOp.bestOfRuns=1059723
+nsPerOp.mean=1144498
+nsPerOp.median=1059723
+nsPerOp.min=940322
+nsPerOp.p95=1603330
+runs=3
+scenario=fullRun
