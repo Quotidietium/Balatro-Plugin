@@ -330,11 +330,18 @@ public final class RoundBoard {
 
     private static final Quaternionf Q_IDENTITY = new Quaternionf();
 
-    /** 设置实体整体缩放（放大文字与背景，使牌面更清晰、命中盒与之相称）。 */
+    /**
+     * 设置实体整体缩放（放大文字与背景，使牌面更清晰、命中盒与之相称）。
+     * P7 性能：唯一调用点是常量 {@code CARD_TEXT_SCALE}，Transformation 值不变——
+     * 缓存为静态单例，免每次更新每张牌 new Transformation + 2×Vector3f。
+     * setTransformation 读取数值写入实体元数据，不持有该实例，共享安全。
+     */
+    private static final Transformation CARD_SCALE_TRANSFORM = new Transformation(
+            new Vector3f(0, 0, 0), Q_IDENTITY,
+            new Vector3f(CARD_TEXT_SCALE, CARD_TEXT_SCALE, CARD_TEXT_SCALE), Q_IDENTITY);
+
     private static void setScale(TextDisplay d, float scale) {
-        d.setTransformation(new Transformation(
-                new Vector3f(0, 0, 0), Q_IDENTITY,
-                new Vector3f(scale, scale, scale), Q_IDENTITY));
+        d.setTransformation(CARD_SCALE_TRANSFORM);
     }
 
     private void hideAll() {
