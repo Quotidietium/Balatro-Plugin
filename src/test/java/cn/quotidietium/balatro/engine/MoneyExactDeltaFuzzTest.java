@@ -62,21 +62,33 @@ class MoneyExactDeltaFuzzTest {
 
     @Test
     void endRoundAndShopTransactionsExactDelta() {
-        for (int trial = 0; trial < 40; trial++) {
+        for (int trial = 0; trial < 60; trial++) {
             boolean green = trial % 2 == 1;
             int stake = trial % 8 < 4 ? 0 : 1; // 红注变体：小盲奖励 0
-            RunState s = Engine.createRun(green ? "green" : "red", stake, "MED" + trial, null);
+            // R218：偶数试验注入重掷券（reroll1=−2 / reroll1+2=−4 / 无券 三态）
+            String rerollVoucher = switch (trial % 6) {
+                case 2 -> "reroll1";
+                case 4 -> "reroll2";
+                default -> null;
+            };
+            RunState s = Engine.createRun(green ? "green" : "red", stake, "MED2-" + trial, null);
+            if (rerollVoucher != null) {
+                s.vouchers.add(rerollVoucher);
+                if ("reroll2".equals(rerollVoucher)) s.vouchers.add("reroll1"); // requires 链
+            }
 
             // —— 小盲注 ——
             Engine.selectBlind(s, Data.BlindType.byKey(s.nextBlind), false);
             winBlindAssertExactDelta(s, green);
 
-            // —— 商店：reroll 精确扣款 ——
+            // —— 商店：reroll 精确扣款（R218：含券路径 max(0, 5+次数−券减免)）——
             long m0 = s.money;
-            long expectedCost = 5 + s.shop.rerollCount;
+            long discount = s.vouchers.contains("reroll1") ? 2 : 0;
+            discount += s.vouchers.contains("reroll2") ? 2 : 0;
+            long expectedCost = Math.max(0, 5 + s.shop.rerollCount - (int) discount);
             long cost = cn.quotidietium.balatro.engine.shop.Shop.reroll(s);
-            assertEquals(expectedCost, cost, "重掷费用应恰为 5+次数（无券）");
-            assertEquals(m0 - expectedCost, s.money, "重掷扣款应精确等于费用");
+            assertEquals(expectedCost, cost, "重掷费用应恰为 max(0,5+次数−券减免)（券=" + rerollVoucher + "）");
+            assertEquals(m0 - expectedCost, s.money, "重掷扣款应精确等于费用（券=" + rerollVoucher + "）");
 
             // —— 商店：购买成功路径精确扣款（买第一个可负担的未售**非小丑**项——
             // 小丑的 onRoundEnd 收入不在本闭包的解析式内）——
