@@ -35,6 +35,8 @@ public final class Scenarios {
         list.add(new ShopGenScenario());
         list.add(new CreateRunScenario());
         list.add(new FullRunScenario());
+        list.add(new UseConsumableScenario());
+        list.add(new PackOpenScenario());
         return list;
     }
 
@@ -342,5 +344,80 @@ public final class Scenarios {
             if (best >= 0) Shop.buyCard(s, best);
         }
         Engine.nextRound(s);
+    }
+
+    // ================= P14 新增场景：消耗品 / 补充包 =================
+    // 红线：与既有场景同规范——固定种子驱动、每批工作量恒定，前后版本可直接对比。
+
+    /** 消耗品使用管线：轮换 magician(增强2张)/strength(升2张)/mercury(升级对子)。 */
+    private static final class UseConsumableScenario implements Scenario {
+        private RunState s;
+        private int k;
+
+        public String name() { return "useConsumable"; }
+        public String description() { return "Consumables.use 消耗品使用管线"; }
+
+        private void reset() {
+            s = Engine.createRun("red", 0, "BENCHUC" + (k++ & 63));
+            Engine.selectBlind(s, Data.BlindType.SMALL, false);
+        }
+
+        public long runBatch() {
+            if (s == null) reset();
+            long sink = 0;
+            for (int i = 0; i < 20_000; i++) {
+                if (s.phase != Phase.ROUND || s.hand.size() < 4) reset();
+                switch (i % 3) {
+                    case 0 -> {
+                        s.addConsumableKey("tarot", "magician");
+                        sink += cn.quotidietium.balatro.engine.consumable.Consumables.use(s,
+                                s.consumables.size() - 1, List.of(s.hand.get(0).id(), s.hand.get(1).id())).ok ? 1 : 0;
+                    }
+                    case 1 -> {
+                        s.addConsumableKey("tarot", "strength");
+                        sink += cn.quotidietium.balatro.engine.consumable.Consumables.use(s,
+                                s.consumables.size() - 1, List.of(s.hand.get(2).id(), s.hand.get(3).id())).ok ? 1 : 0;
+                    }
+                    default -> {
+                        s.addConsumableKey("planet", "mercury");
+                        sink += cn.quotidietium.balatro.engine.consumable.Consumables.use(s,
+                                s.consumables.size() - 1, List.of()).ok ? 1 : 0;
+                    }
+                }
+            }
+            Blackhole.consume(sink + s.hand.size());
+            return 20_000;
+        }
+    }
+
+    /** 补充包开启管线：开秘术包→选第 1 张（消耗品槽满则跳过）→自动回程。 */
+    private static final class PackOpenScenario implements Scenario {
+        private RunState s;
+        private int k;
+        private Data.Pack arcana;
+
+        public String name() { return "packOpen"; }
+        public String description() { return "Packs.open+pick/skip 补充包管线"; }
+
+        private void reset() {
+            s = Engine.createRun("red", 0, "BENCHPO" + (k++ & 63));
+            if (arcana == null) {
+                for (Data.Pack p : Data.PACKS) {
+                    if (p.type == Data.PackType.ARCANA) { arcana = p; break; }
+                }
+            }
+        }
+
+        public long runBatch() {
+            if (s == null) reset();
+            long sink = 0;
+            for (int i = 0; i < 20_000; i++) {
+                Packs.open(s, arcana);
+                sink += Packs.pick(s, 0) ? 1 : 0;
+                if (s.phase == Phase.PACK) { Packs.skip(s); sink += 2; }
+            }
+            Blackhole.consume(sink + s.consumables.size());
+            return 20_000;
+        }
     }
 }
