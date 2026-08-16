@@ -34,3 +34,5 @@ build/
 benchmark/tmp/
 benchmark/results/jfrprof/
 benchmark/results/p13spot/
+benchmark/results/p14smoke/
+benchmark/results/p14smoke2/
