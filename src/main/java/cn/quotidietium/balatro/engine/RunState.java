@@ -53,7 +53,9 @@ public final class RunState {
     public final List<String> tags = new ArrayList<>();
 
     // ---- 牌堆 ----
-    public List<Card> fullDeck = new ArrayList<>();
+    /** P8 性能：预置 52 容量——标准/绝大多数挑战牌组恰 52 张，消除 10→15→22→33→49 的
+     *  5 次扩容拷贝链（JFR 实测 grow 链占 playHand 场景分配 ~25% 的主因之一）。 */
+    public List<Card> fullDeck = new ArrayList<>(52);
     public List<Card> drawPile = new ArrayList<>();
     public List<Card> hand = new ArrayList<>();
     public List<Card> discardPile = new ArrayList<>();
@@ -77,6 +79,8 @@ public final class RunState {
     public final List<Data.HandType> playedTypesThisRound = new ArrayList<>();
     public final Set<Integer> playedThisAnte = new HashSet<>(); // pillar：本底注打过的牌 id
     public Map<String, Object> flags = new HashMap<>();
+    /** P8 性能：computeFlags 双缓冲备用表（见 Engine.computeFlags）。包内私有协作字段。 */
+    Map<String, Object> flagsSpare;
     public boolean bossDisabled;
     public boolean bossTriggeredThisHand;
     public Integer bossSuitDebuff; // Boss 花色失效（null 或 0-3）

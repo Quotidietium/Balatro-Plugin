@@ -20,6 +20,21 @@ public final class Engine {
 
     private static final List<Data.Boss> BOSSES = List.of(Data.Boss.values());
 
+    /** P8 性能：Boss 抽取池静态化（常规 23 个 / 终结者 5 个）——原实现每底注新建
+     *  ArrayList 逐个筛选；池内容仅取决于 showdown，且 pick 只读，可全局共享。 */
+    private static final List<Data.Boss> BOSS_POOL_REGULAR;
+    private static final List<Data.Boss> BOSS_POOL_FINISHERS;
+
+    static {
+        List<Data.Boss> regular = new ArrayList<>();
+        List<Data.Boss> finishers = new ArrayList<>();
+        for (Data.Boss b : BOSSES) {
+            (Data.FINISHERS.contains(b.key) ? finishers : regular).add(b);
+        }
+        BOSS_POOL_REGULAR = List.copyOf(regular);
+        BOSS_POOL_FINISHERS = List.copyOf(finishers);
+    }
+
     private Engine() {
     }
 
@@ -154,11 +169,8 @@ public final class Engine {
         Rng.Stream st = s.stream("boss");
         // R126 对齐真版（Boss_Blinds Wiki）：Showdown 5 终结者仅在底注 8/16…出现；
         // 底注 1~7 只从 23 个常规 Boss 抽取（REF 28 个混抽为 REF bug，R45 曾"验证"该错误分布）。
-        List<Data.Boss> pool = new ArrayList<>();
-        boolean showdown = s.ante % 8 == 0;
-        for (Data.Boss b : BOSSES) {
-            if (Data.FINISHERS.contains(b.key) == showdown) pool.add(b);
-        }
+        // P8 性能：池为静态共享不可变列表（内容仅取决于 showdown，pick 只读）。
+        List<Data.Boss> pool = s.ante % 8 == 0 ? BOSS_POOL_FINISHERS : BOSS_POOL_REGULAR;
         Data.Boss picked = st.pick(pool);
         for (int tries = 0; tries < 5 && (picked.key.equals(s.bossKey)
                 || s.mods.bannedBosses.contains(picked.key)); tries++) {
@@ -349,7 +361,14 @@ public final class Engine {
     }
 
     private static void computeFlags(RunState s) {
-        Map<String, Object> f = new HashMap<>();
+        // P8 性能：双缓冲——复用备用 HashMap（clear+重填）替代每次 new HashMap。
+        // 语义等价论证：旧表停驻为备用时**内容冻结**（本调用内不触碰），与本轮之前
+        // 「换新表、旧表留给已持有引用者」的可观察行为一致；s.flags 字段在每处读取点
+        // 都是现取现用（isFace/isSuit/HandEval/prob 等），无跨重算持快照的读取方。
+        Map<String, Object> f = s.flagsSpare;
+        if (f == null) f = new HashMap<>();
+        s.flagsSpare = s.flags;
+        f.clear();
         for (JokerInstance j : s.jokers) {
             if (j.debuff) continue;
             // P5 性能：flags() 只调一次（原实现判空+取值各调一次——BasicJoker 的
@@ -433,12 +452,16 @@ public final class Engine {
         // 不消耗 stream，不影响种子复现。
         for (Card c : s.fullDeck) { c.setDebuff(false); c.setFacedown(false); }
         // P5 性能：复用 drawPile 现有容量（clear+addAll 替代 new ArrayList 拷贝）——
-        // 第二回合起零扩容分配；内容语义与「新列表装 fullDeck 再洗牌」完全一致
+        // 第二回合起零扩容分配；内容语义与「新列表装 fullDeck 再洗牌」完全一致。
+        // P8 性能：首回合单步 ensureCapacity 到整副牌大小（替代 10→…→49 的逐级扩容链）；
+        // 字段声明为 List，第三方替换非 ArrayList 实现时自动跳过（仅失去优化，行为不变）。
         s.drawPile.clear();
+        if (s.drawPile instanceof ArrayList<Card> dp) dp.ensureCapacity(s.fullDeck.size());
         s.drawPile.addAll(s.fullDeck);
+        s.discardPile.clear();
+        if (s.discardPile instanceof ArrayList<Card> dcp) dcp.ensureCapacity(s.fullDeck.size());
         s.stream("shuffle" + s.roundCount).shuffle(s.drawPile);
         s.hand.clear();
-        s.discardPile.clear();
         for (int i = 0; i < s.handSizeRound; i++) drawOne(s, i == 0 && "house".equals(bk));
 
         // Boss post-draw：房子（首轮全面朝下）、翠绿铃（强制选中）、翠绿之叶（全部失效）
