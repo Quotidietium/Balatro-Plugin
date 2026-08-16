@@ -61,9 +61,9 @@ class ConsumableSlotFuzzTest {
 
     @Test
     void slotOccupancyAndExactRemovalHoldUnderRandomOps() {
-        Random rnd = new Random(20260817L);
-        for (int trial = 0; trial < 80; trial++) {
-            RunState s = Engine.createRun("red", 0, "CSLOT" + trial, null);
+        Random rnd = new Random(20260823L); // R216 扩展
+        for (int trial = 0; trial < 160; trial++) {
+            RunState s = Engine.createRun("red", 0, "CSLOT2-" + trial, null);
             Engine.selectBlind(s, Data.BlindType.SMALL, false);
             s.consumableSlots = 2; // 闭包：无券无挑战，槽位恒 2（negative 注入才扩容）
             for (int step = 0; step < 40; step++) {

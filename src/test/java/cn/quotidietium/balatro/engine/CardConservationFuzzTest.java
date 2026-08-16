@@ -42,9 +42,9 @@ class CardConservationFuzzTest {
 
     @Test
     void cardMultisetConservedUnderRandomPlay() {
-        Random rnd = new Random(20260816L);
-        for (int trial = 0; trial < 150; trial++) {
-            RunState s = Engine.createRun("red", 0, "CONSV" + trial, null);
+        Random rnd = new Random(20260822L); // R216 扩展
+        for (int trial = 0; trial < 300; trial++) {
+            RunState s = Engine.createRun("red", 0, "CONSV2-" + trial, null);
             Engine.selectBlind(s, Data.BlindType.SMALL, false);
             assertConserved(s, "开局 trial=" + trial);
             for (int step = 0; step < 40; step++) {
