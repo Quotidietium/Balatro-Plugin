@@ -131,4 +131,38 @@ class MultiSessionInterleaveTest {
             }
         }
     }
+
+    /**
+     * R179：五会话扩展变体——「多用户高频率」目标的更强隔离证明。
+     * 5 会话（red/green/plasma/black/yellow × 赌注 0-4 × 1 个挑战）×1000 tick 轮转，
+     * 每会话 ~200 步（覆盖数个底注）；独跑重放逐 tick 比对同一 R160 完备摘要。
+     */
+    @Test
+    void fiveSessionInterleaveExtended() {
+        final int N = 5;
+        final int TICKS = 1000;
+        String[] decks = {"red", "green", "plasma", "black", "yellow"};
+        String[] seeds = {"MSX1", "MSX2", "MSX3", "MSX4", "MSX5"};
+        String challenge = Data.CHALLENGES.get(3).key(); // 与三会话变体不同挑战
+
+        RunState[] inter = new RunState[N];
+        for (int i = 0; i < N; i++) {
+            inter[i] = Engine.createRun(decks[i], i, seeds[i], i == 1 ? challenge : null);
+        }
+        List<List<String>> digests = new ArrayList<>();
+        for (int i = 0; i < N; i++) digests.add(new ArrayList<>());
+        for (int tick = 0; tick < TICKS; tick++) {
+            int i = tick % N;
+            step(inter[i], tick);
+            digests.get(i).add(digest(inter[i]));
+        }
+        for (int i = 0; i < N; i++) {
+            RunState solo = Engine.createRun(decks[i], i, seeds[i], i == 1 ? challenge : null);
+            for (int tick = i, k = 0; tick < TICKS; tick += N, k++) {
+                step(solo, tick);
+                assertEquals(digest(solo), digests.get(i).get(k),
+                        "五会话变体：会话 " + i + "（" + decks[i] + "）在 tick " + tick + " 分岔");
+            }
+        }
+    }
 }
