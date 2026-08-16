@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p11p48-1, benchmark\results\p11p48-2, benchmark\results\p11p48-3]
+#Sun Aug 16 17:57:32 CST 2026
+allocBytesPerOp.median=8113
+label=p11p48-best
+nsPerOp.bestOfRuns=3752
+nsPerOp.mean=4554
+nsPerOp.median=3752
+nsPerOp.min=3585
+nsPerOp.p95=6793
+runs=3
+scenario=shopGen

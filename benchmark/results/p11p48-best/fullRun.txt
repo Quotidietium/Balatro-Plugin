@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\p11p48-1, benchmark\results\p11p48-2, benchmark\results\p11p48-3]
+#Sun Aug 16 17:57:32 CST 2026
+allocBytesPerOp.median=1989709
+label=p11p48-best
+nsPerOp.bestOfRuns=903718
+nsPerOp.mean=1013615
+nsPerOp.median=903718
+nsPerOp.min=796908
+nsPerOp.p95=1461925
+runs=3
+scenario=fullRun

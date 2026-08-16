@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\c2fin1, benchmark\results\c2fin2, benchmark\results\c2fin3]
+#Sun Aug 16 18:06:43 CST 2026
+allocBytesPerOp.median=478
+label=c2fin-best
+nsPerOp.bestOfRuns=284
+nsPerOp.mean=326
+nsPerOp.median=284
+nsPerOp.min=263
+nsPerOp.p95=433
+runs=3
+scenario=discard

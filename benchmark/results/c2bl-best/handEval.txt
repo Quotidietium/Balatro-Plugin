@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\c2bl1, benchmark\results\c2bl2, benchmark\results\c2bl3]
+#Sun Aug 16 18:06:44 CST 2026
+allocBytesPerOp.median=231
+label=c2bl-best
+nsPerOp.bestOfRuns=91
+nsPerOp.mean=93
+nsPerOp.median=91
+nsPerOp.min=81
+nsPerOp.p95=106
+runs=3
+scenario=handEval

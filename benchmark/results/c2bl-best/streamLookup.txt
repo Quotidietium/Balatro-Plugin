@@ -1,0 +1,11 @@
+#best-of-3 aggregated from [benchmark\results\c2bl1, benchmark\results\c2bl2, benchmark\results\c2bl3]
+#Sun Aug 16 18:06:44 CST 2026
+allocBytesPerOp.median=0
+label=c2bl-best
+nsPerOp.bestOfRuns=2
+nsPerOp.mean=2
+nsPerOp.median=2
+nsPerOp.min=2
+nsPerOp.p95=2
+runs=3
+scenario=streamLookup
