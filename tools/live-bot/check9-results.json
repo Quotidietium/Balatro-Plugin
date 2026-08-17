@@ -1,0 +1,60 @@
+{
+  "results": [
+    {
+      "name": "evil_inputs_no_crash",
+      "ok": false,
+      "detail": "24 条畸形命令后仍可交互 status=null"
+    },
+    {
+      "name": "soak_4bots_no_kick",
+      "ok": true,
+      "detail": "4 bot 存活，共 16 局 60 手"
+    },
+    {
+      "name": "soak_tps",
+      "ok": true,
+      "detail": "TPS 读数 2 次，最低 19.97（读数：19.98/19.99）"
+    },
+    {
+      "name": "soak_mem",
+      "ok": true,
+      "detail": "java 工作集 1244672000 -> 1258778624"
+    }
+  ],
+  "stats": [
+    {
+      "runs": 4,
+      "handsPlayed": 14
+    },
+    {
+      "runs": 4,
+      "handsPlayed": 11
+    },
+    {
+      "runs": 4,
+      "handsPlayed": 12
+    },
+    {
+      "runs": 4,
+      "handsPlayed": 23
+    }
+  ],
+  "tpsReadings": [
+    [
+      19.98,
+      19.97,
+      20,
+      20,
+      20
+    ],
+    [
+      19.99,
+      19.99,
+      20,
+      20,
+      20
+    ]
+  ],
+  "memBefore": "1244672000",
+  "memAfter": "1258778624"
+}

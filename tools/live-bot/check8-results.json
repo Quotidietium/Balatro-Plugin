@@ -1,0 +1,116 @@
+[
+  {
+    "name": "reached_shop",
+    "ok": true,
+    "detail": "1 局内清盲"
+  },
+  {
+    "name": "shop_buy_success",
+    "ok": true,
+    "detail": "$7->$4"
+  },
+  {
+    "name": "confirm_box_sell",
+    "ok": true,
+    "detail": "确认出售 $1->$2"
+  },
+  {
+    "name": "bombard_no_crash",
+    "ok": {
+      "_events": {},
+      "_eventsCount": 0,
+      "id": 1215,
+      "position": {
+        "x": 1.7874557714072008,
+        "y": -60,
+        "z": 5.026819842829237
+      },
+      "velocity": {
+        "x": 0,
+        "y": -0.0784000015258789,
+        "z": 0
+      },
+      "yaw": 2.3090706270201347,
+      "pitch": -0.136135684984509,
+      "onGround": true,
+      "height": 1.8,
+      "width": 0.6,
+      "effects": {},
+      "equipment": [
+        {
+          "type": 948,
+          "count": 1,
+          "metadata": 0,
+          "nbt": null,
+          "components": [],
+          "removedComponents": [],
+          "componentMap": {},
+          "stackId": null,
+          "name": "string",
+          "displayName": "String",
+          "stackSize": 64,
+          "slot": 36
+        },
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "isValid": true,
+      "metadata": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        20,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        127
+      ],
+      "passengers": [],
+      "vehicle": null,
+      "username": "BalBot",
+      "type": "player",
+      "name": "player",
+      "eyeHeight": 1.62,
+      "attributes": {
+        "player.block_interaction_range": {
+          "value": 4.5,
+          "modifiers": []
+        },
+        "generic.max_health": {
+          "value": 20,
+          "modifiers": []
+        },
+        "generic.scale": {
+          "value": 0.10000000149011612,
+          "modifiers": []
+        },
+        "player.entity_interaction_range": {
+          "value": 3,
+          "modifiers": []
+        }
+      },
+      "isInWater": false,
+      "isInLava": false,
+      "isCollidedHorizontally": false,
+      "isCollidedVertically": true
+    },
+    "detail": "~180 次连点后 status={\"phase\":\"ROUND\",\"hands\":4,\"score\":0}"
+  },
+  {
+    "name": "command_flood_ok",
+    "ok": true,
+    "detail": "30 连发 status 后仍响应"
+  }
+]

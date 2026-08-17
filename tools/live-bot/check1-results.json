@@ -1,0 +1,47 @@
+[
+  {
+    "name": "init_owner_zero_entities",
+    "ok": true,
+    "detail": "owner sees {}"
+  },
+  {
+    "name": "init_observer_zero_entities",
+    "ok": true,
+    "detail": "observer sees {}"
+  },
+  {
+    "name": "blindselect_spawn",
+    "ok": true,
+    "detail": "owner sees {\"text_display\":15,\"interaction\":10}; interactions=7.23,-58.93,12.10 | 6.45,-58.93,12.10 | 5.67,-58.93,12.10 | 4.89,-58.93,12.10 | 4.11,-58.93,12.10 | 3.33,-58.93,12.10 | 2.55,-58.93,12.10 | 1.77,-58.93,12.10 | 5.65,-59.77,12.10 | 3.35,-59.77,12.10"
+  },
+  {
+    "name": "private_visibility_observer",
+    "ok": true,
+    "detail": "observer client sees {}"
+  },
+  {
+    "name": "server_side_entities_present",
+    "ok": false,
+    "detail": "server: interaction=1 text_display=1"
+  },
+  {
+    "name": "go_clicked_round_phase",
+    "ok": true,
+    "detail": "after go: {\"text_display\":15,\"interaction\":10} (期望手牌~8+按钮2)"
+  },
+  {
+    "name": "play_hand_clicked",
+    "ok": true,
+    "detail": "after play: interactions=10 (出牌后手牌重抽/回合推进)"
+  },
+  {
+    "name": "quit_cleanup",
+    "ok": false,
+    "detail": "server-side entities after /quit = 2"
+  },
+  {
+    "name": "disconnect_cleanup",
+    "ok": false,
+    "detail": "playing=1 → after abrupt disconnect=2"
+  }
+]

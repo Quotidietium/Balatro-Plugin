@@ -1,0 +1,32 @@
+[
+  {
+    "name": "smart_play_scores",
+    "ok": true,
+    "detail": "智能选牌出牌计分生效"
+  },
+  {
+    "name": "reached_shop",
+    "ok": true,
+    "detail": "2 局内清盲进入商店"
+  },
+  {
+    "name": "shop_reroll_refresh",
+    "ok": true,
+    "detail": "reroll 后商店简介刷新（money=7）"
+  },
+  {
+    "name": "shop_buy_click",
+    "ok": false,
+    "detail": "未扣款（可能全买不起）money=2"
+  },
+  {
+    "name": "shop_next_button",
+    "ok": true,
+    "detail": "next 后 phase=BLIND_SELECT blind=small"
+  },
+  {
+    "name": "blindselect_go",
+    "ok": false,
+    "detail": "go 后 phase=BLIND_SELECT"
+  }
+]

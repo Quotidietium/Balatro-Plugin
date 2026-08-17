@@ -1,0 +1,12 @@
+[
+  {
+    "name": "smart_play_scores",
+    "ok": true,
+    "detail": "智能选牌出牌计分生效"
+  },
+  {
+    "name": "reached_shop",
+    "ok": false,
+    "detail": "4 局内清盲进入商店"
+  }
+]

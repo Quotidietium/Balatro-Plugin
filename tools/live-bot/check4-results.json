@@ -1,0 +1,22 @@
+[
+  {
+    "name": "shift_right_info_packet",
+    "ok": false,
+    "detail": "原生 sneaking 包右键后聊天框收到卡牌简介"
+  },
+  {
+    "name": "play_scores",
+    "ok": true,
+    "detail": "出牌使 hands 减少或 score 增加"
+  },
+  {
+    "name": "reached_shop",
+    "ok": false,
+    "detail": "清盲后 phase=SHOP"
+  },
+  {
+    "name": "shop_info_in_chat",
+    "ok": true,
+    "detail": "商店简介 8 行进聊天框"
+  }
+]

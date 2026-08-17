@@ -1,0 +1,32 @@
+[
+  {
+    "name": "round_spawn",
+    "ok": true,
+    "detail": "owner sees {\"text_display\":15,\"interaction\":10}"
+  },
+  {
+    "name": "oracle_server_count",
+    "ok": false,
+    "detail": "server=0 client=10"
+  },
+  {
+    "name": "click_at_default_distance",
+    "ok": false,
+    "detail": "hands 4 -> 4（减少=点击生效）"
+  },
+  {
+    "name": "click_after_closer",
+    "ok": false,
+    "detail": "hands 4 -> 4（前移后生效=距离缺陷实锤）"
+  },
+  {
+    "name": "quit_cleanup",
+    "ok": true,
+    "detail": "server after /quit: interaction=0 text_display=0"
+  },
+  {
+    "name": "disconnect_cleanup",
+    "ok": true,
+    "detail": "playing=0 -> after disconnect: interaction=0 text_display=0"
+  }
+]

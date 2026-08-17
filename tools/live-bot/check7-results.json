@@ -1,0 +1,22 @@
+[
+  {
+    "name": "reached_shop",
+    "ok": true,
+    "detail": "1 局内清盲"
+  },
+  {
+    "name": "shop_buy_success",
+    "ok": false,
+    "detail": "money=7 无可买"
+  },
+  {
+    "name": "bombard_no_crash",
+    "ok": true,
+    "detail": "非 ROUND 阶段跳过（phase=BLIND_SELECT）"
+  },
+  {
+    "name": "command_flood_ok",
+    "ok": true,
+    "detail": "跳过"
+  }
+]

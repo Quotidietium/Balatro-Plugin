@@ -1,0 +1,17 @@
+[
+  {
+    "name": "evil_legal_length_survives",
+    "ok": true,
+    "detail": "23 条畸形命令后未踢、可交互（在线，status=ROUND）"
+  },
+  {
+    "name": "oversize_command_protocol_reject",
+    "ok": true,
+    "detail": "313 字符命令被协议层拒绝踢出（{\"type\":\"compound\",\"value\":{\"with\":{\"type\":\"list\",\"value\":{\"type\":\"string\",\"value\":[\"Inter）"
+  },
+  {
+    "name": "server_healthy_after_reject",
+    "ok": true,
+    "detail": "拒绝后重连，插件仍响应"
+  }
+]
