@@ -1,0 +1,64 @@
+{
+  "results": [
+    {
+      "name": "soak10_alive",
+      "ok": true,
+      "detail": "10/10 存活；70 局 264 手 / 4 分钟"
+    },
+    {
+      "name": "soak10_tps",
+      "ok": false,
+      "detail": "TPS 样本 0 个，最低 0"
+    },
+    {
+      "name": "soak10_mem",
+      "ok": true,
+      "detail": "java 工作集 1.12GB -> 1.16GB"
+    }
+  ],
+  "stats": [
+    {
+      "runs": 7,
+      "hands": 23
+    },
+    {
+      "runs": 7,
+      "hands": 27
+    },
+    {
+      "runs": 7,
+      "hands": 25
+    },
+    {
+      "runs": 7,
+      "hands": 27
+    },
+    {
+      "runs": 7,
+      "hands": 23
+    },
+    {
+      "runs": 8,
+      "hands": 29
+    },
+    {
+      "runs": 6,
+      "hands": 29
+    },
+    {
+      "runs": 7,
+      "hands": 30
+    },
+    {
+      "runs": 7,
+      "hands": 18
+    },
+    {
+      "runs": 7,
+      "hands": 33
+    }
+  ],
+  "tpsSamples": [],
+  "memBefore": 1124564992,
+  "memAfter": 1163317248
+}

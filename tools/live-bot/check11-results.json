@@ -1,0 +1,27 @@
+[
+  {
+    "name": "gui_wizard_full_flow",
+    "ok": true,
+    "detail": "向导点击链完成，开局生效 status={\"ante\":1,\"phase\":\"ROUND\",\"score\":0,\"target\":300} entities=25"
+  },
+  {
+    "name": "teleport_relocate",
+    "ok": true,
+    "detail": "传送 成功，实体 25->25（新位置 16 格内），状态保持 phase=ROUND score=0"
+  },
+  {
+    "name": "death_respawn_relocate",
+    "ok": true,
+    "detail": "重生后实体 25，状态 phase=ROUND score=0（应与迁移前一致）"
+  },
+  {
+    "name": "reload_cleanup",
+    "ok": false,
+    "detail": "reload 前实体 25 -> 后 25，status=ROUND"
+  },
+  {
+    "name": "reload_reusable",
+    "ok": true,
+    "detail": "reload 后再开局 entities=25"
+  }
+]

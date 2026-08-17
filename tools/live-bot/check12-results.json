@@ -1,0 +1,12 @@
+[
+  {
+    "name": "reload_live_cleanup",
+    "ok": false,
+    "detail": "活动局 reload：实体 25->25，status=ROUND"
+  },
+  {
+    "name": "reload_reusable",
+    "ok": true,
+    "detail": "reload 后再开局 entities=25 phase=ROUND"
+  }
+]
