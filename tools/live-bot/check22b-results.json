@@ -1,0 +1,17 @@
+[
+  {
+    "name": "concurrent_alive",
+    "ok": true,
+    "detail": "4/4 存活（kicked={}），总动作轮≈67"
+  },
+  {
+    "name": "tps_under_load",
+    "ok": true,
+    "detail": "TPS min 样本=20, 20, 20（解析值）"
+  },
+  {
+    "name": "post_stress_sessions",
+    "ok": true,
+    "detail": "4/4 存活者均可正常开局"
+  }
+]

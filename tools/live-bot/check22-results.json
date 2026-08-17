@@ -1,0 +1,103 @@
+[
+  {
+    "name": "adversarial_battery",
+    "ok": true,
+    "detail": "26/26"
+  },
+  {
+    "name": "highfreq_single",
+    "ok": {
+      "_events": {},
+      "_eventsCount": 0,
+      "id": 1,
+      "position": {
+        "x": -498.813997037958,
+        "y": -60,
+        "z": -480.8348047293432
+      },
+      "velocity": {
+        "x": 0,
+        "y": -0.0784000015258789,
+        "z": 0
+      },
+      "yaw": 3.141592760116651,
+      "pitch": -4.1611873946578726e-9,
+      "onGround": true,
+      "height": 1.8,
+      "width": 0.6,
+      "effects": {},
+      "equipment": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "isValid": true,
+      "metadata": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        20,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        127
+      ],
+      "passengers": [],
+      "vehicle": null,
+      "username": "BalBot",
+      "type": "player",
+      "name": "player",
+      "eyeHeight": 1.62,
+      "attributes": {
+        "generic.max_health": {
+          "value": 20,
+          "modifiers": []
+        },
+        "player.entity_interaction_range": {
+          "value": 3,
+          "modifiers": []
+        },
+        "player.block_interaction_range": {
+          "value": 4.5,
+          "modifiers": []
+        },
+        "generic.scale": {
+          "value": 0.10000000149011612,
+          "modifiers": []
+        }
+      },
+      "isInWater": false,
+      "isInLava": false,
+      "isCollidedHorizontally": false,
+      "isCollidedVertically": true
+    },
+    "detail": "118 条命令后 status=true 在线=true"
+  },
+  {
+    "name": "concurrent_4bots_alive",
+    "ok": true,
+    "detail": "4/4 存活，轮次≈25/bot"
+  },
+  {
+    "name": "tps_under_load",
+    "ok": false,
+    "detail": "TPS 样本=1,1,1,1 min=1"
+  },
+  {
+    "name": "post_stress_sessions",
+    "ok": false,
+    "detail": "2/4 可开新局"
+  }
+]
