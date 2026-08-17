@@ -1,0 +1,47 @@
+[
+  {
+    "name": "gui_wizard_start",
+    "ok": true,
+    "detail": "六步点击链开局"
+  },
+  {
+    "name": "gui_run_reached_shop",
+    "ok": true,
+    "detail": "GUI 开局的局清盲进商店"
+  },
+  {
+    "name": "gui_bought_target",
+    "ok": true,
+    "detail": "GUI 开局的局持有 倒吊人"
+  },
+  {
+    "name": "gui_target_acquired",
+    "ok": true,
+    "detail": "倒吊人"
+  },
+  {
+    "name": "gui_confirm_req_line",
+    "ok": true,
+    "detail": "需选中 1–2 张手牌（当前已选 1 张，将作用于已选牌）"
+  },
+  {
+    "name": "gui_confirm_at_ids",
+    "ok": true,
+    "detail": "/balatro use 1 tarot:hanged @50"
+  },
+  {
+    "name": "gui_use_succeeded",
+    "ok": true,
+    "detail": "使用成功。\n没有消耗品。"
+  },
+  {
+    "name": "gui_effect_applied",
+    "ok": true,
+    "detail": "before=Y after=红桃 A"
+  },
+  {
+    "name": "dual_channel_race_safe",
+    "ok": true,
+    "detail": "命令局保持 ante=1 phase=ROUND 实体=10 rejected=true"
+  }
+]
