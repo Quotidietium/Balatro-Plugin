@@ -1,0 +1,7 @@
+[
+  {
+    "name": "chunk_unload_reload_heal",
+    "ok": true,
+    "detail": "跨界开局实体 25 → 远离 0 → 返回 25，phase ROUND->ROUND"
+  }
+]

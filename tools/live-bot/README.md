@@ -30,6 +30,14 @@ R220 审计轮（2026-08-17）首次建立，用于执行 `note/release/实机�
    mineflayer 每次 activateEntity 会 lookAt 漂移视向，绝对 x 排序会翻车。
 8. **协议层防线**：>256 字符命令被 Netty 解码拒绝（DecoderException 踢出）；
    `§`（U+00A7）触发 `illegal_characters` 踢出——都是**服务器自带防线**，预期行为。
+9. **RCON 环境陷阱（重大，R221 发现）**：**Paper 1.21.11 启用 RCON 后 use_entity
+   全灭**（A/B 四组对照：boot1/2/6 无 RCON 交互全部正常，boot3/4 有 RCON 时连
+   原版右键上船都不行、服务器侧玩家坐标冻结的假象、mineflayer 确认包正常发出）。
+   机理未定位（疑与该 Paper 构建的 RCON 实现有关）。**规约：假人验证一律在
+   RCON 关闭的服务器上执行**；需要控制台时用「假人 op 直跑命令」或
+   stop-and-restart 替代。相关假阴性排查记录：无交易村民右键无窗口（假阴性
+   探针）；soak 脚本的「手数」是乐观计数——在 RCON 死服上会掩盖交互失效，
+   必须以状态变化（score/hands/money）为断言。
 
 ## 脚本清单（R220 战役）
 
