@@ -45,6 +45,18 @@ public final class BalatroPlugin extends JavaPlugin {
                 getLogger().info("已接入 Vault 经济。");
             }
         }
+        // 默认奖励：过关节点经 EconomyService 发放（计划书 §7.2；0.4.60 起默认生效，
+        // config reward.economy.enabled=false 可整体关闭）。无 Vault 时 deposit 无副作用。
+        saveDefaultConfig();
+        getConfig().options().copyDefaults(true);
+        saveConfig();
+        if (getConfig().getBoolean("reward.economy.enabled", true)) {
+            services.setReward(new cn.quotidietium.balatro.service.EconomyReward(
+                    services::economy,
+                    getConfig().getLong("reward.economy.blind", 1),
+                    getConfig().getLong("reward.economy.ante", 10),
+                    getConfig().getLong("reward.economy.win", 100)));
+        }
         sessionManager = new SessionManager(this);
         guiManager = new cn.quotidietium.balatro.gui.GuiManager(this);
 

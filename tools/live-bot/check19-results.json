@@ -1,0 +1,17 @@
+[
+  {
+    "name": "vault_balance_cmd",
+    "ok": true,
+    "detail": "初始 Vault 余额 = 2"
+  },
+  {
+    "name": "vault_cleared_blind",
+    "ok": true,
+    "detail": "2 局内清盲"
+  },
+  {
+    "name": "vault_reward_credited",
+    "ok": true,
+    "detail": "清盲后 Vault 余额 2 -> 3（BlindResult→Reward→Economy 链生效）"
+  }
+]

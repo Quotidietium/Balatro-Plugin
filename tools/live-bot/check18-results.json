@@ -1,0 +1,281 @@
+{
+  "results": [
+    {
+      "name": "maxload_alive",
+      "ok": {
+        "_events": {},
+        "_eventsCount": 0,
+        "id": 3329,
+        "position": {
+          "x": 11.9,
+          "y": -60,
+          "z": -7.2
+        },
+        "velocity": {
+          "x": 0,
+          "y": -0.0784000015258789,
+          "z": 0
+        },
+        "yaw": 3.9086648731571065,
+        "pitch": -0.28012533162928444,
+        "onGround": true,
+        "height": 1.8,
+        "width": 0.6,
+        "effects": {},
+        "equipment": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "isValid": true,
+        "metadata": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          20,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          127
+        ],
+        "passengers": [],
+        "vehicle": null,
+        "username": "BalBot2",
+        "type": "player",
+        "name": "player",
+        "eyeHeight": 1.62,
+        "attributes": {
+          "player.entity_interaction_range": {
+            "value": 3,
+            "modifiers": []
+          },
+          "player.block_interaction_range": {
+            "value": 4.5,
+            "modifiers": []
+          },
+          "generic.scale": {
+            "value": 0.10000000149011612,
+            "modifiers": []
+          },
+          "generic.max_health": {
+            "value": 20,
+            "modifiers": []
+          }
+        },
+        "isInWater": false,
+        "isInLava": false,
+        "isCollidedHorizontally": false,
+        "isCollidedVertically": true
+      },
+      "detail": "20/20 存活；275 局，**真实生效动作 1462 次**（状态变化断言），死循环 0"
+    },
+    {
+      "name": "maxload_real_interaction",
+      "ok": true,
+      "detail": "真实交互数 1462 ≥ 局数 275（若远小于则交互在满载下失效）"
+    },
+    {
+      "name": "maxload_tps",
+      "ok": true,
+      "detail": "TPS 样本 16，最低 20"
+    },
+    {
+      "name": "maxload_mem",
+      "ok": true,
+      "detail": "java 工作集 0.00 -> 0.00 GB"
+    }
+  ],
+  "stats": [
+    {
+      "runs": 14,
+      "realActions": 75,
+      "deadCycles": 0
+    },
+    {
+      "runs": 15,
+      "realActions": 79,
+      "deadCycles": 0
+    },
+    {
+      "runs": 15,
+      "realActions": 81,
+      "deadCycles": 0
+    },
+    {
+      "runs": 15,
+      "realActions": 86,
+      "deadCycles": 0
+    },
+    {
+      "runs": 14,
+      "realActions": 75,
+      "deadCycles": 0
+    },
+    {
+      "runs": 16,
+      "realActions": 80,
+      "deadCycles": 0
+    },
+    {
+      "runs": 14,
+      "realActions": 73,
+      "deadCycles": 0
+    },
+    {
+      "runs": 16,
+      "realActions": 88,
+      "deadCycles": 0
+    },
+    {
+      "runs": 14,
+      "realActions": 78,
+      "deadCycles": 0
+    },
+    {
+      "runs": 15,
+      "realActions": 88,
+      "deadCycles": 0
+    },
+    {
+      "runs": 14,
+      "realActions": 72,
+      "deadCycles": 0
+    },
+    {
+      "runs": 14,
+      "realActions": 77,
+      "deadCycles": 0
+    },
+    {
+      "runs": 14,
+      "realActions": 72,
+      "deadCycles": 0
+    },
+    {
+      "runs": 14,
+      "realActions": 73,
+      "deadCycles": 0
+    },
+    {
+      "runs": 15,
+      "realActions": 82,
+      "deadCycles": 0
+    },
+    {
+      "runs": 14,
+      "realActions": 69,
+      "deadCycles": 0
+    },
+    {
+      "runs": 14,
+      "realActions": 67,
+      "deadCycles": 0
+    },
+    {
+      "runs": 14,
+      "realActions": 76,
+      "deadCycles": 0
+    },
+    {
+      "runs": 14,
+      "realActions": 71,
+      "deadCycles": 0
+    }
+  ],
+  "tpsSamples": [
+    [
+      20,
+      20,
+      20
+    ],
+    [
+      20,
+      20,
+      20
+    ],
+    [
+      20,
+      20,
+      20
+    ],
+    [
+      20,
+      20,
+      20
+    ],
+    [
+      20,
+      20,
+      20
+    ],
+    [
+      20,
+      20,
+      20
+    ],
+    [
+      20,
+      20,
+      20
+    ],
+    [
+      20,
+      20,
+      20
+    ],
+    [
+      20,
+      20,
+      20
+    ],
+    [
+      20,
+      20,
+      20
+    ],
+    [
+      20,
+      20,
+      20
+    ],
+    [
+      20,
+      20,
+      20
+    ],
+    [
+      20,
+      20,
+      20
+    ],
+    [
+      20,
+      20,
+      20
+    ],
+    [
+      20,
+      20,
+      20
+    ],
+    [
+      20,
+      20,
+      20
+    ]
+  ],
+  "memBefore": 0,
+  "memAfter": 0
+}

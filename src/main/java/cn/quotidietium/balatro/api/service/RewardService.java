@@ -4,8 +4,8 @@ import java.util.UUID;
 
 /**
  * 过关奖励策略（内部钩子，由会话层在对应节点直接调用）。
- * 默认 {@code NoOpReward} 不发奖；后续可配置为按盲注/底注/通关经 {@link EconomyService} 发奖，
- * 或发物品/执行命令。
+ * 默认 {@code EconomyReward}（0.4.60 起）经 {@link EconomyService} 按配置发放
+ * （config {@code reward.economy.*}，可整体关闭或按档清零）；也可替换为发物品/执行命令的实现。
  *
  * <p>外部插件如需挂钩奖励，监听 {@code BalatroBlindResultEvent}/{@code BalatroAnteClearEvent}/
  * {@code BalatroRunEndEvent} 即可，二者并存。
