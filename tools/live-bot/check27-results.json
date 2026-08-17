@@ -1,0 +1,54 @@
+{
+  "results": [
+    {
+      "name": "baseline",
+      "ok": true,
+      "detail": "bal=$348 statsLines=269 wins=0"
+    },
+    {
+      "name": "won_ante8",
+      "ok": true,
+      "detail": "blindClears=24 anteClears=8 用时536s"
+    },
+    {
+      "name": "win_economy_exact",
+      "ok": true,
+      "detail": "通关 Δ=204.0（期望 204）"
+    },
+    {
+      "name": "win_stats_row",
+      "ok": true,
+      "detail": "stats +1 行（期望 1）"
+    },
+    {
+      "name": "win_counter_once",
+      "ok": false,
+      "detail": "wins +0（期望恰 1）"
+    },
+    {
+      "name": "endless_entered",
+      "ok": true,
+      "detail": "ante>=9"
+    },
+    {
+      "name": "endless_economy_formula",
+      "ok": true,
+      "detail": "终局 Δ=205.0 == 清盲25×1+底注8×10+100=205（无尽失败不发通关奖）"
+    },
+    {
+      "name": "endless_stats_boundary",
+      "ok": true,
+      "detail": "stats 总 +2 行（endlessLost=true，期望 2：win + endless loss）"
+    },
+    {
+      "name": "win_counter_not_double",
+      "ok": false,
+      "detail": "wins 终局 +0（恰 1，无尽失败不重复计数）"
+    }
+  ],
+  "seed": "W26A1446",
+  "blindClears": 25,
+  "anteClears": 8,
+  "endlessLost": true,
+  "endlessEntered": true
+}

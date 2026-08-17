@@ -1,0 +1,22 @@
+[
+  {
+    "name": "A_setup",
+    "ok": false,
+    "detail": "未获得目标类消耗品"
+  },
+  {
+    "name": "B_cross_world",
+    "ok": true,
+    "detail": "下界=true 重建=true(11) 选中保持=true 使用=true"
+  },
+  {
+    "name": "C_death_respawn",
+    "ok": true,
+    "detail": "重建=true(11) 选中保持=true 使用=true"
+  },
+  {
+    "name": "D_chunk_heal",
+    "ok": true,
+    "detail": "远离实体=11 重建=true(11) 选中保持=true 使用=true"
+  }
+]
