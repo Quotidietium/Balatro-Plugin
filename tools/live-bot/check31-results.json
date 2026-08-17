@@ -1,0 +1,32 @@
+[
+  {
+    "name": "A_jokerless_reached_shop",
+    "ok": true,
+    "detail": "jokerless 清盲进商店"
+  },
+  {
+    "name": "A_ban_respected",
+    "ok": true,
+    "detail": "两轮商店零小丑行、零审判/幽灵/灵魂"
+  },
+  {
+    "name": "A_tarots_still_sold",
+    "ok": true,
+    "detail": "非禁入塔罗仍正常出售（禁入是子集而非全禁）"
+  },
+  {
+    "name": "A_target_chain_in_challenge",
+    "ok": false,
+    "detail": "cmds=[] text="
+  },
+  {
+    "name": "B_eternal_nosell",
+    "ok": false,
+    "detail": "4 次购丑（4 次右键）未遇到永恒（30%/只）"
+  },
+  {
+    "name": "C_rental_confirm",
+    "ok": false,
+    "detail": "6 次购丑未遇到 $1 租赁（30%/只）"
+  }
+]
