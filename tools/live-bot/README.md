@@ -74,6 +74,7 @@ R220 审计轮（2026-08-17）首次建立，用于执行 `note/release/实机�
 | check31 | R234：jokerless 禁入 × 新路径——两轮商店零小丑行/零审判幽灵灵魂、非禁入塔罗仍售（3/6 过项）；贴纸采样 18 只 0 命中（联合 ~6% 运气偏差）→ 由 `ShopStickerStakeTest` 固定种子锁补位；⚠ 本地探针 classpath 须含 `build/resources/main`（缺则 jokermeta 加载失败→桶空→商店全塔罗，易误判为引擎缺陷） | 禁入面过/贴纸面引擎锁 |
 | check32 | R235：psychic Boss × @ids 链——种子 B2351 小盲实机 3 手可清（317/300），但 big 盲真实路径手牌不可清（220/450×7 手）→ Boss 回合未达；⚠ **种子预验必须模拟真实流路径**（`nextBlind="big"` 伪推进的手牌 ≠ 真实小盲消耗后的手牌）——语义由 `BossPsychicConsumableTargetTest` 引擎锁闭合 | 引擎锁闭合 |
 | check33 | R236：真实流路径预验（RealPathScan 逐阶段推进）命中 R236X51 → 双盲实机推进到 psychic Boss 回合——出 1 张被拒（通灵者文案）、确认框 `tarot:star @37` 快照、使用成功、梅花 Q→方块 Q 效果落地 | 6/6 通过 |
+| check34 | R237：medusa 石头局 × 目标确认链——石头手牌（`N:石头`）渲染/推进/小盲可清、商店购买（禁入子集生效）、确认框 `tarot:star @26` 快照、使用成功、红桃 A→方块 A 落地；⚠ medusa 持永恒大理石小丑 → 最上行=小丑行，消耗品行=小丑行脚底−0.62（行距偏移法）；bell 为终结者 Boss（仅 ante8，`FINISHERS` 池），ante1 采样不存在 → `BossBellConsumableTargetTest` 引擎锁补位 | 7/7 通过 |
 | probe/metaprobe/jsonprobe | 盲注 go 点击聚焦探针/交互元数据/聊天 JSON 结构 | 诊断工具 |
 
 `*-results.json` 为各轮断言结果存档。
