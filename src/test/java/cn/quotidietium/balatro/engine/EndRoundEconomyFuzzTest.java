@@ -70,7 +70,7 @@ class EndRoundEconomyFuzzTest {
     void allChallengesKeepMoneyAboveFloorAcrossWonRounds() {
         for (Data.Challenge ch : Data.CHALLENGES) {
             for (int seed = 0; seed < 3; seed++) {
-                RunState s = Engine.createRun("red", 0, "ECO" + seed, ch.key());
+                RunState s = Engine.createRun("red", 0, "ECO2-" + ch.key() + "-" + seed, ch.key());
                 for (int round = 0; round < 4; round++) {
                     if (!winRound(s)) break; // 极端 Boss 限制下无法推进即停（非本测目标）
                     assertTrue(s.money >= moneyFloor(s),
@@ -82,10 +82,28 @@ class EndRoundEconomyFuzzTest {
         }
     }
 
+    /** R219：挑战 × 赌注交叉经济下界——每挑战 × 赌注 {3, 7}（黑注贴纸/金注租赁经济最高压）
+     *  各 1 新种子，赢 2 回合断言下界。 */
+    @Test
+    void challengeTimesStakeCrossKeepsMoneyAboveFloor() {
+        for (Data.Challenge ch : Data.CHALLENGES) {
+            for (int stake : new int[] {3, 7}) {
+                RunState s = Engine.createRun("red", stake, "ECX-" + ch.key() + "-" + stake, ch.key());
+                for (int round = 0; round < 2; round++) {
+                    if (!winRound(s)) break;
+                    assertTrue(s.money >= moneyFloor(s),
+                            ch.key() + "@" + stake + " 交叉下界被击穿 round=" + round
+                                    + " money=" + s.money + " floor=" + moneyFloor(s));
+                    if (s.phase == Phase.SHOP && !Engine.nextRound(s)) break;
+                }
+            }
+        }
+    }
+
     @Test
     void standardStakesZeroToSevenAllKeepMoneyNonNegative() {
         for (int stake = 0; stake <= 7; stake++) {
-            RunState s = Engine.createRun("red", stake, "ECOSTK" + stake, null);
+            RunState s = Engine.createRun("red", stake, "ECOSTK2-" + stake, null);
             for (int round = 0; round < 3; round++) {
                 if (!winRound(s)) break;
                 assertTrue(s.money >= 0,
