@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import cn.quotidietium.balatro.engine.Card;
 import cn.quotidietium.balatro.engine.Consumable;
 import cn.quotidietium.balatro.engine.Data;
 import cn.quotidietium.balatro.engine.Engine;
@@ -134,5 +135,39 @@ class ConsumablesUseInfoTest {
         // 上一次 use 已移除星球，hermit 现位于索引 0
         s2.consumables.add(new Consumable("tarot", "hermit"));
         assertTrue(Consumables.use(s2, 0, List.of()).ok, "hermit 应可在商店使用");
+    }
+
+    /**
+     * 愚人生效需求（R225 同族收口）：fool 复制上一张塔罗/星球——上一张是目标类塔罗时，
+     * effectiveUseInfo 返回其需求（板端据此携带 @ids）；否则与 useInfo(fool) 一致。
+     */
+    @Test
+    void foolEffectiveRequirementFollowsLastTarotPlanet() {
+        RunState s = roundState();
+        // 无上一张：愚人无目标需求（引擎侧会报「没有可复制的牌」，与本元数据无关）
+        assertEquals(Consumables.useInfo("fool"), Consumables.effectiveUseInfo(s, "fool"));
+        // 上一张是目标类塔罗 strength(1,2)：生效需求跟随
+        s.lastTarotPlanet = new RunState.TarotPlanet("tarot", "strength");
+        assertEquals(new Consumables.UseInfo(1, 2, true), Consumables.effectiveUseInfo(s, "fool"));
+        // 上一张是非目标塔罗 hermit：无目标需求
+        s.lastTarotPlanet = new RunState.TarotPlanet("tarot", "hermit");
+        assertEquals(Consumables.useInfo("fool"), Consumables.effectiveUseInfo(s, "fool"));
+        // 上一张是星球：星球无目标需求
+        s.lastTarotPlanet = new RunState.TarotPlanet("planet", Data.PLANETS.get(0).key);
+        assertEquals(Consumables.useInfo("fool"), Consumables.effectiveUseInfo(s, "fool"));
+        // 非 fool 的 key 不受 lastTarotPlanet 影响
+        s.lastTarotPlanet = new RunState.TarotPlanet("tarot", "strength");
+        assertEquals(Consumables.useInfo("aura"), Consumables.effectiveUseInfo(s, "aura"));
+
+        // 行为闭环：愚人 + 上一张 strength + 1 张选中目标 → 成功（点数 +1 生效）
+        RunState s2 = roundState();
+        s2.lastTarotPlanet = new RunState.TarotPlanet("tarot", "strength");
+        s2.consumables.add(new Consumable("tarot", "fool"));
+        Card target = null; // 8 张手牌至多 4 张 A，必有 rank<14 的牌（A 不参与 +1）
+        for (Card c : s2.hand) if (c.rank() < 14) { target = c; break; }
+        int before = target.rank();
+        Consumables.Result r = Consumables.use(s2, 0, List.of(target.id()));
+        assertTrue(r.ok, "愚人复制 strength 应可用: " + r.err);
+        assertEquals(before + 1, target.rank(), "目标牌点数应 +1");
     }
 }

@@ -832,7 +832,7 @@ public final class RoundBoard {
                     Consumable c = state.consumables.get(i);
                     Component info = Component.text("[" + kindLabel(c.kind) + "] " + c.name(), NamedTextColor.AQUA)
                             .appendNewline().append(Component.text(c.desc(), NamedTextColor.GRAY));
-                    String req = targetReqText(Consumables.useInfo(c.key));
+                    String req = targetReqText(Consumables.effectiveUseInfo(state, c.key));
                     if (req != null) {
                         info = info.appendNewline().append(Component.text(
                                 req + "（右键手牌选中后再使用）", NamedTextColor.YELLOW));
@@ -1088,7 +1088,7 @@ public final class RoundBoard {
         if (i < 0 || i >= st.consumables.size()) return;
         Consumable c = st.consumables.get(i);
         int sellVal = RunState.sellValue(c);
-        Consumables.UseInfo info = Consumables.useInfo(c.key);
+        Consumables.UseInfo info = Consumables.effectiveUseInfo(st, c.key);
         String req = targetReqText(info);
         String cmd = "/balatro use " + (i + 1) + " " + c.kind + ":" + c.key;
         player.sendMessage(Component.text("━━ 确认使用 ━━", NamedTextColor.GOLD));
@@ -1139,7 +1139,7 @@ public final class RoundBoard {
         player.sendMessage(Component.text("[" + kindLabel(c.kind) + "] " + c.name(), NamedTextColor.AQUA));
         player.sendMessage(Component.text(c.desc(), NamedTextColor.GRAY));
         player.sendMessage(Component.text("售价：$" + val, NamedTextColor.GREEN));
-        Consumables.UseInfo info = Consumables.useInfo(c.key);
+        Consumables.UseInfo info = Consumables.effectiveUseInfo(st, c.key);
         Component buttons;
         if (!info.needsTargets() && !info.roundOnly()) {
             Component use = Component.text("[确认使用]", NamedTextColor.GREEN)

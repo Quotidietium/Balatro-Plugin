@@ -142,6 +142,20 @@ public final class Consumables {
         };
     }
 
+    /**
+     * 该消耗品在本局的<b>生效</b>使用需求（UI 预检用）：愚人（fool）复制上一张
+     * 塔罗/星球（lastTarotPlanet），其生效需求随被复制者动态变化——上一张是目标类
+     * 塔罗时，愚人同样需要选中目标（引擎递归 apply 会以相同 targetIds 走内层分支，
+     * 空目标即报「请选择 N 张手牌」）。其余 key 与 {@link #useInfo} 一致。
+     */
+    public static UseInfo effectiveUseInfo(RunState s, String key) {
+        if (key.equals("fool") && s.lastTarotPlanet != null) {
+            UseInfo inner = useInfo(s.lastTarotPlanet.key);
+            if (inner.needsTargets()) return inner;
+        }
+        return useInfo(key);
+    }
+
     private static Result apply(RunState s, Consumable c, List<Integer> targetIds, boolean inRound) {
         // P14 性能：一次性流（名字内嵌递增 useSeq 永不复现）分段折叠建流，
         // 零字符串物化/零缓存插入，与原 stream("use:"+...) 逐位等价（守门测试锁定）。
