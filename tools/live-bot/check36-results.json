@@ -1,0 +1,42 @@
+[
+  {
+    "name": "A_water_boss_round",
+    "ok": true,
+    "detail": "blind=boss held=true"
+  },
+  {
+    "name": "A_water_disc_rejected",
+    "ok": true,
+    "detail": "没有剩余弃牌次数"
+  },
+  {
+    "name": "A_water_confirm_at_ids",
+    "ok": true,
+    "detail": "/balatro use 1 tarot:moon @26"
+  },
+  {
+    "name": "A_water_use_succeeded",
+    "ok": true,
+    "detail": "使用成功。|没有消耗品。"
+  },
+  {
+    "name": "B_mark_boss_round",
+    "ok": true,
+    "detail": "blind=boss held=true"
+  },
+  {
+    "name": "B_mark_status_facedown",
+    "ok": true,
+    "detail": "1:♣A  2:？  3:？  4:？  5:♣8  6:♥5  7:♦5  8:♥3"
+  },
+  {
+    "name": "B_mark_confirm_at_ids",
+    "ok": true,
+    "detail": "/balatro use 1 tarot:sun @39"
+  },
+  {
+    "name": "B_mark_use_succeeded",
+    "ok": true,
+    "detail": "使用成功。|没有消耗品。"
+  }
+]

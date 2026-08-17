@@ -76,6 +76,7 @@ R220 审计轮（2026-08-17）首次建立，用于执行 `note/release/实机�
 | check33 | R236：真实流路径预验（RealPathScan 逐阶段推进）命中 R236X51 → 双盲实机推进到 psychic Boss 回合——出 1 张被拒（通灵者文案）、确认框 `tarot:star @37` 快照、使用成功、梅花 Q→方块 Q 效果落地 | 6/6 通过 |
 | check34 | R237：medusa 石头局 × 目标确认链——石头手牌（`N:石头`）渲染/推进/小盲可清、商店购买（禁入子集生效）、确认框 `tarot:star @26` 快照、使用成功、红桃 A→方块 A 落地；⚠ medusa 持永恒大理石小丑 → 最上行=小丑行，消耗品行=小丑行脚底−0.62（行距偏移法）；bell 为终结者 Boss（仅 ante8，`FINISHERS` 池），ante1 采样不存在 → `BossBellConsumableTargetTest` 引擎锁补位 | 7/7 通过 |
 | check35/35b | R238：**#81 缺陷发现与修复实证**——xray 挑战开局回合 3 张面朝下：status 手牌 `？`×3、8 张按序 Shift 简介中面朝下牌显示「面朝下的牌（内容未知）」位置精确对应、身份零泄露（0.4.62）；water/mark Boss 回合的实机推进不稳定（脚本策略镜像仍与实机有微差），语义由 `BossWaterNoDiscardTest` 引擎锁闭合 | 修复实证 + 引擎锁 |
+| check36 | R240：**命令驱动推进（分叉结构性消除）+ 逐动作对账日志落地**——water W238w369 与 mark W238m603 双盲命令推进到 Boss 回合：water 弃牌被拒（「没有剩余弃牌次数」）+ `tarot:moon @26` 使用成功；mark status 3 张 ？ + `tarot:sun @39` 使用成功；`check36-actions.log` 为实机侧对账基准（规约 #13 基建） | 8/8 通过 |
 | probe/metaprobe/jsonprobe | 盲注 go 点击聚焦探针/交互元数据/聊天 JSON 结构 | 诊断工具 |
 
 `*-results.json` 为各轮断言结果存档。
