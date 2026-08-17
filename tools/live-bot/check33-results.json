@@ -1,0 +1,32 @@
+[
+  {
+    "name": "boss_psychic_round_reached",
+    "ok": true,
+    "detail": "R236X51 Boss 回合（psychic）held=true"
+  },
+  {
+    "name": "psychic_rejects_short_play",
+    "ok": true,
+    "detail": "通灵者：必须出满 5 张牌"
+  },
+  {
+    "name": "boss_confirm_req_line",
+    "ok": true,
+    "detail": "需选中 1–3 张手牌（当前已选 1 张，将作用于已选牌）"
+  },
+  {
+    "name": "boss_confirm_at_ids",
+    "ok": true,
+    "detail": "/balatro use 1 tarot:star @37"
+  },
+  {
+    "name": "boss_use_succeeded",
+    "ok": true,
+    "detail": "使用成功。\n没有消耗品。"
+  },
+  {
+    "name": "boss_effect_applied",
+    "ok": true,
+    "detail": "before=梅花 Q after=方块 Q"
+  }
+]
