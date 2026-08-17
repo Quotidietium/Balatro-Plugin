@@ -1,0 +1,89 @@
+{
+  "results": [
+    {
+      "name": "soak_alive_20",
+      "ok": true,
+      "detail": "存活 20/20 kicked=0"
+    },
+    {
+      "name": "tps_full_load",
+      "ok": true,
+      "detail": "样本=20,20,20,20,20,20,20,20 min=20"
+    },
+    {
+      "name": "memory_observed",
+      "ok": true,
+      "detail": "host java 合计峰值≈6184MB（含用户进程，记录型）；服务器 -Xmx2G"
+    },
+    {
+      "name": "newpath_target_use",
+      "ok": true,
+      "detail": "目标确认链 尝试=16 成功=7"
+    },
+    {
+      "name": "newpath_shop_use",
+      "ok": true,
+      "detail": "商店使用按钮 尝试=18 成功=9"
+    },
+    {
+      "name": "stats_match_losses",
+      "ok": true,
+      "detail": "新增 155 == 失败局 155，7 段合法=true"
+    }
+  ],
+  "agg": {
+    "runs": 177,
+    "hands": 871,
+    "losses": 155,
+    "blindClears": 60,
+    "targetUses": 7,
+    "targetAttempts": 16,
+    "shopUseOk": 9,
+    "shopAttempts": 18,
+    "buys": 18
+  },
+  "tpsSamples": [
+    20,
+    20,
+    20,
+    20,
+    20,
+    20,
+    20,
+    20
+  ],
+  "memSamples": [
+    {
+      "max": 1404,
+      "sum": 1820
+    },
+    {
+      "max": 4344,
+      "sum": 5965
+    },
+    {
+      "max": 4433,
+      "sum": 6055
+    },
+    {
+      "max": 4562,
+      "sum": 6184
+    },
+    {
+      "max": 4539,
+      "sum": 6161
+    },
+    {
+      "max": 4531,
+      "sum": 6153
+    },
+    {
+      "max": 1406,
+      "sum": 1665
+    },
+    {
+      "max": 3856,
+      "sum": 5463
+    }
+  ]
+}
