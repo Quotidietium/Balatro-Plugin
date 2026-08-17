@@ -1,0 +1,32 @@
+[
+  {
+    "name": "perm_denied_command",
+    "ok": false,
+    "detail": "拒绝消息=false，实体=25（应为 0）"
+  },
+  {
+    "name": "perm_denied_no_session",
+    "ok": false,
+    "detail": "无权者不产生牌桌实体"
+  },
+  {
+    "name": "perm_denied_tab_empty",
+    "ok": true,
+    "detail": "Tab 补全=null（应空）"
+  },
+  {
+    "name": "perm_allowed_control",
+    "ok": true,
+    "detail": "对照组实体=25（默认 true 可玩）"
+  },
+  {
+    "name": "perm_allowed_tab",
+    "ok": null,
+    "detail": "对照组 Tab=null 项"
+  },
+  {
+    "name": "perm_revoked_midgame",
+    "ok": true,
+    "detail": "局中撤销：命令拒绝=true，实体=25（行为记录）"
+  }
+]
