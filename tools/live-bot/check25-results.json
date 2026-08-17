@@ -1,0 +1,59 @@
+{
+  "results": [
+    {
+      "name": "initial_balances",
+      "ok": true,
+      "detail": "{\"BalBot\":26,\"BalBot2\":0,\"AdvBot3\":0}"
+    },
+    {
+      "name": "economy_reward_exact",
+      "ok": true,
+      "detail": "BalBot:Δ0.0=清盲0×1+底注0×10(期望0) ; BalBot2:Δ0.0=清盲0×1+底注0×10(期望0) ; AdvBot3:Δ1.0=清盲1×1+底注0×10(期望1)"
+    },
+    {
+      "name": "stats_rows_match_losses",
+      "ok": true,
+      "detail": "新增6 行 == 失败局数6（含部分打出 END 后自动结算）"
+    },
+    {
+      "name": "stats_rows_wellformed",
+      "ok": true,
+      "detail": "6 行均 7 段"
+    },
+    {
+      "name": "wins_file_unchanged",
+      "ok": true,
+      "detail": "无通关 → wins.txt 不变"
+    }
+  ],
+  "track": {
+    "BalBot": {
+      "blindClears": 0,
+      "anteClears": 0,
+      "losses": 2,
+      "runs": 2
+    },
+    "BalBot2": {
+      "blindClears": 0,
+      "anteClears": 0,
+      "losses": 2,
+      "runs": 2
+    },
+    "AdvBot3": {
+      "blindClears": 1,
+      "anteClears": 0,
+      "losses": 2,
+      "runs": 2
+    }
+  },
+  "bal0": {
+    "BalBot": 26,
+    "BalBot2": 0,
+    "AdvBot3": 0
+  },
+  "bal1": {
+    "BalBot": 26,
+    "BalBot2": 0,
+    "AdvBot3": 1
+  }
+}

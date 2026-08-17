@@ -1,0 +1,52 @@
+[
+  {
+    "name": "confirm_page_reached",
+    "ok": true,
+    "detail": "向导到确认页"
+  },
+  {
+    "name": "seed_slot_found",
+    "ok": true,
+    "detail": "slot=16"
+  },
+  {
+    "name": "seed_set_reply",
+    "ok": true,
+    "detail": "种子已设置为 SEEDOK1。"
+  },
+  {
+    "name": "confirm_reopen_with_seed",
+    "ok": true,
+    "detail": "图标含 SEEDOK1"
+  },
+  {
+    "name": "seed_cancel",
+    "ok": true,
+    "detail": "已取消种子输入。"
+  },
+  {
+    "name": "seed_invalid_kept",
+    "ok": true,
+    "detail": "无效种子：仅允许字母/数字/下划线/连字符，长度 1~32。仍使用原设置。"
+  },
+  {
+    "name": "seed_cmd_mix",
+    "ok": true,
+    "detail": "命令执行=true 窗口仍有效=true"
+  },
+  {
+    "name": "seed_gui_return_cleanup",
+    "ok": true,
+    "detail": "未吞=true 有回显=true"
+  },
+  {
+    "name": "seed_atomic_claim",
+    "ok": true,
+    "detail": "设置=1条首条=true 次条放行=true"
+  },
+  {
+    "name": "seed_timeout_pass",
+    "ok": true,
+    "detail": "未误吞=true 聊天放行=true"
+  }
+]
