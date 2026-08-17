@@ -10,7 +10,6 @@ import cn.quotidietium.balatro.engine.Rng;
 import cn.quotidietium.balatro.engine.RunState;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * 消耗品使用与效果，移植自 {@code engine.js} 的 useConsumable/applyConsumable（52 效果）。
@@ -114,13 +113,34 @@ public final class Consumables {
     /** 版本抽取池（wheel/aura 用，对齐原版：1/3 均匀，非商店权重）。 */
     private static final List<String> EDITION_POOL = List.of("foil", "holo", "poly");
 
-    /** 需要以手牌为目标的消耗品 key（非回合阶段无法使用）。 */
-    private static final Set<String> NEED_ROUND_TARGET = Set.of(
-            "magician", "empress", "hierophant",
-            "lovers", "chariot", "justice", "devil", "tower",
-            "strength", "hanged", "death",
-            "star", "moon", "sun", "world",
-            "talisman", "dejavu", "trance", "medium", "aura", "cryptid");
+    /** 消耗品使用需求元数据：目标张数区间（exact 需求 min==max）+ 是否仅限出牌回合。 */
+    public record UseInfo(int minTargets, int maxTargets, boolean roundOnly) {
+        /** 是否需要手牌目标（maxTargets>0）。 */
+        public boolean needsTargets() { return maxTargets > 0; }
+    }
+
+    /** 无目标且不限回合（星球/非目标塔罗/非回合限幻灵）。 */
+    private static final UseInfo UI_NONE = new UseInfo(0, 0, false);
+    /** 无目标但仅限回合（作用于随机/全体手牌的幻灵，apply 内 inRoundHand 分支把关）。 */
+    private static final UseInfo UI_ROUND_ONLY = new UseInfo(0, 0, true);
+
+    /**
+     * 消耗品使用需求（UI 预检/提示的单一事实源）。行为真源仍是各 apply 分支的
+     * targets(max, exact) 与 inRoundHand 调用——两者由 ConsumablesUseInfoTest
+     * 的行为边界锁强制一致（改任一侧都会红）。needsTargets()==true 的 key 集合与
+     * 原 NEED_ROUND_TARGET 集合逐字相同，非回合预检行为不变。
+     */
+    public static UseInfo useInfo(String key) {
+        return switch (key) {
+            case "magician", "empress", "hierophant", "strength", "hanged" -> new UseInfo(1, 2, true);
+            case "lovers", "chariot", "justice", "devil", "tower",
+                    "talisman", "dejavu", "trance", "medium", "aura", "cryptid" -> new UseInfo(1, 1, true);
+            case "death" -> new UseInfo(2, 2, true);
+            case "star", "moon", "sun", "world" -> new UseInfo(1, 3, true);
+            case "familiar", "grim", "incantation", "sigil", "ouija", "immolate" -> UI_ROUND_ONLY;
+            default -> UI_NONE;
+        };
+    }
 
     private static Result apply(RunState s, Consumable c, List<Integer> targetIds, boolean inRound) {
         // P14 性能：一次性流（名字内嵌递增 useSeq 永不复现）分段折叠建流，
@@ -128,7 +148,7 @@ public final class Consumables {
         Rng.Stream st = s.streamUse(c.key);
 
         // 需指定手牌目标的消耗品只能在出牌回合使用（提前给出明确提示，避免误导性报错）
-        if (!inRound && NEED_ROUND_TARGET.contains(c.key)) {
+        if (!inRound && useInfo(c.key).needsTargets()) {
             return Result.err("该消耗品需要指定手牌目标，请在出牌回合使用");
         }
 
