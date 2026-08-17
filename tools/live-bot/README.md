@@ -90,3 +90,9 @@ node check9.js   # 恶意输入 + 4 bot soak
 ```
 
 服务器需已部署 balatro jar；ops.json 按要点 1 配置 BalBot/BalBot2。
+
+13. **模拟镜像必须逐动作对账**（R239）：实机脚本的动作通道是实体点击（use_entity
+    包），**命令日志不可见**——对账基准必须是聊天 status 快照（动作前 hand → 动作
+    → 动作后 score/hands/discards），模拟侧输出同格式 `ACTION [hand] params ->
+    post-state`，首个不等行即分叉点；禁止只比「种子可清/不可清」结论不比过程
+    （R238 的 W238w183「预验通过实机失败」曾因此无法定位）。
