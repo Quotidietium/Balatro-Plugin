@@ -365,6 +365,7 @@ public final class GameSession {
     }
 
     private static String cardLabel(Card c) {
+        if (c.facedown()) return "？"; // 身份保密（R238）：与板面「？」一致，防 status 通道泄露
         if (c.isStone()) return "石头";
         return Data.Suit.byIndex(c.suit()).symbol + Data.rankName(c.rank());
     }

@@ -871,6 +871,11 @@ public final class RoundBoard {
 
     /** 手牌扑克牌简介：花色点数 + 增强/版本/蜡封说明。 */
     private static Component playingCardInfo(Card c) {
+        // 面朝下牌身份保密（R238 修复）：mark Boss/xray 的隐藏机制不得被简介通道击穿——
+        // 板面已渲染「？」，简介与 status 同样只给「面朝下」，增强/版本/蜡封一并隐藏。
+        if (c.facedown()) {
+            return Component.text("面朝下的牌（内容未知）", NamedTextColor.GRAY);
+        }
         Component head = c.isStone()
                 ? Component.text("石头牌", NamedTextColor.GRAY)
                 : Component.text(Data.Suit.byIndex(c.suit()).name + " " + Data.rankName(c.rank()), NamedTextColor.WHITE);
