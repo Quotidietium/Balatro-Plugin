@@ -1,0 +1,29 @@
+{
+  "results": [
+    {
+      "name": "start_balance",
+      "ok": true,
+      "detail": "$39"
+    },
+    {
+      "name": "first_ante_exact",
+      "ok": true,
+      "detail": "首个底注 Δ=13.0（期望 3×1+10=13）"
+    },
+    {
+      "name": "run_won",
+      "ok": true,
+      "detail": "won=true blindClears=24 用时568s"
+    },
+    {
+      "name": "full_run_economy_exact",
+      "ok": true,
+      "detail": "整局 Δ=204.0（期望 24×1+8×10+100=204）"
+    }
+  ],
+  "seed": "W26A1446",
+  "blindClears": 24,
+  "balStart": 39,
+  "balAfterFirstAnte": 52,
+  "balEnd": 243
+}
