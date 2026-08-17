@@ -8,6 +8,7 @@ import cn.quotidietium.balatro.engine.JokerInstance;
 import cn.quotidietium.balatro.engine.Consumable;
 import cn.quotidietium.balatro.engine.Phase;
 import cn.quotidietium.balatro.engine.RunState;
+import cn.quotidietium.balatro.engine.consumable.Consumables;
 import cn.quotidietium.balatro.session.GameSession;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -829,8 +830,14 @@ public final class RoundBoard {
                 int i = Integer.parseInt(action.substring("cons:".length()));
                 if (i >= 0 && i < state.consumables.size()) {
                     Consumable c = state.consumables.get(i);
-                    return Component.text("[" + kindLabel(c.kind) + "] " + c.name(), NamedTextColor.AQUA)
+                    Component info = Component.text("[" + kindLabel(c.kind) + "] " + c.name(), NamedTextColor.AQUA)
                             .appendNewline().append(Component.text(c.desc(), NamedTextColor.GRAY));
+                    String req = targetReqText(Consumables.useInfo(c.key));
+                    if (req != null) {
+                        info = info.appendNewline().append(Component.text(
+                                req + "（右键手牌选中后再使用）", NamedTextColor.YELLOW));
+                    }
+                    return info;
                 }
             } else if (action.startsWith("shop:") && state.shop != null) {
                 int i = Integer.parseInt(action.substring("shop:".length()));
@@ -1011,7 +1018,7 @@ public final class RoundBoard {
 
     public void playSelected() {
         if (selected.isEmpty()) return;
-        cn.quotidietium.balatro.engine.Engine.PlayResult r = session.play(new ArrayList<>(selected));
+        cn.quotidietium.balatro.engine.Engine.PlayResult r = session.play(selectedIdsInHandOrder());
         selected.clear();
         if (!r.ok && r.err != null) {
             session.player().sendMessage(Component.text(r.err, NamedTextColor.RED));
@@ -1020,11 +1027,21 @@ public final class RoundBoard {
 
     public void discardSelected() {
         if (selected.isEmpty()) return;
-        cn.quotidietium.balatro.engine.Engine.PlayResult r = session.discard(new ArrayList<>(selected));
+        cn.quotidietium.balatro.engine.Engine.PlayResult r = session.discard(selectedIdsInHandOrder());
         selected.clear();
         if (!r.ok && r.err != null) {
             session.player().sendMessage(Component.text(r.err, NamedTextColor.RED));
         }
+    }
+
+    /**
+     * 当前选中牌 id，按手牌从左到右序（R225：确定性——弃牌的紫蜡封流序、消耗品
+     * 目标次序（死神「左变右」）不再随 HashSet 哈希布局漂移）。
+     */
+    private List<Integer> selectedIdsInHandOrder() {
+        List<Integer> ids = new ArrayList<>(selected.size());
+        for (Card card : session.state().hand) if (selected.contains(card.id())) ids.add(card.id());
+        return ids;
     }
 
     public void clearSelection() {
@@ -1057,24 +1074,48 @@ public final class RoundBoard {
     }
 
     /**
-     * 右键消耗品：在聊天框弹出「确认使用」提示（名称 · 说明 · 出售价 · 目标提示），
-     * 附「[确认使用]」(→ /balatro use，无目标) 与「[取消]」按钮。
+     * 右键消耗品：在聊天框弹出「确认使用」提示（名称 · 说明 · 目标需求 · 手动命令），
+     * 附「[确认使用]」(→ /balatro use) 与「[取消]」按钮。
+     *
+     * <p>R225：目标类消耗品的确认命令携带确认时刻选中牌的卡 id 快照（@id 令牌，
+     * 手牌从左到右序）。此前按钮不带任何目标——右键选中牌后确认仍报
+     * 「请选择 N 张手牌」，21 种目标类消耗品（光环造镭射/死神/力量…）在全息侧
+     * 事实上不可用。选中数不满足需求时不带令牌，由引擎给出精确数量错误（提示行
+     * 已预告需求）；命令层校验快照 id 仍在手牌（TOCTOU 防错位）。
      */
     public void sendUseConfirm(Player player, int i) {
         RunState st = session.state();
         if (i < 0 || i >= st.consumables.size()) return;
         Consumable c = st.consumables.get(i);
         int sellVal = RunState.sellValue(c);
+        Consumables.UseInfo info = Consumables.useInfo(c.key);
+        String req = targetReqText(info);
+        String cmd = "/balatro use " + (i + 1) + " " + c.kind + ":" + c.key;
         player.sendMessage(Component.text("━━ 确认使用 ━━", NamedTextColor.GOLD));
         player.sendMessage(Component.text("[" + kindLabel(c.kind) + "] " + c.name(), NamedTextColor.AQUA));
         player.sendMessage(Component.text(c.desc(), NamedTextColor.GRAY));
+        if (req != null && st.phase == Phase.ROUND) {
+            List<Integer> sel = selectedIdsInHandOrder();
+            boolean fit = sel.size() >= info.minTargets() && sel.size() <= info.maxTargets();
+            player.sendMessage(Component.text(
+                    req + "（当前已选 " + sel.size() + " 张" + (fit ? "，将作用于已选牌）" : "）"),
+                    fit ? NamedTextColor.GREEN : NamedTextColor.YELLOW));
+            if (fit) {
+                StringBuilder sb = new StringBuilder(cmd).append(" @");
+                for (int k = 0; k < sel.size(); k++) {
+                    if (k > 0) sb.append(',');
+                    sb.append(sel.get(k));
+                }
+                cmd = sb.toString();
+            }
+        } else if (req != null) {
+            player.sendMessage(Component.text(req + "（仅出牌回合可用）", NamedTextColor.YELLOW));
+        }
         player.sendMessage(Component.text(
-                "需指定目标时用 /balatro use " + (i + 1) + " <手牌序号...>；商店阶段右键消耗品=出售（$" + sellVal
-                        + "，或 /balatro sellc " + (i + 1) + "）",
-                NamedTextColor.DARK_GRAY));
-        // 按钮末位携带期望 kind:key：确认后到点击前消耗品列表可能已变化（使用/出售收缩列表），
-        // 命令层校验不一致则取消执行，防止序号错位用错消耗品
-        player.sendMessage(confirmButtons("/balatro use " + (i + 1) + " " + c.kind + ":" + c.key, "使用", null));
+                "手动命令：/balatro use " + (i + 1) + " <手牌序号...>；出售：/balatro sellc " + (i + 1)
+                        + "（$" + sellVal + "）", NamedTextColor.DARK_GRAY));
+        // 按钮携带期望 kind:key + 目标快照 @id（命令层双重校验：列表/手牌变化均取消防错位）
+        player.sendMessage(confirmButtons(cmd, "使用", null));
     }
 
     /**
@@ -1083,19 +1124,43 @@ public final class RoundBoard {
      *
      * <p>与 {@link #sendSellConfirm}（小丑版）结构对称，消除原先消耗品仅在「确认使用」
      * 对话框中以灰色文字提及出售、且无可点击按钮的不对称。
+     *
+     * <p>R225：引擎允许在商店使用「无目标且不限回合」的消耗品（星球/非目标塔罗/部分
+     * 幻灵，Consumables.useInfo 元数据），此前商店右键只有出售按钮——此类牌现在同时
+     * 提供「[确认使用]」。目标类/回合限幻灵不提供（引擎会拒，提示行已预告）。
      */
     public void sendSellConsumableConfirm(Player player, int i) {
         RunState st = session.state();
         if (i < 0 || i >= st.consumables.size()) return;
         Consumable c = st.consumables.get(i);
         int val = RunState.sellValue(c);
+        String sellCmd = "/balatro sellc " + (i + 1) + " " + c.kind + ":" + c.key;
         player.sendMessage(Component.text("━━ 确认出售 ━━", NamedTextColor.GOLD));
         player.sendMessage(Component.text("[" + kindLabel(c.kind) + "] " + c.name(), NamedTextColor.AQUA));
         player.sendMessage(Component.text(c.desc(), NamedTextColor.GRAY));
         player.sendMessage(Component.text("售价：$" + val, NamedTextColor.GREEN));
-        // 按钮携带期望 kind:key：确认后到点击前消耗品列表可能已变化（使用/出售收缩列表），
-        // 命令层校验不一致则取消执行，防止序号错位卖错消耗品
-        player.sendMessage(confirmButtons("/balatro sellc " + (i + 1) + " " + c.kind + ":" + c.key, "出售", "$" + val));
+        Consumables.UseInfo info = Consumables.useInfo(c.key);
+        Component buttons;
+        if (!info.needsTargets() && !info.roundOnly()) {
+            Component use = Component.text("[确认使用]", NamedTextColor.GREEN)
+                    .clickEvent(ClickEvent.runCommand("/balatro use " + (i + 1) + " " + c.kind + ":" + c.key))
+                    .hoverEvent(HoverEvent.showText(Component.text("点击确认使用（商店内可用）", NamedTextColor.GRAY)));
+            // 按钮携带期望 kind:key：确认后到点击前消耗品列表可能已变化（使用/出售收缩列表），
+            // 命令层校验不一致则取消执行，防止序号错位卖错/用错消耗品
+            buttons = Component.text(" ").append(use).append(Component.text("   "))
+                    .append(confirmButtons(sellCmd, "出售", "$" + val));
+        } else {
+            buttons = confirmButtons(sellCmd, "出售", "$" + val);
+        }
+        player.sendMessage(buttons);
+    }
+
+    /** 目标需求提示（如「需选中 1 张手牌」/「需选中 1–2 张手牌」）；无需目标返回 null。 */
+    private static String targetReqText(Consumables.UseInfo info) {
+        if (!info.needsTargets()) return null;
+        return info.minTargets() == info.maxTargets()
+                ? "需选中 " + info.maxTargets() + " 张手牌"
+                : "需选中 " + info.minTargets() + "–" + info.maxTargets() + " 张手牌";
     }
 
     /** 生成「[确认X] [取消]」两个可点击按钮。 */
