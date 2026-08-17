@@ -1,0 +1,12 @@
+[
+  {
+    "name": "status_hides_facedown",
+    "ok": true,
+    "detail": "3 张面朝下 → 1:♠J  2:♠10  3:？  4:？  5:♦7  6:？  7:♣5  8:♣2"
+  },
+  {
+    "name": "shiftinfo_facedown_hidden",
+    "ok": false,
+    "detail": "见到面朝下简介=false 异常泄露=无"
+  }
+]
