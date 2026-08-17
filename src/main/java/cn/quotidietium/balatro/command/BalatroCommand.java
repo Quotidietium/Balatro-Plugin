@@ -576,35 +576,61 @@ public final class BalatroCommand implements CommandExecutor, TabCompleter {
         // 此前手写解析是唯一缺 <0 拦截的序号命令（越界仅靠引擎兜底，且文案逊于其它命令）。
         int cidx = parseOne(player, args);
         if (cidx < 0) return;
-        // 全息「确认使用」按钮在末位携带期望 kind:key（含冒号，区别于数字手牌序号）：
-        // 确认后到点击前消耗品列表可能已变化（使用/出售收缩列表），序号可能指向另一个
-        // 消耗品——校验不一致则取消，防止错位用错。手动输入不带标识则跳过校验（向后兼容）。
-        int targetEnd = args.length;
-        if (args.length >= 3) {
-            String last = args[args.length - 1];
-            if (last.indexOf(':') >= 0) {
-                if (!consKindKeyAt(s, cidx).equals(last)) {
-                    player.sendMessage("§c消耗品列表已变化，使用已取消。请重新右键该消耗品确认。");
+        // 参数三形态（板端确认按钮只产生 ①+②，手动输入只产生 ③，混用 ②③ 拒绝）：
+        //   ① kind:key 期望标识（含冒号）：确认后到点击前消耗品列表可能已变化（使用/出售
+        //     收缩列表），序号可能指向另一个消耗品——校验不一致则取消（R52 防错位，向后兼容）。
+        //   ② @id1,id2 目标快照令牌（R225）：全息「确认使用」携带确认时刻选中牌的卡 id。
+        //   ③ 纯数字：手动手牌序号（1-based，旧路径不变）。
+        String expectKindKey = null;
+        List<Integer> snapshotIds = null;
+        List<Integer> cardIds = new ArrayList<>();
+        for (int i = 2; i < args.length; i++) {
+            String a = args[i];
+            if (a.isEmpty()) { player.sendMessage("§c无效参数：" + a); return; }
+            if (a.indexOf(':') >= 0) {
+                if (expectKindKey != null) { player.sendMessage("§c无效参数：" + a); return; }
+                expectKindKey = a;
+            } else if (a.charAt(0) == '@') {
+                if (snapshotIds != null) { player.sendMessage("§c无效参数：" + a); return; }
+                snapshotIds = UseTargets.parseAtIds(a);
+                if (snapshotIds == null) { player.sendMessage("§c无效的目标令牌：" + a); return; }
+            } else {
+                int hi;
+                try {
+                    hi = Integer.parseInt(a);
+                } catch (NumberFormatException e) {
+                    player.sendMessage("§c无效的手牌序号：" + a);
                     return;
                 }
-                targetEnd = args.length - 1;
+                if (hi < 1 || hi > s.state().hand.size()) { player.sendMessage("§c手牌序号越界：" + a); return; }
+                cardIds.add(s.state().hand.get(hi - 1).id());
             }
         }
-        List<Integer> cardIds = new ArrayList<>();
-        for (int i = 2; i < targetEnd; i++) {
-            int hi;
-            try {
-                hi = Integer.parseInt(args[i]);
-            } catch (NumberFormatException e) {
-                player.sendMessage("§c无效的手牌序号：" + args[i]);
-                return;
+        if (expectKindKey != null && !consKindKeyAt(s, cidx).equals(expectKindKey)) {
+            player.sendMessage("§c消耗品列表已变化，使用已取消。请重新右键该消耗品确认。");
+            return;
+        }
+        if (snapshotIds != null) {
+            if (!cardIds.isEmpty()) { player.sendMessage("§c不能同时指定手牌序号与目标令牌。"); return; }
+            // 目标侧 TOCTOU：快照 id 必须全部仍在手牌（确认到点击之间出牌/弃牌/销毁都会
+            // 改写手牌），缺一即整体取消。序号会漂移而卡 id 不会——这是携带 @id 而非序号的原因。
+            for (int id : snapshotIds) {
+                if (handIdAt(s, id) == null) {
+                    player.sendMessage("§c手牌已变化，使用已取消。请重新右键该消耗品确认。");
+                    return;
+                }
             }
-            if (hi < 1 || hi > s.state().hand.size()) { player.sendMessage("§c手牌序号越界：" + args[i]); return; }
-            cardIds.add(s.state().hand.get(hi - 1).id());
+            cardIds = snapshotIds;
         }
         var r = s.useConsumable(cidx, cardIds);
         if (!r.ok) player.sendMessage("§c" + r.err);
         else { player.sendMessage("§a使用成功。"); cmdCons(player); }
+    }
+
+    /** 手牌中查找卡 id；未命中返回 null（目标快照 TOCTOU 校验用）。 */
+    private static cn.quotidietium.balatro.engine.Card handIdAt(GameSession s, int id) {
+        for (var c : s.state().hand) if (c.id() == id) return c;
+        return null;
     }
 
     /** 当前消耗品 idx 处的期望标识（kind:key）；越界返回空串（必不匹配，走「列表已变化」取消）。 */
