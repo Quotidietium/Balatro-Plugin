@@ -1,0 +1,27 @@
+[
+  {
+    "name": "bought_planet",
+    "ok": true,
+    "detail": "[2] planet 金星 $3"
+  },
+  {
+    "name": "held_cons_row",
+    "ok": true,
+    "detail": "1 个"
+  },
+  {
+    "name": "shop_dual_buttons",
+    "ok": true,
+    "detail": "sell=true use=true"
+  },
+  {
+    "name": "shop_use_works",
+    "ok": true,
+    "detail": "使用成功。\n没有消耗品。"
+  },
+  {
+    "name": "planet_shop_flow_done",
+    "ok": true,
+    "detail": "完成"
+  }
+]

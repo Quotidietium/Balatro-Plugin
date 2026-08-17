@@ -1,0 +1,52 @@
+[
+  {
+    "name": "bought_target_consumable",
+    "ok": true,
+    "detail": "持有 战车"
+  },
+  {
+    "name": "acquired_any_target",
+    "ok": true,
+    "detail": "战车"
+  },
+  {
+    "name": "shop_dual_buttons",
+    "ok": true,
+    "detail": "商店无星球，跳过（非缺陷）"
+  },
+  {
+    "name": "back_to_round",
+    "ok": true,
+    "detail": "phase=ROUND"
+  },
+  {
+    "name": "cons_row_visible",
+    "ok": true,
+    "detail": "最上行(y≈-57.88) 1 个命中盒"
+  },
+  {
+    "name": "confirm_req_line",
+    "ok": true,
+    "detail": "需选中 1 张手牌（当前已选 1 张，将作用于已选牌）"
+  },
+  {
+    "name": "confirm_cmd_has_at_ids",
+    "ok": true,
+    "detail": "/balatro use 1 tarot:chariot @26"
+  },
+  {
+    "name": "use_succeeded",
+    "ok": true,
+    "detail": "使用成功。\n没有消耗品。"
+  },
+  {
+    "name": "no_select_error",
+    "ok": true,
+    "detail": "无「请选择」错误"
+  },
+  {
+    "name": "effect_applied",
+    "ok": true,
+    "detail": "changed=true kw=true :: 红桃 A\n钢铁牌：持有在手时 ×1.5 倍率"
+  }
+]
